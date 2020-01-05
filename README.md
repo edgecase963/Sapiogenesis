@@ -1,2 +1,2 @@
-# Ebition
-Ebition is a project aimed towards making evolving creatures with built in neural networks (Ebits)
+# NSS
+NSS (Natural Selection Simulator) is a project designed to simulate the process of natural selection and evolution
