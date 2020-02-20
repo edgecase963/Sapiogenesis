@@ -1,18 +1,15 @@
 #!/etc/python2.7
 import sys, os, time, sprites
 from PyQt4 import QtGui, QtCore
+from pybrain.tools.shortcuts import buildNetwork
 
 
 
 def num2perc(num, maxNum):
-    perc = (float(num) / float(maxNum))
-    perc = (perc * 100.0)
-    return perc
+    return ((float(num) / float(maxNum)) * 100.0)
 
 def perc2num(perc, maxNum):
-    num = (float(perc) / 100.0)
-    num = (num * float(maxNum))
-    return num
+    return ((float(perc) / 100.0) * float(maxNum))
 
 def posList(lst):
     lst2 = []
@@ -39,5 +36,13 @@ def condition(listVar):
 
 
 
-class Mico(QtGui.QGraphicsPixmapItem):
+class Mico_Brain():
+    pass
+
+
+class Mico_Body(sprites.Sprite):
+    pass
+
+
+class Mico():
     pass

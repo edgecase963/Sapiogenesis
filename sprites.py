@@ -5,14 +5,10 @@ from PyQt4 import QtGui, QtCore
 
 
 def num2perc(num, maxNum):
-    perc = (float(num) / float(maxNum))
-    perc = (perc * 100.0)
-    return perc
+    return ((float(num) / float(maxNum)) * 100.0)
 
 def perc2num(perc, maxNum):
-    num = (float(perc) / 100.0)
-    num = (num * float(maxNum))
-    return num
+    return ((float(perc) / 100.0) * float(maxNum))
 
 def posList(lst):
     lst2 = []
@@ -61,12 +57,9 @@ class Sprite(QtGui.QGraphicsPixmapItem):
 
         self.limitedBoundary = True   # If set to True, this sprite will bounce off the edges of the scene
 
-        self.width = width
-        self.height = height
         #self.setPos(self.xPos, self.yPos)
         self.setPos(pos[0], pos[1])
 
-        self.changed = True
         self.lastUpdated = time.time()
 
         self.movDirection = [1.0, 1.0]
@@ -90,9 +83,8 @@ class Sprite(QtGui.QGraphicsPixmapItem):
             self.mouseHoverFunc(self, event)
 
     def scale(self, width, height):
-        self.width = width
-        self.height = height
-        self.changed = True
+        tempPixmap = self.pixmap.scaled(width, height, QtCore.Qt.KeepAspectRatio)
+        self.setPixmap( tempPixmap )
 
     def getPos(self):
         return self.pos()
@@ -104,6 +96,11 @@ class Sprite(QtGui.QGraphicsPixmapItem):
         return self.sceneBoundingRect().center()
     def getRect(self):
         return self.sceneBoundingRect()
+
+    def getWidth(self):
+        return self.getRect().width()
+    def getHeight(self):
+        return self.getRect().height()
 
     def direct(self, direction, invert=False):   # Set "invert" to True if you want the sprite to move away from the target
         if invert:
@@ -121,18 +118,8 @@ class Sprite(QtGui.QGraphicsPixmapItem):
         print "Sprite bumped!"
 
     def updateSprite(self):
-        if self.changed:
-            tempPixmap = self.pixmap.scaled(self.width, self.height, QtCore.Qt.KeepAspectRatio)
-            self.setPixmap( tempPixmap )
-            self.changed = False
-            print "Sprite changed!"
-            print "Position: {}, {}".format( self.x(), self.y() )
-
         uDiff = time.time() - self.lastUpdated
-
-        nPerc = uDiff * self.friction
-        sPerc = perc2num(self.friction, self.movSpeed)
-        self.movSpeed -= sPerc
+        self.movSpeed -= perc2num(self.friction, self.movSpeed)
 
         if self.movSpeed <= self.frictionCutOff: self.movSpeed = 0.0
 
