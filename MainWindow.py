@@ -1,5 +1,6 @@
-#!/etc/python2.7
-from PyQt4 import QtCore, QtGui
+#!/usr/bin/env python
+from PyQt5 import QtCore, QtGui
+from PyQt5 import QtWidgets
 import sys
 import sprites
 
@@ -12,46 +13,41 @@ except AttributeError:
         return s
 
 try:
-    _encoding = QtGui.QApplication.UnicodeUTF8
+    _encoding = QtWidgets.QApplication.UnicodeUTF8
     def _translate(context, text, disambig):
-        return QtGui.QApplication.translate(context, text, disambig, _encoding)
+        return QtWidgets.QApplication.translate(context, text, disambig, _encoding)
 except AttributeError:
     def _translate(context, text, disambig):
-        return QtGui.QApplication.translate(context, text, disambig)
-
-
-def collisionF(sprite, itemsList):
-    print "COLLISION: ", itemsList
-
+        return QtWidgets.QApplication.translate(context, text, disambig)
 
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName(_fromUtf8("MainWindow"))
         MainWindow.resize(1100, 800)
-        self.centralwidget = QtGui.QWidget(MainWindow)
+        self.centralwidget = QtWidgets.QWidget(MainWindow)
         self.centralwidget.setObjectName(_fromUtf8("centralwidget"))
 
-        self.worldView = QtGui.QGraphicsView(self.centralwidget)
+        self.worldView = QtWidgets.QGraphicsView(self.centralwidget)
         self.worldView.setGeometry(QtCore.QRect(15, 20, 1070, 600))
         self.worldView.setObjectName(_fromUtf8("worldView"))
 
         self.timeline = QtCore.QTimeLine(1000)
         self.timeline.setFrameRange(0, 100)
 
-        self.scene = QtGui.QGraphicsScene(self.worldView)
+        self.scene = QtWidgets.QGraphicsScene(self.worldView)
         self.scene.setSceneRect(0, 0, 1050, 1200)
         self.worldView.setScene(self.scene)
 
         self.worldView.setBackgroundBrush( QtGui.QBrush( QtGui.QColor(180,180,255) ) )
 
-        self.world_info_frame = QtGui.QFrame(self.centralwidget)
+        self.world_info_frame = QtWidgets.QFrame(self.centralwidget)
         self.world_info_frame.setGeometry(QtCore.QRect(15, 630, 220, 110))
-        self.world_info_frame.setFrameShape(QtGui.QFrame.StyledPanel)
-        self.world_info_frame.setFrameShadow(QtGui.QFrame.Raised)
+        self.world_info_frame.setFrameShape(QtWidgets.QFrame.StyledPanel)
+        self.world_info_frame.setFrameShadow(QtWidgets.QFrame.Raised)
         self.world_info_frame.setObjectName(_fromUtf8("world_info_frame"))
 
-        self.pop_val = QtGui.QLabel(self.world_info_frame)
+        self.pop_val = QtWidgets.QLabel(self.world_info_frame)
         self.pop_val.setGeometry(QtCore.QRect(110, 70, 100, 25))
         font = QtGui.QFont()
         font.setBold(False)
@@ -59,7 +55,7 @@ class Ui_MainWindow(object):
         self.pop_val.setFont(font)
         self.pop_val.setObjectName(_fromUtf8("pop_val"))
 
-        self.time_label = QtGui.QLabel(self.world_info_frame)
+        self.time_label = QtWidgets.QLabel(self.world_info_frame)
         self.time_label.setGeometry(QtCore.QRect(10, 40, 60, 25))
         font = QtGui.QFont()
         font.setBold(True)
@@ -68,7 +64,7 @@ class Ui_MainWindow(object):
         self.time_label.setStatusTip(_fromUtf8("This world's age"))
         self.time_label.setObjectName(_fromUtf8("time_label"))
 
-        self.pop_label = QtGui.QLabel(self.world_info_frame)
+        self.pop_label = QtWidgets.QLabel(self.world_info_frame)
         self.pop_label.setGeometry(QtCore.QRect(10, 70, 90, 25))
         font = QtGui.QFont()
         font.setBold(True)
@@ -77,7 +73,7 @@ class Ui_MainWindow(object):
         self.pop_label.setStatusTip(_fromUtf8("How many organisms are in this world"))
         self.pop_label.setObjectName(_fromUtf8("pop_label"))
 
-        self.co2_label = QtGui.QLabel(self.world_info_frame)
+        self.co2_label = QtWidgets.QLabel(self.world_info_frame)
         self.co2_label.setGeometry(QtCore.QRect(10, 10, 60, 25))
         font = QtGui.QFont()
         font.setBold(True)
@@ -86,98 +82,98 @@ class Ui_MainWindow(object):
         self.co2_label.setStatusTip(_fromUtf8("The amount of CO2 in this world"))
         self.co2_label.setObjectName(_fromUtf8("co2_label"))
 
-        self.co2_val = QtGui.QLabel(self.world_info_frame)
+        self.co2_val = QtWidgets.QLabel(self.world_info_frame)
         self.co2_val.setGeometry(QtCore.QRect(70, 10, 140, 25))
         self.co2_val.setObjectName(_fromUtf8("co2_val"))
 
-        self.time_val = QtGui.QLabel(self.world_info_frame)
+        self.time_val = QtWidgets.QLabel(self.world_info_frame)
         self.time_val.setGeometry(QtCore.QRect(70, 40, 140, 25))
         self.time_val.setObjectName(_fromUtf8("time_val"))
 
-        self.world_controls_frame = QtGui.QFrame(self.centralwidget)
+        self.world_controls_frame = QtWidgets.QFrame(self.centralwidget)
         self.world_controls_frame.setGeometry(QtCore.QRect(260, 630, 271, 110))
-        self.world_controls_frame.setFrameShape(QtGui.QFrame.StyledPanel)
-        self.world_controls_frame.setFrameShadow(QtGui.QFrame.Raised)
+        self.world_controls_frame.setFrameShape(QtWidgets.QFrame.StyledPanel)
+        self.world_controls_frame.setFrameShadow(QtWidgets.QFrame.Raised)
         self.world_controls_frame.setObjectName(_fromUtf8("world_controls_frame"))
 
-        self.add_co2_btn = QtGui.QPushButton(self.world_controls_frame)
+        self.add_co2_btn = QtWidgets.QPushButton(self.world_controls_frame)
         self.add_co2_btn.setGeometry(QtCore.QRect(10, 10, 100, 27))
         self.add_co2_btn.setStatusTip(_fromUtf8("Adds CO2 into the world"))
         self.add_co2_btn.setObjectName(_fromUtf8("add_co2_btn"))
 
-        self.co2_spinBox = QtGui.QSpinBox(self.world_controls_frame)
+        self.co2_spinBox = QtWidgets.QSpinBox(self.world_controls_frame)
         self.co2_spinBox.setGeometry(QtCore.QRect(120, 10, 131, 29))
         self.co2_spinBox.setStatusTip(_fromUtf8("Amount of CO2 to add"))
         self.co2_spinBox.setMaximum(999999999)
         self.co2_spinBox.setProperty("value", 100)
         self.co2_spinBox.setObjectName(_fromUtf8("co2_spinBox"))
 
-        self.rem_co2_btn = QtGui.QPushButton(self.world_controls_frame)
+        self.rem_co2_btn = QtWidgets.QPushButton(self.world_controls_frame)
         self.rem_co2_btn.setGeometry(QtCore.QRect(10, 40, 100, 27))
         self.rem_co2_btn.setStatusTip(_fromUtf8("Removes CO2 from the world"))
         self.rem_co2_btn.setObjectName(_fromUtf8("rem_co2_btn"))
 
-        self.rem_co2_spinbox = QtGui.QSpinBox(self.world_controls_frame)
+        self.rem_co2_spinbox = QtWidgets.QSpinBox(self.world_controls_frame)
         self.rem_co2_spinbox.setGeometry(QtCore.QRect(120, 40, 131, 29))
         self.rem_co2_spinbox.setStatusTip(_fromUtf8("Amount of CO2 to remove"))
         self.rem_co2_spinbox.setMaximum(999999999)
         self.rem_co2_spinbox.setProperty("value", 100)
         self.rem_co2_spinbox.setObjectName(_fromUtf8("rem_co2_spinbox"))
 
-        self.set_co2_btn = QtGui.QPushButton(self.world_controls_frame)
+        self.set_co2_btn = QtWidgets.QPushButton(self.world_controls_frame)
         self.set_co2_btn.setGeometry(QtCore.QRect(10, 70, 100, 27))
         self.set_co2_btn.setStatusTip(_fromUtf8("Sets the world's CO2 to a specific value"))
         self.set_co2_btn.setObjectName(_fromUtf8("set_co2_btn"))
 
-        self.set_co2_spinbox = QtGui.QSpinBox(self.world_controls_frame)
+        self.set_co2_spinbox = QtWidgets.QSpinBox(self.world_controls_frame)
         self.set_co2_spinbox.setGeometry(QtCore.QRect(120, 70, 131, 29))
         self.set_co2_spinbox.setStatusTip(_fromUtf8("New CO2 value"))
         self.set_co2_spinbox.setMaximum(999999999)
         self.set_co2_spinbox.setProperty("value", 1800)
         self.set_co2_spinbox.setObjectName(_fromUtf8("set_co2_spinbox"))
 
-        self.organismView = QtGui.QGraphicsView(self.centralwidget)
+        self.organismView = QtWidgets.QGraphicsView(self.centralwidget)
         self.organismView.setGeometry(QtCore.QRect(556, 630, 141, 110))
         self.organismView.setObjectName(_fromUtf8("organismView"))
 
-        self.organism_controls_frame = QtGui.QFrame(self.centralwidget)
+        self.organism_controls_frame = QtWidgets.QFrame(self.centralwidget)
         self.organism_controls_frame.setGeometry(QtCore.QRect(920, 630, 165, 110))
-        self.organism_controls_frame.setFrameShape(QtGui.QFrame.StyledPanel)
-        self.organism_controls_frame.setFrameShadow(QtGui.QFrame.Raised)
+        self.organism_controls_frame.setFrameShape(QtWidgets.QFrame.StyledPanel)
+        self.organism_controls_frame.setFrameShadow(QtWidgets.QFrame.Raised)
         self.organism_controls_frame.setObjectName(_fromUtf8("organism_controls_frame"))
 
-        self.kill_btn = QtGui.QPushButton(self.organism_controls_frame)
+        self.kill_btn = QtWidgets.QPushButton(self.organism_controls_frame)
         self.kill_btn.setGeometry(QtCore.QRect(15, 10, 55, 27))
         self.kill_btn.setStatusTip(_fromUtf8("Kill this organism"))
         self.kill_btn.setObjectName(_fromUtf8("kill_btn"))
 
-        self.feed_btn = QtGui.QPushButton(self.organism_controls_frame)
+        self.feed_btn = QtWidgets.QPushButton(self.organism_controls_frame)
         self.feed_btn.setGeometry(QtCore.QRect(15, 40, 55, 27))
         self.feed_btn.setStatusTip(_fromUtf8("Feed this organism"))
         self.feed_btn.setObjectName(_fromUtf8("feed_btn"))
 
-        self.view_brain_btn = QtGui.QPushButton(self.organism_controls_frame)
+        self.view_brain_btn = QtWidgets.QPushButton(self.organism_controls_frame)
         self.view_brain_btn.setGeometry(QtCore.QRect(40, 75, 85, 27))
         self.view_brain_btn.setStatusTip(_fromUtf8("View this organism's brain"))
         self.view_brain_btn.setObjectName(_fromUtf8("view_brain_btn"))
 
-        self.save_organism_btn = QtGui.QPushButton(self.organism_controls_frame)
+        self.save_organism_btn = QtWidgets.QPushButton(self.organism_controls_frame)
         self.save_organism_btn.setGeometry(QtCore.QRect(90, 10, 60, 27))
         self.save_organism_btn.setStatusTip(_fromUtf8("Save this organism to a file"))
         self.save_organism_btn.setObjectName(_fromUtf8("save_organism_btn"))
 
-        self.hurt_btn = QtGui.QPushButton(self.organism_controls_frame)
+        self.hurt_btn = QtWidgets.QPushButton(self.organism_controls_frame)
         self.hurt_btn.setGeometry(QtCore.QRect(90, 40, 60, 27))
         self.hurt_btn.setStatusTip(_fromUtf8("Take energy from this organism"))
         self.hurt_btn.setObjectName(_fromUtf8("hurt_btn"))
 
-        self.organism_info_frame = QtGui.QFrame(self.centralwidget)
+        self.organism_info_frame = QtWidgets.QFrame(self.centralwidget)
         self.organism_info_frame.setGeometry(QtCore.QRect(720, 630, 181, 110))
-        self.organism_info_frame.setFrameShape(QtGui.QFrame.StyledPanel)
-        self.organism_info_frame.setFrameShadow(QtGui.QFrame.Raised)
+        self.organism_info_frame.setFrameShape(QtWidgets.QFrame.StyledPanel)
+        self.organism_info_frame.setFrameShadow(QtWidgets.QFrame.Raised)
         self.organism_info_frame.setObjectName(_fromUtf8("organism_info_frame"))
 
-        self.energy_label = QtGui.QLabel(self.organism_info_frame)
+        self.energy_label = QtWidgets.QLabel(self.organism_info_frame)
         self.energy_label.setGeometry(QtCore.QRect(10, 10, 60, 25))
         font = QtGui.QFont()
         font.setBold(True)
@@ -186,7 +182,7 @@ class Ui_MainWindow(object):
         self.energy_label.setStatusTip(_fromUtf8("How much energy this organism has"))
         self.energy_label.setObjectName(_fromUtf8("energy_label"))
 
-        self.generation_label = QtGui.QLabel(self.organism_info_frame)
+        self.generation_label = QtWidgets.QLabel(self.organism_info_frame)
         self.generation_label.setGeometry(QtCore.QRect(10, 40, 90, 25))
         font = QtGui.QFont()
         font.setBold(True)
@@ -195,7 +191,7 @@ class Ui_MainWindow(object):
         self.generation_label.setStatusTip(_fromUtf8("This organism's generation"))
         self.generation_label.setObjectName(_fromUtf8("generation_label"))
 
-        self.neurons_label = QtGui.QLabel(self.organism_info_frame)
+        self.neurons_label = QtWidgets.QLabel(self.organism_info_frame)
         self.neurons_label.setGeometry(QtCore.QRect(10, 70, 70, 25))
         font = QtGui.QFont()
         font.setBold(True)
@@ -205,30 +201,30 @@ class Ui_MainWindow(object):
         self.neurons_label.setObjectName(_fromUtf8("neurons_label"))
 
         MainWindow.setCentralWidget(self.centralwidget)
-        self.menubar = QtGui.QMenuBar(MainWindow)
+        self.menubar = QtWidgets.QMenuBar(MainWindow)
         self.menubar.setGeometry(QtCore.QRect(0, 0, 1100, 31))
         self.menubar.setObjectName(_fromUtf8("menubar"))
-        self.menuFile = QtGui.QMenu(self.menubar)
+        self.menuFile = QtWidgets.QMenu(self.menubar)
         self.menuFile.setObjectName(_fromUtf8("menuFile"))
         MainWindow.setMenuBar(self.menubar)
 
-        self.statusbar = QtGui.QStatusBar(MainWindow)
+        self.statusbar = QtWidgets.QStatusBar(MainWindow)
         self.statusbar.setObjectName(_fromUtf8("statusbar"))
         MainWindow.setStatusBar(self.statusbar)
 
-        self.actionNew = QtGui.QAction(MainWindow)
+        self.actionNew = QtWidgets.QAction(MainWindow)
         self.actionNew.setObjectName(_fromUtf8("actionNew"))
 
-        self.actionOpen = QtGui.QAction(MainWindow)
+        self.actionOpen = QtWidgets.QAction(MainWindow)
         self.actionOpen.setObjectName(_fromUtf8("actionOpen"))
 
-        self.actionSave = QtGui.QAction(MainWindow)
+        self.actionSave = QtWidgets.QAction(MainWindow)
         self.actionSave.setObjectName(_fromUtf8("actionSave"))
 
-        self.actionSave_As = QtGui.QAction(MainWindow)
+        self.actionSave_As = QtWidgets.QAction(MainWindow)
         self.actionSave_As.setObjectName(_fromUtf8("actionSave_As"))
 
-        self.actionQuit = QtGui.QAction(MainWindow)
+        self.actionQuit = QtWidgets.QAction(MainWindow)
         self.actionQuit.setObjectName(_fromUtf8("actionQuit"))
 
         self.menuFile.addAction(self.actionNew)
@@ -272,7 +268,9 @@ class Ui_MainWindow(object):
         self.actionQuit.setText(_translate("MainWindow", "Quit", None))
 
     def addOrganism(self, xy):
-        crit = sprites.Sprite(xy, 100, 100, "Images/neuron.png", collisionFunc=collisionF)
+        #cell = sprites.Cell(xy, 100, 100, image="Images/neuron.png")
+        print("Creature Position: {}".format(xy))
+        crit = sprites.Creature(xy, 100, 100)
         self.scene.addItem(crit)
         self.organisms.append(crit)
 
@@ -280,8 +278,9 @@ class Ui_MainWindow(object):
         self.organisms = []   # A list containing all organisms in this environment
 
         self.addOrganism([50,50])
-        tCrit = sprites.Sprite([100,100], 100, 100, "Images/neuron.png", collisionFunc=collisionF, parent=self.organisms[0])
-        self.scene.addItem(tCrit)
+        #self.addOrganism([200,200])
+        #tCrit = sprites.Sprite([100,100], 100, 100, "Images/neuron.png", collisionFunc=collisionF, parent=self.organisms[0])
+        #self.scene.addItem(tCrit)
 
         self.worldView.timer = QtCore.QBasicTimer()
         self.worldView.updateSpeed = 50
@@ -300,15 +299,15 @@ class Ui_MainWindow(object):
     def worldMouseReleaseEvent(self, event):
         pos = event.lastScenePos()   # pos = QtCore.QPointF
 
-        print "Pos: ", pos.x(), pos.y()
+        print("Pos: ", pos.x(), pos.y())
         for org in self.organisms:
             org.bump(pos, 500)
 
 
 
 if (__name__ == "__main__"):
-        app = QtGui.QApplication(sys.argv)
-        window = QtGui.QMainWindow()
+        app = QtWidgets.QApplication(sys.argv)
+        window = QtWidgets.QMainWindow()
         myapp = Ui_MainWindow()
 
         myapp.setupUi(window)
