@@ -1,10 +1,13 @@
 #!/usr/bin/env python
 import sys
+import math
 import os
 import time
+import copy
 import numpy as np
 from PyQt5 import QtGui, QtCore
 from PyQt5 import QtWidgets
+import random
 
 
 
@@ -15,6 +18,8 @@ def perc2num(perc, maxNum):
     return ((float(perc) / 100.0) * float(maxNum))
 
 def getPointAvg(lst):
+    # Gathers the center of every point in `lst` and returns the average
+    # Used to get the exact center of a creature with many different cells
     nList = np.array([[i.x(), i.y()] for i in lst])
     nList = sum(nList) / len(nList)
     return QtCore.QPointF(nList[0], nList[1])
@@ -28,7 +33,7 @@ def posList(lst):
             lst2.append(i)
     return lst2
 
-def condition(listVar):
+def condition(listVar, multiplier=1):
     lst2 = []
 
     for i in listVar:
@@ -36,11 +41,33 @@ def condition(listVar):
         isneg = False
         if (i < 0):
             isneg = True; i = -i
-        i = (i / sum(posList(listVar)))
+        i = (i / sum(posList(listVar))*multiplier)
         if (isneg): i = -i
         lst2.append(i)
 
     return lst2
+
+def cellDirection(cellA, cellB, invert=False):
+    if invert:
+        direction = [ (cellA.getCenter().x()-cellB.getCenter().x()), (cellA.getCenter().y()-cellB.getCenter().y()) ]
+    else:
+        direction = [ (cellB.getCenter().x()-cellA.getCenter().x()), (cellB.getCenter().y()-cellA.getCenter().y()) ]
+    direction = condition(direction)
+    return direction
+
+def randomDirection(multiplier=1):
+    return condition([random.random()-random.random(), random.random()-random.random()], multiplier=multiplier)
+
+def calculateDistance(x1,y1,x2,y2):
+    dist = math.sqrt((x2 - x1)**2 + (y2 - y1)**2)
+    return dist
+
+def cellDistance(cell1, cell2):
+    x1 = cell1.getPos().x()
+    y1 = cell1.getPos().y()
+    x2 = cell2.getPos().x()
+    y2 = cell2.getPos().y()
+    return calculateDistance(x1, y1, x2, y2)
 
 
 
@@ -162,7 +189,12 @@ class Sprite(QtWidgets.QGraphicsPixmapItem):
         self.setPos(xPos, yPos)
 
         hit = False
-        collisions = self.getCollisions()
+        preCol = self.getCollisions()
+        collisions = []
+        for i in preCol:
+            if i.parent != self.parent:
+                if self.parent and i.parent:
+                    collisions.append(i)
         if self.lastItemsList == collisions and len(collisions) > 0 and time.time()-self.lastCollision >= self.collisionInt:
             hit = True
         elif collisions != self.lastItemsList and len(collisions) > 0:
@@ -178,10 +210,76 @@ class Sprite(QtWidgets.QGraphicsPixmapItem):
 
 
 
+class DNA():
+    def __init__(self):
+        self.cells = {}
+        # Structure: { <cell_id>: {"type": "eye", "size": 25, "xy": [<x_pos>, <y_pos>]} }
+
+        self.connections = {}
+        # Structure: { <cell_id>: [<cell_id1>, <cell_id2>] }
+
+        self.types = ["eye", "barrier", "carniv", "co2c", "nose", "push", "scent"]
+
+    def copy(self):
+        return copy.deepcopy(self)
+
+    def mutate(self, magnitude):
+        # `magnitude` : 0.0 - 1.0
+        pass
+
+    def randomize(self, sizeRange=[5,40], connection_range=[0, 2], xy_range=[0,42]):
+        size = random.randrange(sizeRange[0], sizeRange[1])
+        print("Size: {}".format(size))
+
+        for i in range(size):
+            x_pos = random.randrange(xy_range[0], xy_range[1])
+            y_pos = random.randrange(xy_range[0], xy_range[1])
+            self.cells[i] = {
+                             "type": random.choice(self.types),
+                             "size": random.randrange(15, 30),
+                             "xy": [x_pos, y_pos]
+                             }
+
+        for cid in self.cells:
+            self.connections[cid] = []
+
+        #connected_id = random.choice([i for i in self.cells if i != self.cells[0]])
+        #self.connections[0].append(connected_id)
+        for cid in self.cells:
+            for i in range( random.randrange(connection_range[0], connection_range[1]) ):
+                if len(self.cells) > 1:
+                    connected_id = random.choice([i for i in self.cells if i != cid])
+                    self.connections[cid].append(connected_id)
+
+        return self
+
+
 class Cell(Sprite):
     def __init__(self, *args, **kwargs):
         super(Cell, self).__init__(*args, **kwargs)
-        print("Cell Pos: {}".format(self.getPos()))
+        self.connections = []
+        self.type = "co2c"
+        self.typeImages = {
+                           "barrier": "Images/barrier.png",
+                           "carniv": "Images/carniv.png",
+                           "co2c": "Images/co2C.png",
+                           "eye": "Images/eye.png",
+                           "health": "Images/health.png",
+                           "neuron": "Images/neuron.png",
+                           "nose": "Images/nose.png",
+                           "push": "Images/push.png",
+                           "scent": "Images/scent.png"
+                           }
+
+    def setType(self, type):
+        if not type in self.typeImages:
+            return
+        self.type = type
+
+        self.pixmap = QtGui.QPixmap(self.typeImages[type])
+        self.setPixmap( self.pixmap.scaled(self.getWidth(), self.getHeight(), QtCore.Qt.KeepAspectRatio) )
+
+        return self
 
     def collision(self, items):
         print("COLLISION: {}".format(items))
@@ -191,7 +289,64 @@ class Creature(Sprite):
     def __init__(self, *args, **kwargs):
         super(Creature, self).__init__(*args, **kwargs)
 
-        xy = [0, 0]
-        for i in range(1):
-            cell = Cell(xy, 100, 100, image="Images/neuron.png", parent=self)
-            xy[0] += 20
+        self.cells = {}
+
+        self.dna = DNA().randomize(sizeRange=[5,12])
+
+        self.buildCells()
+
+    def buildCells(self):
+        for cid in self.dna.cells:
+            cell_info = self.dna.cells[cid]
+            xy = cell_info["xy"]
+            newCell = Cell(xy, cell_info["size"], cell_info["size"], image="Images/neuron.png", parent=self)
+            newCell.setType(cell_info["type"])
+            self.cells[cid] = newCell
+        for cid in self.cells:
+            for connected_id in self.dna.connections:
+                connected_cell = self.cells[connected_id]
+                self.cells[cid].connections.append(connected_cell)
+
+    def replicate(self, cell, direction):
+        newX = cell.getPos().x() + direction[0]
+        newY = cell.getPos().y() + direction[1]
+
+        newCell = Cell([newX, newY], 20, 20, image="Images/neuron.png", parent=self)
+        self.cells.append(newCell)
+        return newCell
+
+    def connected(self, cell1, cell2):
+        if cell2 in cell1.connections or cell1 in cell2.connections:
+            return True
+        return False
+
+    def updateCellDistances(self):
+        for cell_id in self.cells:
+            cell = self.cells[cell_id]
+
+            touchingCells = [self.cells[c] for c in self.cells if cellDistance(cell, self.cells[c]) <= cell.getWidth()/2+self.cells[c].getWidth()/2]
+            if cell in touchingCells:
+                touchingCells.remove(cell)
+            touchingCells = sorted(touchingCells, key=lambda a: random.random())
+
+            for c in touchingCells:
+                distance = cellDistance(cell, c)
+                mult = 2
+                if self.connected(cell, c):
+                    mult = 3
+                if distance < cell.getWidth()/mult + c.getWidth()/mult:
+                    movDir = cellDirection(cell, c, invert=True)
+                    cell.setPos( cell.getPos().x() + movDir[0], cell.getPos().y() + movDir[1] )
+
+            connected_cells = [c for c in cell.connections]
+
+            for c in connected_cells:
+                distance = cellDistance(cell, c)
+                if distance > cell.getWidth()/2.5 + c.getWidth()/2.5:
+                    movDir = cellDirection(cell, c, invert=True)
+                    cell.setPos( cell.getPos().x() - movDir[0], cell.getPos().y() - movDir[1] )
+
+    def updateCells(self, scene):
+        self.updateCellDistances()
+        for cid in self.cells:
+            self.cells[cid].updateSprite()

@@ -3,6 +3,7 @@ from PyQt5 import QtCore, QtGui
 from PyQt5 import QtWidgets
 import sys
 import sprites
+import random
 
 
 
@@ -270,14 +271,15 @@ class Ui_MainWindow(object):
     def addOrganism(self, xy):
         #cell = sprites.Cell(xy, 100, 100, image="Images/neuron.png")
         print("Creature Position: {}".format(xy))
-        crit = sprites.Creature(xy, 100, 100)
+        crit = sprites.Creature(xy, 20, 20)
         self.scene.addItem(crit)
         self.organisms.append(crit)
 
     def setupEnvironment(self):
         self.organisms = []   # A list containing all organisms in this environment
 
-        self.addOrganism([50,50])
+        self.addOrganism([300, 300])
+        self.addOrganism([350, 350])
         #self.addOrganism([200,200])
         #tCrit = sprites.Sprite([100,100], 100, 100, "Images/neuron.png", collisionFunc=collisionF, parent=self.organisms[0])
         #self.scene.addItem(tCrit)
@@ -294,18 +296,20 @@ class Ui_MainWindow(object):
     def worldTimerEvent(self, event):
         for org in self.organisms[:]:
             org.updateSprite()
+            org.updateCells(self.scene)
         self.scene.update( self.scene.sceneRect() )
 
     def worldMouseReleaseEvent(self, event):
         pos = event.lastScenePos()   # pos = QtCore.QPointF
 
         print("Pos: ", pos.x(), pos.y())
-        for org in self.organisms:
-            org.bump(pos, 500)
+        self.organisms[0].bump(pos, 500)
+        #for org in self.organisms:
+        #    org.bump(pos, 500)
 
 
 
-if (__name__ == "__main__"):
+if __name__ == "__main__":
         app = QtWidgets.QApplication(sys.argv)
         window = QtWidgets.QMainWindow()
         myapp = Ui_MainWindow()

@@ -2,6 +2,7 @@
 import torch
 import random
 import copy
+import matplotlib.pyplot as plt
 
 
 
@@ -12,6 +13,24 @@ def expand_list(lst):
         if i and i != len(lst)-1:
             result.append(lst[i])
     return result
+
+
+
+def graph_loss(model, interval=50):
+    net_trainer = model.trainer
+
+    if not net_trainer.history:
+        return
+
+    epochList = [i for i in net_trainer.history]
+    lossList = [net_trainer.history[i] for i in net_trainer.history]
+    netLen = len( [i for i in net_trainer.model.children()] )
+
+    plt.plot(epochList, lossList)
+    plt.xlabel("Epoch")
+    plt.ylabel("Loss")
+    plt.title("Optimizer: {} | Layers: {}".format(net_trainer.optimizer_name, netLen))
+    plt.show()
 
 
 
@@ -110,6 +129,20 @@ class Network(torch.nn.Module):
     def copy(self):
         return copy.deepcopy(self)
 
+    def layers(self):
+        layers = [self.inputLayer]
+        for layer in self.hiddenLayers:
+            layers.append(layer)
+        layers.append(self.outputLayer)
+        return layers
+
+    def layerSizes(self):
+        layer_sizes = [self.inputSize]
+        for s in self.hiddenList:
+            layer_sizes.append(s)
+        layer_sizes.append(self.outputSize)
+        return layer_sizes
+
     def setupLayers(self, inputSize, hiddenLayers, outputSize):
         hiddenLayers = expand_list(hiddenLayers)
         self.hiddenList = hiddenLayers[:]
@@ -149,7 +182,7 @@ class Network(torch.nn.Module):
             newLength = len(self.hiddenList) + lengthChange
             if newLength < 1:
                 newLength = 1
-            print("New Length: {}".format(newLength))
+
             for i in range(newLength):
                 if len(self.hiddenList)-1 >= i:
                     newLayer = self.hiddenList[i]
@@ -158,13 +191,12 @@ class Network(torch.nn.Module):
                 newHidden.append(newLayer)
 
         sizeChange = magnitude * 10.
+
         for i in range(len(newHidden)):
             newAmt = random.randrange(-sizeChange, sizeChange)
             newHidden[i] = newHidden[i]-newAmt
             if newHidden[i] < self.minHiddenSize:
                 newHidden[i] = self.minHiddenSize
-
-        print("Hidden: {}".format(newHidden))
 
         self.setupLayers(self.inputSize, newHidden, self.outputSize)
 
@@ -209,7 +241,7 @@ if __name__ == "__main__":
     inputData = torch.tensor( [[0,0], [0,1], [1,0], [1,1]] ).float()
     targetData = torch.tensor( [[0,1,1,1]] ).float().resize_(4,1)
 
-    net = Network(2, [3, 6, 3], 1)
+    net = Network(2, [3], 1)
 
     print("Input Data: {}".format(inputData))
 
@@ -218,14 +250,13 @@ if __name__ == "__main__":
         print(layer)
     print("\n")
 
-    print("Before Mutation: {}".format(net(inputData)) )
+    print("Before mutation\n")
+    input(net.layerSizes())
 
-    net.mutateBias(.5)
+    net.mutateLayers(.2)
 
-    print("After Mutation:  {}".format(net(inputData)))
-
-    net.mutateLayers(.6)
-    input(net.hiddenLayers)
+    print("\nAfter mutation\n")
+    input(net.layerSizes())
 
     loss = net.trainer.train_until(inputData, targetData, iterations=10)
 
@@ -233,4 +264,6 @@ if __name__ == "__main__":
         loss = net.trainer.train_until(inputData, targetData, iterations=50)
         print("Loss: {}".format(loss))
 
-    print("\n\nAfter Training: {}".format(net(inputData)) )
+    print("\n\nAfter Training:\n{}".format(net(inputData)) )
+
+    graph_loss(net)
