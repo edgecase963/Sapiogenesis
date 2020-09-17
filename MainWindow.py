@@ -4,6 +4,7 @@ from PyQt5 import QtWidgets
 import sys
 import sprites
 import random
+from shatterbox import shatterbox
 
 
 
@@ -39,6 +40,8 @@ class Ui_MainWindow(object):
         self.scene = QtWidgets.QGraphicsScene(self.worldView)
         self.scene.setSceneRect(0, 0, 1050, 1200)
         self.worldView.setScene(self.scene)
+
+        self.scene.mouseReleaseEvent = self.worldMouseReleaseEvent
 
         self.worldView.setBackgroundBrush( QtGui.QBrush( QtGui.QColor(180,180,255) ) )
 
@@ -275,35 +278,10 @@ class Ui_MainWindow(object):
         self.scene.addItem(crit)
         self.organisms.append(crit)
 
-    def setupEnvironment(self):
-        self.organisms = []   # A list containing all organisms in this environment
-
-        self.addOrganism([300, 300])
-        self.addOrganism([350, 350])
-        #self.addOrganism([200,200])
-        #tCrit = sprites.Sprite([100,100], 100, 100, "Images/neuron.png", collisionFunc=collisionF, parent=self.organisms[0])
-        #self.scene.addItem(tCrit)
-
-        self.worldView.timer = QtCore.QBasicTimer()
-        self.worldView.updateSpeed = 50
-
-        self.worldView.timerEvent = self.worldTimerEvent
-        #self.worldView.mouseReleaseEvent = self.worldMouseReleaseEvent
-        self.scene.mouseReleaseEvent = self.worldMouseReleaseEvent
-
-        self.worldView.timer.start(self.worldView.updateSpeed, self.worldView)
-
-    def worldTimerEvent(self, event):
-        for org in self.organisms[:]:
-            org.updateSprite()
-            org.updateCells(self.scene)
-        self.scene.update( self.scene.sceneRect() )
-
     def worldMouseReleaseEvent(self, event):
         pos = event.lastScenePos()   # pos = QtCore.QPointF
 
         print("Pos: ", pos.x(), pos.y())
-        self.organisms[0].bump(pos, 500)
         #for org in self.organisms:
         #    org.bump(pos, 500)
 
@@ -315,7 +293,11 @@ if __name__ == "__main__":
         myapp = Ui_MainWindow()
 
         myapp.setupUi(window)
-        myapp.setupEnvironment()
+        #myapp.setupEnvironment()
+        env = shatterbox.setupEnvironment(myapp.worldView, myapp.scene)
+
+        sprite1 = env.add_ball_sprite([300,300], 40, 40, image="Images/neuron.png")
+        sprite2 = env.add_ball_sprite([320,320], 40, 40, image="Images/eye.png")
 
         window.show()
         sys.exit(app.exec_())
