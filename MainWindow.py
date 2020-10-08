@@ -2,10 +2,12 @@
 from PyQt5 import QtCore, QtGui
 from PyQt5 import QtWidgets
 import sys
-import sprites
+#import sprites
 import random
-from shatterbox import shatterbox
 
+sys.path.insert(1, "../../Programs/shatterbox")
+
+import shatterbox
 
 
 try:
@@ -281,7 +283,7 @@ class Ui_MainWindow(object):
     def worldMouseReleaseEvent(self, event):
         pos = event.lastScenePos()   # pos = QtCore.QPointF
 
-        print("Pos: ", pos.x(), pos.y())
+        print("Pos: {}, {}".format( pos.x(), pos.y() ))
         #for org in self.organisms:
         #    org.bump(pos, 500)
 

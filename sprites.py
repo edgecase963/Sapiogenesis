@@ -1,352 +1,317 @@
-#!/usr/bin/env python
-import sys
-import math
-import os
 import time
-import copy
-import numpy as np
-from PyQt5 import QtGui, QtCore
-from PyQt5 import QtWidgets
+import sys
 import random
+import networks
+import math
+
+from PyQt5 import QtCore, QtGui
+from PyQt5 import QtWidgets
+from MainWindow import Ui_MainWindow
+
+sys.path.insert(1, "../../Programs/shatterbox")
+
+import shatterbox
 
 
 
-def num2perc(num, maxNum):
-    return ((float(num) / float(maxNum)) * 100.0)
+cell_types = ["barrier", "carniv", "co2C", "eye", "olfactory", "push", "pheremone", "body"]
 
-def perc2num(perc, maxNum):
-    return ((float(perc) / 100.0) * float(maxNum))
 
-def getPointAvg(lst):
-    # Gathers the center of every point in `lst` and returns the average
-    # Used to get the exact center of a creature with many different cells
-    nList = np.array([[i.x(), i.y()] for i in lst])
-    nList = sum(nList) / len(nList)
-    return QtCore.QPointF(nList[0], nList[1])
-
-def posList(lst):
-    lst2 = []
-    for i in lst:
-        if (i < 0):
-            lst2.append(-i)
-        else:
-            lst2.append(i)
-    return lst2
-
-def condition(listVar, multiplier=1):
-    lst2 = []
-
-    for i in listVar:
-        i = float(i)
-        isneg = False
-        if (i < 0):
-            isneg = True; i = -i
-        i = (i / sum(posList(listVar))*multiplier)
-        if (isneg): i = -i
-        lst2.append(i)
-
-    return lst2
-
-def cellDirection(cellA, cellB, invert=False):
-    if invert:
-        direction = [ (cellA.getCenter().x()-cellB.getCenter().x()), (cellA.getCenter().y()-cellB.getCenter().y()) ]
-    else:
-        direction = [ (cellB.getCenter().x()-cellA.getCenter().x()), (cellB.getCenter().y()-cellA.getCenter().y()) ]
-    direction = condition(direction)
-    return direction
-
-def randomDirection(multiplier=1):
-    return condition([random.random()-random.random(), random.random()-random.random()], multiplier=multiplier)
+def random_direction():
+    deg = random.randrange(0, 360)
+    rad = math.radians(deg)
+    x_direction = math.cos(rad)
+    y_direction = math.sin(rad)
+    return [x_direction, y_direction]
 
 def calculateDistance(x1,y1,x2,y2):
-    dist = math.sqrt((x2 - x1)**2 + (y2 - y1)**2)
+    dist = math.sqrt( (x2 - x1)**2 + (y2 - y1)**2 )
     return dist
 
-def cellDistance(cell1, cell2):
-    x1 = cell1.getPos().x()
-    y1 = cell1.getPos().y()
-    x2 = cell2.getPos().x()
-    y2 = cell2.getPos().y()
-    return calculateDistance(x1, y1, x2, y2)
 
 
-
-class Sprite(QtWidgets.QGraphicsPixmapItem):
-    def __init__(self, pos, width, height, image=None, parent=None, collisionInt=.5):
-        # "pos" should be a QtCore.QPointF class
-
-        self.parent = parent   # Look at self.setParentItem(<item>)
-        super(Sprite, self).__init__(parent)
-
-        if image:
-            self.pixmap = QtGui.QPixmap(image)
-            self.setPixmap( self.pixmap.scaled(width, height, QtCore.Qt.KeepAspectRatio) )
-        #self.setFlag(QtGui.QGraphicsPixmapItem.ItemIsSelectable)
-        #self.setFlag(QtGui.QGraphicsPixmapItem.ItemIsMovable)
-        self.setAcceptHoverEvents(True)
-        self.setAcceptTouchEvents(True)
-
-        self.collisionInt = float(collisionInt)   # The interval at which to wait before calling "self.collision" again
-        self.lastCollision = time.time() - self.collisionInt
-        self.lastItemsList = []   # The last list of collision items this object collided with to help keep track of collisions
-        # `self.collision` is called with ( self, [<itemsList>] )
-        # "[<itemsList>]" is a list of all items this sprite is colliding with
-
-        self.limitedBoundary = True   # If set to True, this sprite will bounce off the edges of the scene
-
-        #self.setPos(self.xPos, self.yPos)
-        self.setPos(pos[0], pos[1])
-
-        self.lastUpdated = time.time()
-
-        self.movDirection = [1.0, 1.0]
-        self.movSpeed = 0.0
-        self.friction = 8.0   # The percentage of movement speed to subtract per second
-        # If set to 0, the sprite will not slow down
-        self.frictionCutOff = 0.01   # If the movement speed falls below this, it will be set to 0.0 just to help keep things simple
-
-        self.mouseHoverFunc = None   # Executes with (self, event)
-        self.mouseReleaseFunc = None   # Executes with (self, event)
-        self.mousePressFunc = None   # Executes with (self, event)
-
-    def mousePressEvent(self, event):
-        if self.mousePressFunc != None:
-            self.mousePressFunc(self, event)
-    def mouseReleaseEvent(self, event):
-        if self.mouseReleaseFunc != None:
-            self.mouseReleaseFunc(self, event)
-    def hoverEnterEvent(self, event):
-        if self.mouseHoverFunc != None:
-            self.mouseHoverFunc(self, event)
-
-    def scale(self, width, height):
-        tempPixmap = self.pixmap.scaled(width, height, QtCore.Qt.KeepAspectRatio)
-        self.setPixmap( tempPixmap )
-
-    def getPos(self):
-        return self.pos()
-
-    def getCollisions(self):
-        return self.collidingItems()
-
-    def getCenter(self):
-        childrenList = self.childItems()
-        if not childrenList:
-            return self.sceneBoundingRect().center()
-        aList = [i.sceneBoundingRect().center() for i in childrenList]
-        return getPointAvg(aList)
-    def getRect(self):
-        return self.sceneBoundingRect()
-
-    def getWidth(self):
-        return self.getRect().width()
-    def getHeight(self):
-        return self.getRect().height()
-
-    def direct(self, direction, invert=False):   # Set "invert" to True if you want the sprite to move away from the target
-        if invert:
-            self.movDirection = [ (self.getCenter().x()-direction.x()), (self.getCenter().y()-direction.y()) ]
-        else:
-            self.movDirection = [ (direction.x()-self.getCenter().x()), (direction.y()-self.getCenter().y()) ]
-        self.movDirection = condition(self.movDirection)
-        print("Direction:  {}, {}".format( direction.x(), direction.y() ))
-        print("Position:   {}, {}".format( self.x(), self.y() ))
-        print("Movement:   {}".format( self.movDirection ))
-
-    def bump(self, direction, speed, invert=False):
-        # Set "invert" to True if you want the sprite to move away from the target
-        self.direct(direction, invert=invert)
-        self.movSpeed = speed
-        print("Sprite bumped!")
-
-    def collision(self, items):
+class Brain():
+    def __init__(self):
         pass
-
-    def updateSprite(self):
-        uDiff = time.time() - self.lastUpdated
-        self.movSpeed -= perc2num(self.friction, self.movSpeed)
-
-        if self.movSpeed <= self.frictionCutOff: self.movSpeed = 0.0
-
-        xPos = self.x() + (self.movSpeed * uDiff * self.movDirection[0])
-        yPos = self.y() + (self.movSpeed * uDiff * self.movDirection[1])
-
-        if self.limitedBoundary:
-            if self.getRect().left() < 0:   # Too far left
-                self.xPos = 0
-                if self.movDirection[0] < 0: self.movDirection[0] = -self.movDirection[0]
-            if self.getRect().right() > self.scene().sceneRect().width():   # Too far right
-                self.xPos = self.scene().sceneRect().width() - self.getRect().width()
-                if self.movDirection[0] > 0: self.movDirection[0] = -self.movDirection[0]
-            if self.getRect().top() < 0:   # Too far up
-                self.yPos = 0
-                if self.movDirection[1] < 0: self.movDirection[1] = -self.movDirection[1]
-            if self.getRect().bottom() > self.scene().sceneRect().height():   # Too far down
-                self.yPos = self.scene().sceneRect().height() - self.getRect().height()
-                if self.movDirection[1] > 0: self.movDirection[1] = -self.movDirection[1]
-
-
-        self.setPos(xPos, yPos)
-
-        hit = False
-        preCol = self.getCollisions()
-        collisions = []
-        for i in preCol:
-            if i.parent != self.parent:
-                if self.parent and i.parent:
-                    collisions.append(i)
-        if self.lastItemsList == collisions and len(collisions) > 0 and time.time()-self.lastCollision >= self.collisionInt:
-            hit = True
-        elif collisions != self.lastItemsList and len(collisions) > 0:
-            hit = True
-        if hit:
-            self.collision(collisions)
-            self.lastCollision = time.time()
-            self.lastItemsList = collisions
-
-        self.update()
-
-        self.lastUpdated = time.time()
-
 
 
 class DNA():
     def __init__(self):
         self.cells = {}
-        # Structure: { <cell_id>: {"type": "eye", "size": 25, "xy": [<x_pos>, <y_pos>]} }
+        # Structure: {
+        #    <Cell_ID>: {
+        #       "size": <integer>,
+        #       "type": <string>,
+        #       "elasticity": <integer>,
+        #       "mass": <integer>,
+        #       "first": <boolean>,
+        #       "relative_pos": [<integer>, <integer>]
+        #   }
+        #}
+        # `relative_pos` helps keep cells from forming to close to one another (starts at [0,0] for the first cell)
 
-        self.connections = {}
-        # Structure: { <cell_id>: [<cell_id1>, <cell_id2>] }
+        #self.connections = {}
+        # Structure: {
+        #   <Cell_ID>: [<Cell_ID_1>, <Cell_ID_2>],
+        #   <Cell_ID>: [<Cell_ID_1>, <Cell_ID_2>]
+        #}
 
-        self.types = ["eye", "barrier", "carniv", "co2c", "nose", "push", "scent"]
+        self.growth_pattern = {}
+        # Structure: {
+        #   <Cell_ID>: {
+        #        <Cell_ID_1>: [<X_Direction>, <Y_Direction>],
+        #        <Cell_ID_2>: [<X_Direction>, <Y_Direction>]
+        #   },
+        #   <Cell_ID>: {
+        #        <Cell_ID_1>: [<X_Direction>, <Y_Direction>],
+        #        <Cell_ID_2>: [<X_Direction>, <Y_Direction>]
+        #   }
+        #}
 
-    def copy(self):
-        return copy.deepcopy(self)
+    def cell_size(self, cell_id):
+        if cell_id in self.cells:
+            return self.cells[cell_id]["size"]
 
-    def mutate(self, magnitude):
-        # `magnitude` : 0.0 - 1.0
-        pass
+    def first_cell(self):
+        # Returns the first cell that's created while building this creature's body
+        for id in self.cells:
+            if self.cells[id]["first"]:
+                return id
 
-    def randomize(self, sizeRange=[5,40], connection_range=[0, 2], xy_range=[0,42]):
-        size = random.randrange(sizeRange[0], sizeRange[1])
-        print("Size: {}".format(size))
+    def sub_cells(self, cell_id):
+        if cell_id in self.growth_pattern:
+            return [ id for id in self.growth_pattern[cell_id] ]
 
-        for i in range(size):
-            x_pos = random.randrange(xy_range[0], xy_range[1])
-            y_pos = random.randrange(xy_range[0], xy_range[1])
-            self.cells[i] = {
-                             "type": random.choice(self.types),
-                             "size": random.randrange(15, 30),
-                             "xy": [x_pos, y_pos]
-                             }
+    def grows_from(self, cell_id):
+        # Returns the cell ID that this given cell grows from
+        for id in self.growth_pattern:
+            if cell_id in self.growth_pattern[id]:
+                return id
 
-        for cid in self.cells:
-            self.connections[cid] = []
+    def path_to_first(self, cell_id):
+        pList = []
+        while True:
+            parentCell = self.grows_from(cell_id)
+            if parentCell:
+                cell_id = parentCell
+                pList.append(cell_id)
+            else:
+                break
+        return pList
 
-        #connected_id = random.choice([i for i in self.cells if i != self.cells[0]])
-        #self.connections[0].append(connected_id)
-        for cid in self.cells:
-            for i in range( random.randrange(connection_range[0], connection_range[1]) ):
-                if len(self.cells) > 1:
-                    connected_id = random.choice([i for i in self.cells if i != cid])
-                    self.connections[cid].append(connected_id)
-
-        return self
-
-
-class Cell(Sprite):
-    def __init__(self, *args, **kwargs):
-        super(Cell, self).__init__(*args, **kwargs)
-        self.connections = []
-        self.type = "co2c"
-        self.typeImages = {
-                           "barrier": "Images/barrier.png",
-                           "carniv": "Images/carniv.png",
-                           "co2c": "Images/co2C.png",
-                           "eye": "Images/eye.png",
-                           "health": "Images/health.png",
-                           "neuron": "Images/neuron.png",
-                           "nose": "Images/nose.png",
-                           "push": "Images/push.png",
-                           "scent": "Images/scent.png"
-                           }
-
-    def setType(self, type):
-        if not type in self.typeImages:
+    def cell_distance(self, id1, id2):
+        if not id1 in self.cells or not id2 in self.cells:
             return
-        self.type = type
+        rel_pos1 = self.cells[id1]["relative_pos"]
+        rel_pos2 = self.cells[id2]["relative_pos"]
 
-        self.pixmap = QtGui.QPixmap(self.typeImages[type])
-        self.setPixmap( self.pixmap.scaled(self.getWidth(), self.getHeight(), QtCore.Qt.KeepAspectRatio) )
+        x1 = rel_pos1[0]
+        y1 = rel_pos1[1]
+        x2 = rel_pos2[0]
+        y2 = rel_pos2[1]
 
+        distance = calculateDistance(x1, y1, x2, y2)
+        return distance
+
+    def _new_cell_id(self):
+        cid = 1
+        while cid in self.cells:
+            cid += 1
+        return cid
+
+    def _make_random_cell(self, sizeRange, massRange, first_cell=False):
+        cell_id = self._new_cell_id()
+        cell_info = {}
+
+        cell_size = random.randrange(sizeRange[0], sizeRange[1])
+        cell_info["size"] = cell_size
+
+        cell_mass = random.randrange(massRange[0], massRange[1])
+        cell_info["mass"] = cell_mass
+
+        cell_elasticity = random.random()
+        cell_info["elasticity"] = cell_elasticity
+
+        cell_friction = random.random()
+        cell_info["friction"] = cell_friction
+
+        if first_cell:
+            cell_type = "heart"
+        else:
+            cell_type = random.choice(cell_types)
+        cell_info["type"] = cell_type
+
+        cell_info["first"] = first_cell
+
+        return cell_id, cell_info
+
+    def _closest_cell_to_point(self, x, y):
+        # This function only compares the relative positions of cells
+        distances = {}
+        for cell_id in self.cells:
+            rel_pos = self.cells[cell_id]["relative_pos"]
+            dist = calculateDistance(x, y, rel_pos[0], rel_pos[1])
+            distances[dist] = cell_id
+        if distances:
+            closest_cell = distances[min(distances)]
+            dist = min(distances)
+            return closest_cell, dist
+
+    def _new_relative_pos(self, parentID, direction, childSize):
+        relParentPos = self.cells[parentID]["relative_pos"]
+        parentSize = self.cells[parentID]["size"]
+        newRelPos = relParentPos[:]
+
+        addX = direction[0] * ((parentSize/2) + (childSize/2))
+        addY = direction[1] * ((parentSize/2) + (childSize/2))
+
+        newRelPos = [newRelPos[0] + addX, newRelPos[1] + addY]
+
+        return newRelPos
+
+    def add_randomized_cell(self, sizeRange, massRange, first_cell=False):
+        cell_id, cell_info = self._make_random_cell(sizeRange, massRange, first_cell=first_cell)
+
+        if first_cell:
+            relative_pos = [0,0]
+
+        if self.cells and not first_cell:
+            pos_verified = False
+            while not pos_verified:
+                grow_from = random.choice( list(self.cells) )
+                grow_direction = random_direction()
+
+                relative_pos = self._new_relative_pos(grow_from, grow_direction, cell_info["size"])
+
+                id, dist = self._closest_cell_to_point(relative_pos[0], relative_pos[1])
+
+                size1 = cell_info["size"]
+                size2 = self.cell_size(id)
+
+                if dist > (size1/2.5 + size2/2.5):
+                    pos_verified = True
+
+            self.growth_pattern[grow_from][cell_id] = grow_direction
+
+        cell_info["relative_pos"] = relative_pos
+
+        self.cells[cell_id] = cell_info
+        self.growth_pattern[cell_id] = {}
+
+    def randomize(self, cellRange=[5,40], sizeRange=[9,42], massRange=[5,20]):
+        self.cells = {}
+        self.growth_pattern = {}
+
+        first_cell = True
+        for i in range(random.randrange(cellRange[0], cellRange[1])):
+            self.add_randomized_cell(sizeRange, massRange, first_cell=first_cell)
+            first_cell = False
         return self
 
-    def collision(self, items):
-        print("COLLISION: {}".format(items))
 
-
-class Creature(Sprite):
-    def __init__(self, *args, **kwargs):
-        super(Creature, self).__init__(*args, **kwargs)
+class Organism():
+    def __init__(self, pos, environment, dna=None):
+        if not dna:
+            dna = DNA().randomize()
+        self.dna = dna
+        self.pos = pos   # [<x>, <y>]
+        self.environment = environment
 
         self.cells = {}
+        # Structure: {<Cell_ID>: <Sprite_Class>}
 
-        self.dna = DNA().randomize(sizeRange=[5,12])
+        self.brain = None
 
-        self.buildCells()
+    def _growth_position(self, newCellID):
+        rel_pos = self.dna.cells[newCellID]["relative_pos"]
+        new_position = [self.pos[0] + rel_pos[0],
+                        self.pos[1] + rel_pos[1]]
 
-    def buildCells(self):
-        for cid in self.dna.cells:
-            cell_info = self.dna.cells[cid]
-            xy = cell_info["xy"]
-            newCell = Cell(xy, cell_info["size"], cell_info["size"], image="Images/neuron.png", parent=self)
-            newCell.setType(cell_info["type"])
-            self.cells[cid] = newCell
-        for cid in self.cells:
-            for connected_id in self.dna.connections:
-                connected_cell = self.cells[connected_id]
-                self.cells[cid].connections.append(connected_cell)
+        return new_position
 
-    def replicate(self, cell, direction):
-        newX = cell.getPos().x() + direction[0]
-        newY = cell.getPos().y() + direction[1]
+    def _create_cell(self, cell_id, subCells=False):
+        # When `subCells` equals True, it will also create all cells that grow from the given cell
+        firstCell = self.dna.cells[cell_id]["first"]
+        if cell_id in self.dna.cells and not cell_id in self.cells:
+            if not self.dna.grows_from(cell_id) in self.cells and not firstCell:
+                print("NO PARENT")
+                print(self.dna.grows_from(cell_id))
+                return
+            if firstCell:
+                pos = self.pos
+            else:
+                pos = self._growth_position(cell_id)
 
-        newCell = Cell([newX, newY], 20, 20, image="Images/neuron.png", parent=self)
-        self.cells.append(newCell)
-        return newCell
+            cellInfo = self.dna.cells[cell_id]
 
-    def connected(self, cell1, cell2):
-        if cell2 in cell1.connections or cell1 in cell2.connections:
-            return True
-        return False
+            body, shape = shatterbox.makeCircle(
+                cellInfo["size"]/2,
+                friction = cellInfo["friction"],
+                elasticity = cellInfo["elasticity"],
+                mass = cellInfo["mass"]
+            )
+            newCell = shatterbox.Sprite(
+                pos,
+                cellInfo["size"],
+                cellInfo["size"],
+                self.environment,
+                body,
+                shape,
+                image="Images/{}.png".format(cellInfo["type"])
+            )
 
-    def updateCellDistances(self):
+            self.cells[cell_id] = newCell
+
+            if subCells:
+                for id in self.dna.sub_cells(cell_id):
+                    self._create_cell(id, subCells=False)
+
+    def build_body(self):
+        self.cells = {}
+
+        fCell = self.dna.first_cell()
+        # `fCell` holds information on the first cell that needs to be added
+
+        if fCell:
+            self._create_cell(fCell, subCells=True)
+        else:
+            print("ERROR: First cell not located - Quitting...")
+            return
+
+        for cell_id in self.dna.cells:
+            self._create_cell(cell_id, subCells=True)
+
         for cell_id in self.cells:
-            cell = self.cells[cell_id]
+            sprite = self.cells[cell_id]
+            self.environment.add_sprite(sprite)
 
-            touchingCells = [self.cells[c] for c in self.cells if cellDistance(cell, self.cells[c]) <= cell.getWidth()/2+self.cells[c].getWidth()/2]
-            if cell in touchingCells:
-                touchingCells.remove(cell)
-            touchingCells = sorted(touchingCells, key=lambda a: random.random())
+        for cell_id in self.cells:
+            sprite = self.cells[cell_id]
+            for id in self.cells:
+                if id != cell_id:
+                    sprite2 = self.cells[id]
+                    sprite.connectTo(sprite2)
 
-            for c in touchingCells:
-                distance = cellDistance(cell, c)
-                mult = 2
-                if self.connected(cell, c):
-                    mult = 3
-                if distance < cell.getWidth()/mult + c.getWidth()/mult:
-                    movDir = cellDirection(cell, c, invert=True)
-                    cell.setPos( cell.getPos().x() + movDir[0], cell.getPos().y() + movDir[1] )
 
-            connected_cells = [c for c in cell.connections]
 
-            for c in connected_cells:
-                distance = cellDistance(cell, c)
-                if distance > cell.getWidth()/2.5 + c.getWidth()/2.5:
-                    movDir = cellDirection(cell, c, invert=True)
-                    cell.setPos( cell.getPos().x() - movDir[0], cell.getPos().y() - movDir[1] )
+if __name__ == "__main__":
+        app = QtWidgets.QApplication(sys.argv)
+        window = QtWidgets.QMainWindow()
+        myapp = Ui_MainWindow()
 
-    def updateCells(self, scene):
-        self.updateCellDistances()
-        for cid in self.cells:
-            self.cells[cid].updateSprite()
+        myapp.setupUi(window)
+        #myapp.setupEnvironment()
+        env = shatterbox.setupEnvironment(myapp.worldView, myapp.scene)
+
+        org = Organism([300,300], env)
+        org2 = Organism([480,480], env)
+
+        fCell = org.dna.first_cell()
+
+        print(org.dna.growth_pattern[fCell])
+
+        org.build_body()
+        org2.build_body()
+
+        window.show()
+        sys.exit(app.exec_())
