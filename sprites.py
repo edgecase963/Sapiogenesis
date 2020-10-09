@@ -50,12 +50,6 @@ class DNA():
         #}
         # `relative_pos` helps keep cells from forming to close to one another (starts at [0,0] for the first cell)
 
-        #self.connections = {}
-        # Structure: {
-        #   <Cell_ID>: [<Cell_ID_1>, <Cell_ID_2>],
-        #   <Cell_ID>: [<Cell_ID_1>, <Cell_ID_2>]
-        #}
-
         self.growth_pattern = {}
         # Structure: {
         #   <Cell_ID>: {
@@ -169,6 +163,16 @@ class DNA():
 
         return newRelPos
 
+    def _viable_cell_position(self, x, y, cellInfo):
+        id, dist = self._closest_cell_to_point(x, y)
+
+        size1 = cellInfo["size"]
+        size2 = self.cell_size(id)
+
+        if dist > (size1/2.5 + size2/2.5):
+            return True
+        return False
+
     def add_randomized_cell(self, sizeRange, massRange, first_cell=False):
         cell_id, cell_info = self._make_random_cell(sizeRange, massRange, first_cell=first_cell)
 
@@ -183,12 +187,7 @@ class DNA():
 
                 relative_pos = self._new_relative_pos(grow_from, grow_direction, cell_info["size"])
 
-                id, dist = self._closest_cell_to_point(relative_pos[0], relative_pos[1])
-
-                size1 = cell_info["size"]
-                size2 = self.cell_size(id)
-
-                if dist > (size1/2.5 + size2/2.5):
+                if self._viable_cell_position(relative_pos[0], relative_pos[1], cell_info):
                     pos_verified = True
 
             self.growth_pattern[grow_from][cell_id] = grow_direction
@@ -197,6 +196,26 @@ class DNA():
 
         self.cells[cell_id] = cell_info
         self.growth_pattern[cell_id] = {}
+
+    def can_be_mirrored(self, mirror_x=True, mirror_y=True):
+        for cell_id in self.cells:
+            new_rel_pos = [ self.cells[cell_id]["relative_pos"][0], self.cells[cell_id]["relative_pos"][1] ]
+
+            relX = new_rel_pos[0]
+            relY = new_rel_pos[1]
+
+            if mirror_x:
+                relX = -relX
+            if mirror_y:
+                relY = -relY
+
+            cellInfo = self.cells[cell_id]
+
+            if cellInfo["first"]:
+                continue
+            if not self._viable_cell_position(relX, relY, cellInfo):
+                return False
+        return True
 
     def randomize(self, cellRange=[5,40], sizeRange=[9,42], massRange=[5,20]):
         self.cells = {}
