@@ -3,6 +3,7 @@ import sys
 import random
 import networks
 import math
+import numpy
 
 from PyQt5 import QtCore, QtGui
 from PyQt5 import QtWidgets
@@ -28,6 +29,11 @@ def calculateDistance(x1,y1,x2,y2):
     dist = math.sqrt( (x2 - x1)**2 + (y2 - y1)**2 )
     return dist
 
+def positive(x):
+    if x > 0:
+        return x
+    return -x
+
 
 
 class Brain():
@@ -45,7 +51,8 @@ class DNA():
         #       "elasticity": <integer>,
         #       "mass": <integer>,
         #       "first": <boolean>,
-        #       "relative_pos": [<integer>, <integer>]
+        #       "relative_pos": [<integer>, <integer>],
+        #       "mirror_self": <cell_id>
         #   }
         #}
         # `relative_pos` helps keep cells from forming to close to one another (starts at [0,0] for the first cell)
@@ -60,6 +67,14 @@ class DNA():
         #        <Cell_ID_1>: [<X_Direction>, <Y_Direction>],
         #        <Cell_ID_2>: [<X_Direction>, <Y_Direction>]
         #   }
+        #}
+
+        self.base_info = {"distanceThreshold": 2.5, "mirror_x": False, "mirror_y": False, "maximum_creation_tries": 30}
+        # Structure: {
+        #    "distanceThreshold": <integer>,
+        #    "mirror_x": <boolean>,
+        #    "mirror_y": <boolean,
+        #    "maximum_creation_tries": 30
         #}
 
     def cell_size(self, cell_id):
@@ -130,6 +145,11 @@ class DNA():
         cell_info["friction"] = cell_friction
 
         if first_cell:
+            cell_info["mirror_self"] = cell_id
+        else:
+            cell_info["mirror_self"] = None
+
+        if first_cell:
             cell_type = "heart"
         else:
             cell_type = random.choice(cell_types)
@@ -163,15 +183,61 @@ class DNA():
 
         return newRelPos
 
+    def _cell_mirrorable(self, x, y, cell_info):
+        cellSize = cell_info["size"]
+        protrusionSizeX = x - (cellSize/2)
+        protrusionSizeY = y - (cellSize/2)
+
+        x_dist = protrusionSizeX*2
+        y_dist = protrusionSizeY*2
+
+        if self.base_info["mirror_x"]:
+            if x_dist < 0:
+                if positive(x_dist) > (cellSize/self.base_info["distanceThreshold"]):
+                    return False
+        if self.base_info["mirror_y"]:
+            if y_dist < 0:
+                if positive(y_dist) > (cellSize/self.base_info["distanceThreshold"]):
+                    return False
+        return True
+
     def _viable_cell_position(self, x, y, cellInfo):
         id, dist = self._closest_cell_to_point(x, y)
 
         size1 = cellInfo["size"]
         size2 = self.cell_size(id)
 
-        if dist > (size1/2.5 + size2/2.5):
+        if self.base_info["mirror_x"] or self.base_info["mirror_y"]:
+            if not self._cell_mirrorable(x, y, cellInfo):
+                return False
+
+        if dist > (size1/self.base_info["distanceThreshold"] + size2/self.base_info["distanceThreshold"]):
             return True
         return False
+
+    def _apply_mirror(self, cell_id, grows_from, grow_direction):
+        newID = self._new_cell_id()
+        cell_info = self.cells[cell_id].copy()
+
+        self.cells[cell_id]["mirror_self"] = newID
+        cell_info["mirror_self"] = cell_id
+
+        relative_pos = self.cells[cell_id]["relative_pos"][:]
+
+        if self.base_info["mirror_x"]:
+            relative_pos[0] = -relative_pos[0]
+        if self.base_info["mirror_y"]:
+            relative_pos[1] = -relative_pos[1]
+
+        new_grows_from = self.cells[grows_from]["mirror_self"]
+        new_grow_direction = [-i for i in grow_direction]
+
+        self.growth_pattern[new_grows_from][newID] = new_grow_direction
+
+        cell_info["relative_pos"] = relative_pos
+
+        self.cells[newID] = cell_info
+        self.growth_pattern[newID] = {}
 
     def add_randomized_cell(self, sizeRange, massRange, first_cell=False):
         cell_id, cell_info = self._make_random_cell(sizeRange, massRange, first_cell=first_cell)
@@ -181,7 +247,11 @@ class DNA():
 
         if self.cells and not first_cell:
             pos_verified = False
+            iterations = 0
             while not pos_verified:
+                if iterations > self.base_info["maximum_creation_tries"]:
+                    return False
+                iterations += 1
                 grow_from = random.choice( list(self.cells) )
                 grow_direction = random_direction()
 
@@ -197,34 +267,37 @@ class DNA():
         self.cells[cell_id] = cell_info
         self.growth_pattern[cell_id] = {}
 
-    def can_be_mirrored(self, mirror_x=True, mirror_y=True):
-        for cell_id in self.cells:
-            new_rel_pos = [ self.cells[cell_id]["relative_pos"][0], self.cells[cell_id]["relative_pos"][1] ]
-
-            relX = new_rel_pos[0]
-            relY = new_rel_pos[1]
-
-            if mirror_x:
-                relX = -relX
-            if mirror_y:
-                relY = -relY
-
-            cellInfo = self.cells[cell_id]
-
-            if cellInfo["first"]:
-                continue
-            if not self._viable_cell_position(relX, relY, cellInfo):
-                return False
+        if not first_cell:
+            if self.base_info["mirror_x"] or self.base_info["mirror_y"]:
+                grow_from = self.grows_from(cell_id)
+                grow_direction = self.growth_pattern[grow_from][cell_id]
+                self._apply_mirror(cell_id, grow_from, grow_direction)
         return True
 
-    def randomize(self, cellRange=[5,40], sizeRange=[9,42], massRange=[5,20]):
+    def randomize(self, cellRange=[3,30], sizeRange=[6,42], massRange=[5,20], mirror_x=[0.6, 0.4], mirror_y=[0.6, 0.4]):
         self.cells = {}
         self.growth_pattern = {}
 
+        mirror_x = numpy.random.choice(numpy.arange(0, 2), p=mirror_x)
+        mirror_y = numpy.random.choice(numpy.arange(0, 2), p=mirror_y)
+
+        mirror_x = bool(mirror_x)
+        mirror_y = bool(mirror_y)
+
+        self.base_info["mirror_x"] = mirror_x
+        self.base_info["mirror_y"] = mirror_y
+
         first_cell = True
         for i in range(random.randrange(cellRange[0], cellRange[1])):
-            self.add_randomized_cell(sizeRange, massRange, first_cell=first_cell)
+            added = False
+            while not added:
+                added = self.add_randomized_cell(
+                    sizeRange,
+                    massRange,
+                    first_cell=first_cell
+                )
             first_cell = False
+        print("Mirror X: {}\nMirror Y: {}\n\n".format(self.base_info["mirror_x"], self.base_info["mirror_y"]))
         return self
 
 
@@ -323,7 +396,7 @@ if __name__ == "__main__":
         env = shatterbox.setupEnvironment(myapp.worldView, myapp.scene)
 
         org = Organism([300,300], env)
-        org2 = Organism([480,480], env)
+        org2 = Organism([500,500], env)
 
         fCell = org.dna.first_cell()
 
