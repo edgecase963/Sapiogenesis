@@ -15,7 +15,7 @@ import shatterbox
 
 
 
-cell_types = ["barrier", "carniv", "co2C", "eye", "olfactory", "push", "pheremone", "body"]
+cell_types = ["barrier", "carniv", "co2C", "eye", "olfactory", "push", "pheremone", "body", "rotate"]
 
 
 def random_direction():
@@ -69,7 +69,7 @@ class DNA():
         #   }
         #}
 
-        self.base_info = {"distanceThreshold": 2.5, "mirror_x": False, "mirror_y": False, "maximum_creation_tries": 30}
+        self.base_info = {"distanceThreshold": 2.2, "mirror_x": False, "mirror_y": False, "maximum_creation_tries": 30}
         # Structure: {
         #    "distanceThreshold": <integer>,
         #    "mirror_x": <boolean>,
