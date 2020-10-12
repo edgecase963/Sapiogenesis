@@ -185,21 +185,20 @@ class DNA():
 
     def _cell_mirrorable(self, x, y, cell_info):
         cellSize = cell_info["size"]
-        protrusionSizeX = x - (cellSize/2)
-        protrusionSizeY = y - (cellSize/2)
 
-        x_dist = protrusionSizeX*2
-        y_dist = protrusionSizeY*2
+        newX = x
+        newY = y
 
         if self.base_info["mirror_x"]:
-            if x_dist < 0:
-                if positive(x_dist) > (cellSize/self.base_info["distanceThreshold"]):
-                    return False
+            newX = -newX
         if self.base_info["mirror_y"]:
-            if y_dist < 0:
-                if positive(y_dist) > (cellSize/self.base_info["distanceThreshold"]):
-                    return False
-        return True
+            newY = -newY
+
+        distance = calculateDistance(x, y, newX, newY)
+
+        if distance > cellSize/self.base_info["distanceThreshold"]:
+            return True
+        return False
 
     def _viable_cell_position(self, x, y, cellInfo):
         id, dist = self._closest_cell_to_point(x, y)
@@ -274,7 +273,7 @@ class DNA():
                 self._apply_mirror(cell_id, grow_from, grow_direction)
         return True
 
-    def randomize(self, cellRange=[3,30], sizeRange=[6,42], massRange=[5,20], mirror_x=[0.6, 0.4], mirror_y=[0.6, 0.4]):
+    def randomize(self, cellRange=[3,30], sizeRange=[6,42], massRange=[5,20], mirror_x=[0.2, 0.8], mirror_y=[0.2, 0.8]):
         self.cells = {}
         self.growth_pattern = {}
 
