@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 from PyQt5 import QtCore, QtGui
 from PyQt5 import QtWidgets
+from PyQt5 import Qt
 import sys
 #import sprites
 import random
@@ -25,23 +26,114 @@ except AttributeError:
         return QtWidgets.QApplication.translate(context, text, disambig)
 
 
+
+class World_View(QtWidgets.QGraphicsView):
+    _zoom = 0
+
+    def wheelEvent(self, event):
+        self._zoom
+        if event.angleDelta().y() > 0:
+            factor = 1.25
+            self._zoom += 1
+        else:
+            factor = 0.8
+            self._zoom -= 1
+        if self._zoom > 0:
+            self.scale(factor, factor)
+        elif self._zoom == 0:
+            self.fitInView()
+        else:
+            self._zoom = 0
+
+    def updateView(self):
+        scene = self.scene()
+        r = scene.sceneRect()
+        self.fitInView()
+
+    def showEvent(self, event):
+        if not event.spontaneous():
+            self.updateView()
+
+    def fitInView(self, scale=False):
+        rect = QtCore.QRectF(self.scene().sceneRect())
+        if not rect.isNull():
+            self.setSceneRect(rect)
+            unity = self.transform().mapRect(QtCore.QRectF(0, 0, 1, 1))
+            self.scale(1 / unity.width(), 1 / unity.height())
+            viewrect = self.viewport().rect()
+            scenerect = self.transform().mapRect(rect)
+            factor = min(viewrect.width() / scenerect.width(),
+                         viewrect.height() / scenerect.height())
+            self.scale(factor, factor)
+            self._zoom = 0
+
+    def mousePressEvent(self, event):
+        self.setDragMode(QtWidgets.QGraphicsView.ScrollHandDrag)
+        super(World_View, self).mousePressEvent(event)
+
+    def mouseReleaseEvent(self, event):
+        self.setDragMode(QtWidgets.QGraphicsView.NoDrag)
+        super(World_View, self).mouseReleaseEvent(event)
+
+
 class Ui_MainWindow(object):
+    def add_random_creature_event(self):
+        pass
+    def heal_event(self):
+        pass
+    def kill_event(self):
+        pass
+    def copy_event(self):
+        pass
+    def paste_event(self):
+        pass
+    def disperse_cells_event(self):
+        pass
+
+    def rightMenuShow(self):
+        pos = QtGui.QCursor.pos()
+        print("Pos: {}".format(pos))
+        #rightMenu = QtWidgets.QMenu(self.listView1)
+        rightMenu = QtWidgets.QMenu()
+
+        addAction = QtWidgets.QAction(u"Add Random Organism", triggered=self.add_random_creature_event)
+        healAction = QtWidgets.QAction(u"Heal", triggered=self.heal_event)
+        killAction = QtWidgets.QAction(u"Kill", triggered=self.kill_event)
+        copyAction = QtWidgets.QAction(u"Copy", triggered=self.copy_event)
+        pasteAction = QtWidgets.QAction(u"Paste", triggered=self.paste_event)
+        disperseCellsAction = QtWidgets.QAction(u"Disperse All Dead Cells", triggered=self.disperse_cells_event)
+        rightMenu.addAction(addAction)
+        rightMenu.addAction(healAction)
+        rightMenu.addAction(killAction)
+        rightMenu.addAction(copyAction)
+        rightMenu.addAction(pasteAction)
+        rightMenu.addAction(disperseCellsAction)
+
+        rightMenu.exec_(pos)
+
     def setupUi(self, MainWindow):
         MainWindow.setObjectName(_fromUtf8("MainWindow"))
         MainWindow.resize(1100, 800)
         self.centralwidget = QtWidgets.QWidget(MainWindow)
         self.centralwidget.setObjectName(_fromUtf8("centralwidget"))
 
-        self.worldView = QtWidgets.QGraphicsView(self.centralwidget)
+        #self.worldView = QtWidgets.QGraphicsView(self.centralwidget)
+        self.worldView = World_View(self.centralwidget)
         self.worldView.setGeometry(QtCore.QRect(15, 20, 1070, 600))
         self.worldView.setObjectName(_fromUtf8("worldView"))
+
+        self.worldView.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
+        self.worldView.customContextMenuRequested[QtCore.QPoint].connect(self.rightMenuShow)
 
         self.timeline = QtCore.QTimeLine(1000)
         self.timeline.setFrameRange(0, 100)
 
         self.scene = QtWidgets.QGraphicsScene(self.worldView)
-        self.scene.setSceneRect(0, 0, 1050, 1200)
+        self.scene.setSceneRect(0, 0, 2800, 1500)
         self.worldView.setScene(self.scene)
+
+        #self.worldView.scene = self.scene
+        self.worldView.fitInView()
 
         self.scene.mouseReleaseEvent = self.worldMouseReleaseEvent
 
@@ -135,7 +227,7 @@ class Ui_MainWindow(object):
         self.set_co2_spinbox.setGeometry(QtCore.QRect(120, 70, 131, 29))
         self.set_co2_spinbox.setStatusTip(_fromUtf8("New CO2 value"))
         self.set_co2_spinbox.setMaximum(999999999)
-        self.set_co2_spinbox.setProperty("value", 1800)
+        self.set_co2_spinbox.setProperty("value", 20000)
         self.set_co2_spinbox.setObjectName(_fromUtf8("set_co2_spinbox"))
 
         self.organismView = QtWidgets.QGraphicsView(self.centralwidget)
@@ -188,6 +280,11 @@ class Ui_MainWindow(object):
         self.energy_label.setStatusTip(_fromUtf8("How much energy this organism has"))
         self.energy_label.setObjectName(_fromUtf8("energy_label"))
 
+        self.energy_val = QtWidgets.QLabel(self.organism_info_frame)
+        self.energy_val.setGeometry(QtCore.QRect(70, 10, 101, 25))
+        self.energy_val.setToolTip("")
+        self.energy_val.setObjectName("energy_val")
+
         self.generation_label = QtWidgets.QLabel(self.organism_info_frame)
         self.generation_label.setGeometry(QtCore.QRect(10, 40, 90, 25))
         font = QtGui.QFont()
@@ -196,6 +293,16 @@ class Ui_MainWindow(object):
         self.generation_label.setFont(font)
         self.generation_label.setStatusTip(_fromUtf8("This organism's generation"))
         self.generation_label.setObjectName(_fromUtf8("generation_label"))
+
+        self.generation_val = QtWidgets.QLabel(self.organism_info_frame)
+        self.generation_val.setGeometry(QtCore.QRect(100, 40, 81, 25))
+        self.generation_val.setToolTip("")
+        self.generation_val.setObjectName("generation_val")
+
+        self.neurons_val = QtWidgets.QLabel(self.organism_info_frame)
+        self.neurons_val.setGeometry(QtCore.QRect(80, 70, 81, 25))
+        self.neurons_val.setToolTip("")
+        self.neurons_val.setObjectName("neurons_val")
 
         self.neurons_label = QtWidgets.QLabel(self.organism_info_frame)
         self.neurons_label.setGeometry(QtCore.QRect(10, 70, 70, 25))
@@ -266,6 +373,9 @@ class Ui_MainWindow(object):
         self.energy_label.setText(_translate("MainWindow", "Energy:", None))
         self.generation_label.setText(_translate("MainWindow", "Generation:", None))
         self.neurons_label.setText(_translate("MainWindow", "Neurons:", None))
+        self.energy_val.setText(_translate("MainWindow", "0", None))
+        self.neurons_val.setText(_translate("MainWindow", "0", None))
+        self.generation_val.setText(_translate("MainWindow", "0", None))
         self.menuFile.setTitle(_translate("MainWindow", "File", None))
         self.actionNew.setText(_translate("MainWindow", "New...", None))
         self.actionOpen.setText(_translate("MainWindow", "Open...", None))
