@@ -8,7 +8,7 @@ import sprites
 
 from PyQt5 import QtCore, QtGui
 from PyQt5 import QtWidgets
-from MainWindow import Ui_MainWindow
+from userInterface import Ui_MainWindow
 import MainWindow
 
 sys.path.insert(1, "../../Programs/shatterbox")
@@ -19,14 +19,31 @@ import shatterbox
 
 def updateUI(window, environment):
     time_passed = time.time() - env.info["startTime"]
+
+    if env.info["co2"] < 0:
+        env.info["co2"] = 0
+
     co2 = env.info["co2"]
     population = len([i for i in env.info["organism_list"] if i.alive()])
     selected = env.info["selected"]
-    window.co2_val.setText(MainWindow._translate("MainWindow", str(int(co2)), None))
-    window.time_val.setText(MainWindow._translate("MainWindow", str(int(time_passed)), None))
-    window.pop_val.setText(MainWindow._translate("MainWindow", str(int(population)), None))
+    window.co2_val.setText( str(int(co2)) )
+    window.time_val.setText( str(int(time_passed)) )
+    window.pop_val.setText( str(int(population)) )
+
+    if window.min_cell_range_spinbox.value() >= window.max_cell_range_spinbox.value():
+        window.max_cell_range_spinbox.setProperty("value", window.min_cell_range_spinbox.value()+1)
+    if window.min_size_range_spinbox.value() >= window.max_size_range_spinbox.value():
+        window.max_size_range_spinbox.setProperty("value", window.min_size_range_spinbox.value()+1)
+    if window.min_mass_range_spinbox.value() >= window.max_mass_range_spinbox.value():
+        window.max_mass_range_spinbox.setProperty("value", window.min_mass_range_spinbox.value()+1)
+
+    mirror_x_chance = window.mirror_x_slider.value()
+    mirror_y_chance = window.mirror_y_slider.value()
+
+    window.mirror_x_lcd.setProperty("value", mirror_x_chance)
+    window.mirror_y_lcd.setProperty("value", mirror_y_chance)
     if selected:
-        window.energy_val.setText(MainWindow._translate("MainWindow", str(int(selected.total_energy())), None))
+        window.energy_val.setText( str(int(selected.total_energy())) )
 
 def cell_double_clicked(sprite, environment):
     pass
@@ -84,12 +101,26 @@ def feed_btn_clicked(window, environment):
                 sprite.info["energy"] = cell_info["energy_storage"]
 
 def add_creature_clicked(window, environment):
+    minCellRange = window.min_cell_range_spinbox.value()
+    maxCellRange = window.max_cell_range_spinbox.value()
+
+    minSizeRange = window.min_size_range_spinbox.value()
+    maxSizeRange = window.max_size_range_spinbox.value()
+
+    minMassRange = window.min_mass_range_spinbox.value()
+    maxMassRange = window.max_mass_range_spinbox.value()
+
+    mirror_x = window.mirror_x_slider.value() / 100.
+    mirror_y = window.mirror_y_slider.value() / 100.
+
+    print("Mirror: {}, {}".format(mirror_x, mirror_y))
+
     dna = sprites.DNA().randomize(
-        cellRange=[3,30],
-        sizeRange=[6,42],
-        massRange=[5,20],
-        mirror_x=[0.6, 0.4],
-        mirror_y=[0.6, 0.4]
+        cellRange=[minCellRange, maxCellRange],
+        sizeRange=[minSizeRange, maxSizeRange],
+        massRange=[minMassRange, maxMassRange],
+        mirror_x=[1.0 - mirror_x, mirror_x],
+        mirror_y=[1.0 - mirror_y, mirror_y]
     )
 
     organism = sprites.Organism(environment.info["lastPosition"], env, dna=dna)
@@ -161,6 +192,9 @@ if __name__ == "__main__":
 
         env.preUpdateEvent = lambda: sprites.update_organisms(env)
         env.postUpdateEvent = lambda: updateUI(myapp, env)
+
+        myapp.mirror_x_slider.setProperty("value", 40)
+        myapp.mirror_y_slider.setProperty("value", 40)
 
         env.mousePressFunc = lambda event, pos: mousePressEvent(event, pos, env)
         env.mouseReleaseFunc = lambda event, pos: mouseReleaseEvent(event, pos, env)

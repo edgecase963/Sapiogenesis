@@ -8,7 +8,7 @@ import copy
 
 from PyQt5 import QtCore, QtGui
 from PyQt5 import QtWidgets
-from MainWindow import Ui_MainWindow
+from userInterface import Ui_MainWindow
 
 sys.path.insert(1, "../../Programs/shatterbox")
 
@@ -19,7 +19,7 @@ import shatterbox
 cell_types = ["barrier", "carniv", "eye", "olfactory", "co2C", "push", "pheremone", "body", "rotate"]
 dead_image = "dead.png"
 
-co2_dispersion_ratio = 18
+co2_dispersion_ratio = 20
 # The dispersion ratio for dead cells.
 # This is used to calculate how much CO2 is added back into the environment when a dead cell is dispersed
 # Dispersion equation: <dispersion_ratio> * (<cell_size> / 2) * (<cell_mass> / 2)
@@ -112,6 +112,14 @@ def num2perc(num, maxNum):
 
 def perc2num(perc, maxNum):
     return ((float(perc) / 100.0) * float(maxNum))
+
+def getAngle(x1, y1, x2, y2):
+    myradians = math.atan2(y2-y1, x2-x1)
+    return myradians
+
+def getDirection(angle):
+    direction = [math.cos(angle), math.sin(angle)]
+    return direction
 
 
 
@@ -426,8 +434,9 @@ class Organism():
 
         lastUpdated = time.time()
 
-    def _growth_position(self, newCellID):
-        rel_pos = self.dna.cells[newCellID]["relative_pos"]
+    def _growth_position(self, newCellID, rel_pos=None):
+        if not rel_pos:
+            rel_pos = self.dna.cells[newCellID]["relative_pos"]
         new_position = [self.pos[0] + rel_pos[0],
                         self.pos[1] + rel_pos[1]]
 
@@ -496,6 +505,8 @@ class Organism():
                 for id in self.dna.sub_cells(cell_id):
                     self._create_cell(id, subCells=False)
 
+            return newCell
+
     def _make_dead_cell(self, sprite):
         cell_id = sprite.cell_id
         cell_info = sprite.base_info
@@ -510,6 +521,30 @@ class Organism():
 
         return newCell
 
+    def rotation(self):
+        fCell = self.dna.first_cell()
+
+        live_cells = self.living_cells()
+        if fCell in live_cells:
+            live_cells.remove(fCell)
+
+        if not live_cells:
+            return
+
+        first_pos = self.cells[fCell].body.position
+        first_size = self.dna.cells[fCell]["size"]
+
+        rel_id = live_cells[0]
+        rel_pos = self.cells[rel_id].body.position
+        rel_info = self.dna.cells[rel_id]
+
+        oldAngle = getAngle( 0, 0, rel_info["relative_pos"][0], rel_info["relative_pos"][1] )
+        curAngle = getAngle( first_pos[0], first_pos[1], rel_pos[0], rel_pos[1] )
+
+        angleDiff = curAngle - oldAngle
+
+        return math.degrees(angleDiff) % 360
+
     def living_cells(self):
         # Returns all living cell IDs
         living_cells = []
@@ -517,6 +552,62 @@ class Organism():
             if self.cells[cell_id].alive:
                 living_cells.append(cell_id)
         return living_cells
+
+    def _revive_cell_angle(self, cell_id):
+        # BACKBURNER
+        parentID = self.dna.grows_from(cell_id)
+
+        if not self.cells[parentID].alive:
+            return
+
+        childSize = self.dna.cells[cell_id]["size"]
+
+        newAngle = math.radians(self.rotation())
+
+        newDirection = getDirection(newAngle)
+
+        newRelPos = self.dna._new_relative_pos(parentID, newDirection, childSize)
+
+        return newRelPos
+
+    def revive_cell(self, sprite):
+        # BACKBURNER
+        if sprite.alive:
+            return
+        cell_id = sprite.cell_id
+
+        firstCell = self.dna.cells[cell_id]["first"]
+
+        #if firstCell:
+        #    pos = self.pos
+        #else:
+        #    pos = self._growth_position(cell_id)
+
+        newRelPos = self._revive_cell_angle(cell_id)
+        pos = self._growth_position(cell_id, rel_pos=newRelPos)
+
+        cell_info = self.dna.cells[cell_id]
+        newCell = self._build_sprite(pos, cell_id, cell_info, alive=True)
+        self.cells[cell_id] = newCell
+
+        sprite = self.cells[cell_id]
+        self.environment.add_sprite(sprite)
+
+        for id in self.cells:
+            if id != cell_id:
+                sprite2 = self.cells[id]
+                sprite.connectTo(sprite2)
+
+    def dead_children(self, sprite):
+        dead_list = []
+        cell_id = sprite.cell_id
+        if cell_id in self.cells:
+            for id in self.dna.sub_cells(cell_id):
+                if id in self.cells:
+                    sprite = self.cells[id]
+                    if not sprite.alive:
+                        dead_list.append(sprite)
+        return dead_list
 
     def dead_cells(self):
         # Returns all dead cell IDs
@@ -614,7 +705,12 @@ class Organism():
         if len(cells_alive) == 1:
             self.kill_cell(self.cells[cells_alive[0]])
 
-        for cell_id in self.cells:
+        fCell = self.dna.first_cell()
+        if self.cells[fCell].alive:
+            sprite = self.cells[fCell]
+            self.pos = sprite.body.position
+
+        for cell_id in self.cells.copy():
             sprite = self.cells[cell_id]
             cell_info = self.dna.cells[cell_id]
 
@@ -636,6 +732,13 @@ class Organism():
 
             if sprite.info["energy"] > cell_info["energy_storage"]:
                 sprite.info["energy"] = cell_info["energy_storage"]
+
+            #if sprite.info["energy"] >= cell_info["energy_storage"]/1.01 and self.dead_children(sprite):
+            #    dead_list = self.dead_children(sprite)
+            #    print(len(dead_list))
+            #    if dead_list:
+            #        self.revive_cell(dead_list[0])
+            #        sprite.info["energy"] /= 2
 
             if sprite.info["energy"] <= 0:
                 self.kill_cell(sprite)
@@ -706,10 +809,10 @@ def update_organisms(environment):
     # For this to work properly the environment must have the variable `lastUpdated` which holds a time.time() value
     # The environment must also have the ".info" variable which holds a dictionary containing "oganism_list" as a value
     for org in environment.info["organism_list"][:]:
-        if not org.living_cells():
-            environment.info["organism_list"].remove(org)
-        else:
+        if org.alive():
             org.update()
+        else:
+            environment.info["organism_list"].remove(org)
 
     uDiff = time.time() - environment.lastUpdated
     environment.lastUpdated = time.time()
@@ -718,12 +821,15 @@ def update_organisms(environment):
         if not sprite.alive:
             gradual_dispersion(environment, sprite, uDiff)
         if sprite.pos().x() < 0 or sprite.pos().x() > environment.width or sprite.pos().y() < 0 or sprite.pos().y() > environment.height:
-            organism = sprite.organism
-            if organism in environment.info["organism_list"]:
-                for cell_id in organism.cells:
-                    sprite = organism.cells[cell_id]
-                    environment.removeSprite(sprite)
-                environment.info["organism_list"].remove(organism)
+            if sprite.alive:
+                organism = sprite.organism
+                if organism in environment.info["organism_list"]:
+                    for cell_id in organism.cells:
+                        sprite = organism.cells[cell_id]
+                        environment.removeSprite(sprite)
+                    environment.info["organism_list"].remove(organism)
+            else:
+                environment.removeSprite(sprite)
 
 
 if __name__ == "__main__":
