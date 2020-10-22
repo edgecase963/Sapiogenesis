@@ -170,8 +170,6 @@ def get_new_orgnism_position(old_organism, dna, environment):
         addX = direction[0] * dist[0]
         addY = direction[1] * dist[1]
 
-        print(dist)
-
         xPos = old_organism.pos[0] + addX
         yPos = old_organism.pos[1] + addY
 
