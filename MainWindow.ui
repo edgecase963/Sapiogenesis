@@ -95,6 +95,9 @@
        <property name="toolTip">
         <string extracomment="This world's age"/>
        </property>
+       <property name="statusTip">
+        <string>The environment's age</string>
+       </property>
        <property name="text">
         <string>Time:</string>
        </property>
@@ -116,6 +119,9 @@
        </property>
        <property name="toolTip">
         <string extracomment="How many organisms are in this world"/>
+       </property>
+       <property name="statusTip">
+        <string>The environment's population</string>
        </property>
        <property name="text">
         <string>Population:</string>
@@ -140,7 +146,7 @@
         <string extracomment="The amount of CO2 in this world"/>
        </property>
        <property name="statusTip">
-        <string/>
+        <string>The amount of CO2 in this environment</string>
        </property>
        <property name="whatsThis">
         <string/>
@@ -222,6 +228,9 @@
        <property name="toolTip">
         <string extracomment="Amount of CO2 to add"/>
        </property>
+       <property name="statusTip">
+        <string>How much CO2 to add</string>
+       </property>
        <property name="maximum">
         <number>999999999</number>
        </property>
@@ -256,6 +265,9 @@
        </property>
        <property name="toolTip">
         <string extracomment="Amount of CO2 to remove"/>
+       </property>
+       <property name="statusTip">
+        <string>How much CO2 to subtract</string>
        </property>
        <property name="maximum">
         <number>999999999</number>
@@ -292,6 +304,9 @@
        <property name="toolTip">
         <string extracomment="New CO2 value"/>
        </property>
+       <property name="statusTip">
+        <string>The new CO2 value</string>
+       </property>
        <property name="maximum">
         <number>999999999</number>
        </property>
@@ -301,9 +316,9 @@
       </widget>
      </widget>
     </widget>
-    <widget class="QWidget" name="tab_3">
+    <widget class="QWidget" name="tab_2">
      <attribute name="title">
-      <string>Generation Controls</string>
+      <string>Creation Controls</string>
      </attribute>
      <widget class="QLabel" name="cell_range_label">
       <property name="geometry">
@@ -345,6 +360,9 @@
       <property name="toolTip">
        <string extracomment="Amount of CO2 to add"/>
       </property>
+      <property name="statusTip">
+       <string>Minimum number of cells per organism</string>
+      </property>
       <property name="maximum">
        <number>999999999</number>
       </property>
@@ -363,6 +381,9 @@
       </property>
       <property name="toolTip">
        <string extracomment="Amount of CO2 to add"/>
+      </property>
+      <property name="statusTip">
+       <string>Maximum number of cells per organism</string>
       </property>
       <property name="maximum">
        <number>999999999</number>
@@ -414,6 +435,9 @@
       <property name="toolTip">
        <string extracomment="Amount of CO2 to add"/>
       </property>
+      <property name="statusTip">
+       <string>Minimum size for each cell</string>
+      </property>
       <property name="maximum">
        <number>999999999</number>
       </property>
@@ -460,6 +484,9 @@
       </property>
       <property name="toolTip">
        <string extracomment="Amount of CO2 to add"/>
+      </property>
+      <property name="statusTip">
+       <string>Maximum size per cell</string>
       </property>
       <property name="maximum">
        <number>999999999</number>
@@ -511,6 +538,9 @@
       <property name="toolTip">
        <string extracomment="Amount of CO2 to add"/>
       </property>
+      <property name="statusTip">
+       <string>Minimum mass per cell</string>
+      </property>
       <property name="maximum">
        <number>999999999</number>
       </property>
@@ -557,6 +587,9 @@
       </property>
       <property name="toolTip">
        <string extracomment="Amount of CO2 to add"/>
+      </property>
+      <property name="statusTip">
+       <string>Maximum mass per cell</string>
       </property>
       <property name="maximum">
        <number>999999999</number>
@@ -646,6 +679,9 @@
         <height>21</height>
        </rect>
       </property>
+      <property name="statusTip">
+       <string>The chance a new organism will be mirrored on the x axis</string>
+      </property>
       <property name="orientation">
        <enum>Qt::Horizontal</enum>
       </property>
@@ -680,6 +716,9 @@
         <width>151</width>
         <height>21</height>
        </rect>
+      </property>
+      <property name="statusTip">
+       <string>The chance a new organism will be mirrored on the y axis</string>
       </property>
       <property name="orientation">
        <enum>Qt::Horizontal</enum>
@@ -740,14 +779,135 @@
       </property>
      </widget>
     </widget>
+    <widget class="QWidget" name="tab_3">
+     <attribute name="title">
+      <string>Reproduction</string>
+     </attribute>
+     <widget class="QLCDNumber" name="severity_lcd">
+      <property name="geometry">
+       <rect>
+        <x>465</x>
+        <y>35</y>
+        <width>50</width>
+        <height>21</height>
+       </rect>
+      </property>
+      <property name="smallDecimalPoint">
+       <bool>false</bool>
+      </property>
+      <property name="mode">
+       <enum>QLCDNumber::Dec</enum>
+      </property>
+      <property name="segmentStyle">
+       <enum>QLCDNumber::Flat</enum>
+      </property>
+     </widget>
+     <widget class="QLabel" name="severity_label">
+      <property name="geometry">
+       <rect>
+        <x>310</x>
+        <y>10</y>
+        <width>151</width>
+        <height>25</height>
+       </rect>
+      </property>
+      <property name="font">
+       <font>
+        <weight>75</weight>
+        <bold>true</bold>
+       </font>
+      </property>
+      <property name="toolTip">
+       <string extracomment="The amount of CO2 in this world"/>
+      </property>
+      <property name="statusTip">
+       <string/>
+      </property>
+      <property name="whatsThis">
+       <string/>
+      </property>
+      <property name="text">
+       <string>Mutation Severity</string>
+      </property>
+     </widget>
+     <widget class="QSlider" name="severity_slider">
+      <property name="geometry">
+       <rect>
+        <x>310</x>
+        <y>35</y>
+        <width>151</width>
+        <height>21</height>
+       </rect>
+      </property>
+      <property name="statusTip">
+       <string>How severe the mutations are when an organism reproduces</string>
+      </property>
+      <property name="orientation">
+       <enum>Qt::Horizontal</enum>
+      </property>
+      <property name="tickInterval">
+       <number>0</number>
+      </property>
+     </widget>
+     <widget class="QSpinBox" name="rep_time_val">
+      <property name="geometry">
+       <rect>
+        <x>110</x>
+        <y>10</y>
+        <width>81</width>
+        <height>29</height>
+       </rect>
+      </property>
+      <property name="toolTip">
+       <string extracomment="Amount of CO2 to add"/>
+      </property>
+      <property name="statusTip">
+       <string/>
+      </property>
+      <property name="maximum">
+       <number>999999999</number>
+      </property>
+      <property name="value">
+       <number>6</number>
+      </property>
+     </widget>
+     <widget class="QLabel" name="rep_time_limit">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>10</y>
+        <width>90</width>
+        <height>25</height>
+       </rect>
+      </property>
+      <property name="font">
+       <font>
+        <weight>75</weight>
+        <bold>true</bold>
+       </font>
+      </property>
+      <property name="toolTip">
+       <string extracomment="The amount of CO2 in this world"/>
+      </property>
+      <property name="statusTip">
+       <string>How much time an organism has to wait before reproducing</string>
+      </property>
+      <property name="whatsThis">
+       <string/>
+      </property>
+      <property name="text">
+       <string>Time Limit:</string>
+      </property>
+     </widget>
+    </widget>
    </widget>
    <widget class="QFrame" name="Organism_Frame">
     <property name="geometry">
      <rect>
       <x>550</x>
-      <y>650</y>
+      <y>640</y>
       <width>530</width>
-      <height>130</height>
+      <height>140</height>
      </rect>
     </property>
     <property name="frameShape">
@@ -762,7 +922,7 @@
        <x>10</x>
        <y>10</y>
        <width>141</width>
-       <height>110</height>
+       <height>120</height>
       </rect>
      </property>
     </widget>
@@ -772,7 +932,7 @@
        <x>160</x>
        <y>10</y>
        <width>181</width>
-       <height>110</height>
+       <height>120</height>
       </rect>
      </property>
      <property name="frameShape">
@@ -799,6 +959,9 @@
       <property name="toolTip">
        <string extracomment="How much energy this organism has"/>
       </property>
+      <property name="statusTip">
+       <string>This organism's total energy</string>
+      </property>
       <property name="text">
        <string>Energy:</string>
       </property>
@@ -807,7 +970,7 @@
       <property name="geometry">
        <rect>
         <x>10</x>
-        <y>40</y>
+        <y>35</y>
         <width>90</width>
         <height>25</height>
        </rect>
@@ -829,7 +992,7 @@
       <property name="geometry">
        <rect>
         <x>10</x>
-        <y>70</y>
+        <y>60</y>
         <width>70</width>
         <height>25</height>
        </rect>
@@ -867,7 +1030,7 @@
       <property name="geometry">
        <rect>
         <x>100</x>
-        <y>40</y>
+        <y>35</y>
         <width>81</width>
         <height>25</height>
        </rect>
@@ -883,7 +1046,7 @@
       <property name="geometry">
        <rect>
         <x>80</x>
-        <y>70</y>
+        <y>60</y>
         <width>81</width>
         <height>25</height>
        </rect>
@@ -895,6 +1058,44 @@
        <string>0</string>
       </property>
      </widget>
+     <widget class="QLabel" name="health_val">
+      <property name="geometry">
+       <rect>
+        <x>80</x>
+        <y>85</y>
+        <width>81</width>
+        <height>25</height>
+       </rect>
+      </property>
+      <property name="toolTip">
+       <string/>
+      </property>
+      <property name="text">
+       <string>0</string>
+      </property>
+     </widget>
+     <widget class="QLabel" name="health_label">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>85</y>
+        <width>70</width>
+        <height>25</height>
+       </rect>
+      </property>
+      <property name="font">
+       <font>
+        <weight>75</weight>
+        <bold>true</bold>
+       </font>
+      </property>
+      <property name="toolTip">
+       <string extracomment="How many neurons are in this organism's brain"/>
+      </property>
+      <property name="text">
+       <string>Health:</string>
+      </property>
+     </widget>
     </widget>
     <widget class="QFrame" name="organism_controls_frame">
      <property name="geometry">
@@ -902,7 +1103,7 @@
        <x>350</x>
        <y>10</y>
        <width>165</width>
-       <height>110</height>
+       <height>120</height>
       </rect>
      </property>
      <property name="frameShape">

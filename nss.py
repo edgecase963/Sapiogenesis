@@ -37,11 +37,16 @@ def updateUI(window, environment):
     if window.min_mass_range_spinbox.value() >= window.max_mass_range_spinbox.value():
         window.max_mass_range_spinbox.setProperty("value", window.min_mass_range_spinbox.value()+1)
 
+    sprites.reproduction_limit = window.rep_time_val.value()
+
     mirror_x_chance = window.mirror_x_slider.value()
     mirror_y_chance = window.mirror_y_slider.value()
+    mutation_severity = window.severity_slider.value()
 
     window.mirror_x_lcd.setProperty("value", mirror_x_chance)
     window.mirror_y_lcd.setProperty("value", mirror_y_chance)
+    window.severity_lcd.setProperty("value", mutation_severity)
+    environment.info["mutation_severity"] = mutation_severity / 100.
     if selected:
         window.energy_val.setText( str(int(selected.total_energy())) )
 
@@ -178,7 +183,9 @@ if __name__ == "__main__":
             "selected": None,
             "lastPosition": [0,0],
             "organism_list": [],
-            "copied": None
+            "copied": None,
+            "mutation_severity": 0.5,
+            "reproduction_limit": 6
         }
 
 
@@ -195,6 +202,7 @@ if __name__ == "__main__":
 
         myapp.mirror_x_slider.setProperty("value", 40)
         myapp.mirror_y_slider.setProperty("value", 40)
+        myapp.severity_slider.setProperty("value", 50)
 
         env.mousePressFunc = lambda event, pos: mousePressEvent(event, pos, env)
         env.mouseReleaseFunc = lambda event, pos: mouseReleaseEvent(event, pos, env)

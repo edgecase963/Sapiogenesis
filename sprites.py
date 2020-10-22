@@ -9,6 +9,7 @@ import copy
 from PyQt5 import QtCore, QtGui
 from PyQt5 import QtWidgets
 from userInterface import Ui_MainWindow
+from threading import Thread
 
 sys.path.insert(1, "../../Programs/shatterbox")
 
@@ -24,8 +25,14 @@ co2_dispersion_ratio = 20
 # This is used to calculate how much CO2 is added back into the environment when a dead cell is dispersed
 # Dispersion equation: <dispersion_ratio> * (<cell_size> / 2) * (<cell_mass> / 2)
 
-cell_dispersion_rate = 5
+co2_conversion_ratio = 24
+# The amount of energy generated from 1 CO2 particle
+
+cell_dispersion_rate = 6
 # The percentage of a dead cell's mass to disperse per second
+
+reproduction_limit = 6
+# The amount of time (in seconds) an organism has to wait before reproducing again
 
 mass_cutoff = 1
 # If a dead cell's mass becomes less than this, it will be removed (dispersed completely)
@@ -50,16 +57,16 @@ base_cell_info = {
         # The second variable reprents a cell's energy intake while in use
         # This is multiplied by the size and mass of each given cell
         # <max_energy_usage> = <base_energy_usage> * (<cell_size> / 2) * (<cell_mass> / 2)
-        "barrier": [4, 4],
-        "carniv": [10, 15],
-        "co2C": [10, 10],
-        "eye": [8, 8],
-        "olfactory": [10, 12],
-        "push": [10, 15],
-        "pheremone": [8, 10],
-        "body": [4, 4],
-        "heart": [8, 8],
-        "rotate": [10, 15]
+        "barrier": [2, 2],
+        "carniv": [6, 10],
+        "co2C": [6, 6],
+        "eye": [5, 5],
+        "olfactory": [6, 8],
+        "push": [6, 10],
+        "pheremone": [6, 8],
+        "body": [2, 2],
+        "heart": [5, 5],
+        "rotate": [6, 10]
     },
     "energy_storage": {
         # This is multiplied by the size and mass of each given cell
@@ -99,8 +106,7 @@ def random_direction():
     return [x_direction, y_direction]
 
 def calculateDistance(x1,y1,x2,y2):
-    dist = math.sqrt( (x2 - x1)**2 + (y2 - y1)**2 )
-    return dist
+    return math.sqrt( (x2 - x1)**2 + (y2 - y1)**2 )
 
 def positive(x):
     if x > 0:
@@ -120,6 +126,60 @@ def getAngle(x1, y1, x2, y2):
 def getDirection(angle):
     direction = [math.cos(angle), math.sin(angle)]
     return direction
+
+def viable_organism_position(pos, dna, environment):
+    overlappingSprites = []
+    for cell_id in dna.cells:
+        relPos = dna.cells[cell_id]["relative_pos"]
+        cellSize = dna.cells[cell_id]["size"]
+        newPos = [ pos[0] + relPos[0], pos[1] + relPos[1] ]
+        if newPos[0] < 0:
+            return False, []
+        elif newPos[0] + cellSize > environment.width:
+            return False, []
+        elif newPos[1] < 0:
+            return False, []
+        elif newPos[1] + cellSize > environment.height:
+            return False, []
+
+        for sprite in environment.sprites:
+            spritePos = sprite.getPos()
+            spriteRadius = sprite.radius
+            dist = calculateDistance(pos[0], pos[1], spritePos[0], spritePos[1])
+
+            if dist <= (spriteRadius*2) + (cellSize*2):
+                if sprite.alive:
+                    return False, []
+                else:
+                    overlappingSprites.append(sprite)
+    return True, overlappingSprites
+
+
+def get_new_orgnism_position(old_organism, dna, environment):
+    orgSize = old_organism.dna.get_size()
+    newSize = dna.get_size()
+    dist = [(orgSize[0]/1.1) + (newSize[0]/1.1), (orgSize[1]/1.1) + (newSize[1]/1.1)]
+
+    degList = list(range(360))
+    rDegList = sorted(degList, key=lambda x: random.random())
+
+    for i in rDegList:
+        rad = math.radians(i)
+        direction = [math.cos(rad), math.sin(rad)]
+
+        addX = direction[0] * dist[0]
+        addY = direction[1] * dist[1]
+
+        print(dist)
+
+        xPos = old_organism.pos[0] + addX
+        yPos = old_organism.pos[1] + addY
+
+        viable, overlappingSprites = viable_organism_position([xPos, yPos], dna, environment)
+        if viable:
+            for sprite in overlappingSprites:
+                environment.removeSprite(sprite)
+            return [xPos, yPos]
 
 
 
@@ -167,6 +227,12 @@ class DNA():
         #    "maximum_creation_tries": <integer>
         #}
 
+        self.cellRange = [3,30]
+        self.sizeRange = [6,42]
+        self.massRange = [5,20]
+        self.mirror_x = [0.6, 0.4]
+        self.mirror_y = [0.6, 0.4]
+
     def copy(self):
         return copy.deepcopy(self)
 
@@ -198,6 +264,27 @@ class DNA():
                 checkList.remove(id)
         return all_cells
 
+    def remove_cell(self, cell_id):
+        if cell_id in self.cells:
+            self.cells.remove(cell_id)
+            self.growth_pattern.remove(cell_id)
+
+            for id in self.growth_pattern:
+                if cell_id in self.growth_pattern[id]:
+                    self.growth_pattern[id].pop(cell_id)
+
+            for id in self.sub_cells(cell_id):
+                self.remove_cell(id)
+
+    def _lower_cells(self):
+        # Returns all cells that do not contain children
+        lower_cell_list = []
+
+        for cell_id in self.growth_pattern:
+            if not self.sub_cells(cell_id):
+                lower_cell_list.append(cell_id)
+        return lower_cell_list
+
     def grows_from(self, cell_id):
         # Returns the cell ID that this given cell grows from
         for id in self.growth_pattern:
@@ -214,6 +301,34 @@ class DNA():
             else:
                 break
         return pList
+
+    def get_size(self):
+        minX = 0
+        maxX = 0
+        minY = 0
+        maxY = 0
+
+        for cell_id in self.cells:
+            pos = self.cells[cell_id]["relative_pos"]
+
+            if pos[0] < minX:
+                minX = pos[0]
+            elif pos[0] > maxX:
+                maxX = pos[0]
+
+            if pos[1] < minY:
+                minY = pos[1]
+            elif pos[1] > maxY:
+                maxY = pos[1]
+
+        if minX < 0:
+            minX = -minX
+        if minY < 0:
+            minY = -minY
+        width = maxX + minX
+        height = maxY + minY
+
+        return [width, height]
 
     def cell_distance(self, id1, id2):
         if not id1 in self.cells or not id2 in self.cells:
@@ -393,6 +508,12 @@ class DNA():
         return True
 
     def randomize(self, cellRange=[3,30], sizeRange=[6,42], massRange=[5,20], mirror_x=[0.6, 0.4], mirror_y=[0.6, 0.4]):
+        self.cellRange = cellRange
+        self.sizeRange = sizeRange
+        self.massRange = massRange
+        self.mirror_x = mirror_x
+        self.mirror_y = mirror_y
+
         self.cells = {}
         self.growth_pattern = {}
 
@@ -418,6 +539,73 @@ class DNA():
         print("Mirror X: {}\nMirror Y: {}\n\n".format(self.base_info["mirror_x"], self.base_info["mirror_y"]))
         return self
 
+    def mutate_cell_count(self, severity):
+        new_dna = self.copy()
+        current_count = len(self.cells)
+        countRange = int(severity * 18.)
+        countRange = round(countRange)
+        if not countRange:
+            return new_dna
+        addedCells = random.randrange(-countRange, countRange)
+
+        while current_count + addedCells <= 1:
+            addedCells = random.randrange(-countRange, countRange)
+
+        if addedCells < 0:
+            for i in range(+addedCells):
+                rCell = new_dna._lower_cells()[0]
+                new_dna.remove_cell(rCell)
+        elif addedCells > 0:
+            for i in range(addedCells):
+                added = False
+                while not added:
+                    added = new_dna.add_randomized_cell(
+                        new_dna.sizeRange,
+                        new_dna.massRange
+                    )
+
+        return new_dna
+
+    def mutate_cell_types(self, severity):
+        new_dna = self.copy()
+        for cell_id in new_dna.cells:
+            if random.random() <= severity and not new_dna.cells[cell_id]["first"]:
+                new_type = random.choice(cell_types)
+                new_dna.cells[cell_id]["type"] = new_type
+
+                if new_dna.base_info["mirror_x"] or new_dna.base_info["mirror_y"]:
+                    mirror_id = new_dna.cells[cell_id]["mirror_self"]
+                    if mirror_id:
+                        if mirror_id in new_dna.cells:
+                            new_dna.cells[mirror_id]["type"] = new_type
+
+        return new_dna
+
+    def mutate_cell_masses(self, severity):
+        new_dna = self.copy()
+        for cell_id in new_dna.cells:
+            if random.random() <= severity:
+                mRange = int(severity * 10.)
+                mRange = round(mRange)
+                if not mRange:
+                    return new_dna
+                addRange = random.randrange(-mRange, mRange)
+
+                while new_dna.cells[cell_id]["mass"] + addRange <= 0:
+                    addRange = random.randrange(-mRange, mRange)
+
+                new_dna.cells[cell_id]["mass"] += addRange
+
+        return new_dna
+
+    def mutate(self, severity):
+        # `severity` : 0.0 - 1.0
+        new_dna = self.copy()
+        new_dna = new_dna.mutate_cell_count(severity)
+        new_dna = new_dna.mutate_cell_types(severity)
+        new_dna = new_dna.mutate_cell_masses(severity)
+        return new_dna
+
 
 class Organism():
     def __init__(self, pos, environment, dna=None):
@@ -432,7 +620,8 @@ class Organism():
 
         self.brain = None
 
-        lastUpdated = time.time()
+        self.lastUpdated = time.time()
+        self.lastBirth = time.time()
 
     def _growth_position(self, newCellID, rel_pos=None):
         if not rel_pos:
@@ -690,12 +879,27 @@ class Organism():
             co2 = perc2num(conversion_ratio, self.environment.info["co2"])
 
             self.environment.info["co2"] -= co2
-            added_energy = co2 * (cell_info["mass"] / 4) * (cell_info["size"] / 4)
+            #added_energy = co2 * (cell_info["mass"] / 3) * (cell_info["size"] / 3)
+            added_energy = co2 * co2_conversion_ratio
 
             spare_energy = self.add_energy(added_energy)
 
-            spare_co2 = spare_energy / (cell_info["mass"] / 4) / (cell_info["size"] / 4)
+            #spare_co2 = spare_energy / (cell_info["mass"] / 3) / (cell_info["size"] / 3)
+            spare_co2 = spare_energy / co2_conversion_ratio
             self.environment.info["co2"] += spare_co2
+
+    def reproduce(self, severity=0.5):
+        self.lastBirth = time.time()
+        new_dna = self.dna.mutate(severity=severity)
+
+        new_pos = get_new_orgnism_position(self, new_dna, self.environment)
+        if not new_pos:
+            print("FAIL")
+            return
+
+        organism = Organism(new_pos, self.environment, dna=new_dna)
+        self.environment.info["organism_list"].append(organism)
+        organism.build_body()
 
     def update(self):
         uDiff = time.time() - self.lastUpdated
@@ -709,6 +913,15 @@ class Organism():
         if self.cells[fCell].alive:
             sprite = self.cells[fCell]
             self.pos = sprite.body.position
+
+        max_energy = sum([ self.dna.cells[id]["energy_storage"] for id in self.living_cells() ])
+        if self.total_energy() >= max_energy/1.01 and (time.time() - self.lastBirth) >= reproduction_limit:
+            if len(self.living_cells()) >= len(self.cells)/2:
+                self.reproduce(severity=self.environment.info["mutation_severity"])
+                for cell_id in self.cells:
+                    sprite = self.cells[cell_id]
+                    if sprite.alive:
+                        sprite.info["energy"] = sprite.info["energy"]/2
 
         for cell_id in self.cells.copy():
             sprite = self.cells[cell_id]

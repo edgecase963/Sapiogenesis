@@ -30,7 +30,7 @@ class Ui_MainWindow(Ui_MainWindow):
         self.worldView.customContextMenuRequested[QtCore.QPoint].connect(self.rightMenuShow)
 
         self.scene = QtWidgets.QGraphicsScene(self.worldView)
-        self.scene.setSceneRect(0, 0, 2800, 1500)
+        self.scene.setSceneRect(0, 0, 3000, 1800)
         self.worldView.setScene(self.scene)
 
         self.worldView.fitInView()
