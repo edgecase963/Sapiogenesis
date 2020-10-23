@@ -10,6 +10,7 @@ from PyQt5 import QtCore, QtGui
 from PyQt5 import QtWidgets
 from userInterface import Ui_MainWindow
 from threading import Thread
+from pymunk import Vec2d
 
 sys.path.insert(1, "../../Programs/shatterbox")
 
@@ -25,7 +26,7 @@ co2_dispersion_ratio = 20
 # This is used to calculate how much CO2 is added back into the environment when a dead cell is dispersed
 # Dispersion equation: <dispersion_ratio> * (<cell_size> / 2) * (<cell_mass> / 2)
 
-co2_conversion_ratio = 24
+co2_conversion_ratio = 26
 # The amount of energy generated from 1 CO2 particle
 
 cell_dispersion_rate = 6
@@ -36,6 +37,12 @@ reproduction_limit = 6
 
 mass_cutoff = 1
 # If a dead cell's mass becomes less than this, it will be removed (dispersed completely)
+
+break_damage = 5
+# The amount of damage a cell does to its parent when it dies (break off from body) - multiplied by its size
+
+starvation_rate = 300
+# The amount of damage to do to a cell each second if its energy equals 0
 
 base_cell_info = {
     "health": {
@@ -127,6 +134,9 @@ def getDirection(angle):
     direction = [math.cos(angle), math.sin(angle)]
     return direction
 
+def randomizeList(l):
+    return sorted(l, key=lambda x: random.random())
+
 def viable_organism_position(pos, dna, environment):
     overlappingSprites = []
     for cell_id in dna.cells:
@@ -161,7 +171,8 @@ def get_new_orgnism_position(old_organism, dna, environment):
     dist = [(orgSize[0]/1.1) + (newSize[0]/1.1), (orgSize[1]/1.1) + (newSize[1]/1.1)]
 
     degList = list(range(360))
-    rDegList = sorted(degList, key=lambda x: random.random())
+    #rDegList = sorted(degList, key=lambda x: random.random())
+    rDegList = randomizeList(degList)
 
     for i in rDegList:
         rad = math.radians(i)
@@ -262,10 +273,15 @@ class DNA():
                 checkList.remove(id)
         return all_cells
 
-    def remove_cell(self, cell_id):
+    def remove_cell(self, cell_id, removing_mirror=False):
         if cell_id in self.cells:
-            self.cells.remove(cell_id)
-            self.growth_pattern.remove(cell_id)
+            if self.cells[cell_id]["mirror_self"] and not removing_mirror:
+                cell_info = self.cells[cell_id]
+                if not cell_info["first"]:
+                    mirrorID = self.cells[cell_id]["mirror_self"]
+                    self.remove_cell(mirrorID, removing_mirror=True)
+            self.cells.pop(cell_id)
+            self.growth_pattern.pop(cell_id)
 
             for id in self.growth_pattern:
                 if cell_id in self.growth_pattern[id]:
@@ -550,9 +566,11 @@ class DNA():
             addedCells = random.randrange(-countRange, countRange)
 
         if addedCells < 0:
-            for i in range(+addedCells):
-                rCell = new_dna._lower_cells()[0]
-                new_dna.remove_cell(rCell)
+            for i in range(positive(addedCells)):
+                lCells = randomizeList(new_dna._lower_cells())
+                rCell = lCells[0]
+                if rCell in self.cells:
+                    new_dna.remove_cell(rCell)
         elif addedCells > 0:
             for i in range(addedCells):
                 added = False
@@ -600,8 +618,12 @@ class DNA():
         # `severity` : 0.0 - 1.0
         new_dna = self.copy()
         new_dna = new_dna.mutate_cell_count(severity)
-        new_dna = new_dna.mutate_cell_types(severity)
+
+        if random.random() <= severity:
+            new_dna = new_dna.mutate_cell_types(severity)
+
         new_dna = new_dna.mutate_cell_masses(severity)
+
         return new_dna
 
 
@@ -809,12 +831,27 @@ class Organism():
         energyList = [self.cells[i].info["energy"] for i in self.living_cells()]
         return sum(energyList)
 
+    def max_health(self):
+        return sum([self.dna.cells[id]["max_health"] for id in self.cells])
+    def current_health(self):
+        return sum([self.cells[id].info["health"] for id in self.living_cells()])
+    def health_percent(self):
+        return num2perc( self.current_health(), self.max_health() )
+
     def kill_cell(self, sprite):
         if not sprite.alive:
             return
         sprite.alive = False
+        sprite.info["health"] = 0
         cell_id = sprite.cell_id
         cell_info = sprite.base_info
+
+        if not cell_info["first"]:
+            parentID = self.dna.grows_from(cell_id)
+            parentSprite = self.cells[parentID]
+            if parentSprite.alive:
+                damage_dealt = break_damage * cell_info["size"]
+                parentSprite.info["health"] -= damage_dealt
 
         newCell = self._make_dead_cell(sprite)
         self.environment.removeSprite(sprite)
@@ -840,6 +877,19 @@ class Organism():
 
         own_info = cell.base_info
         other_info = sprite.base_info
+
+        if own_info["type"] == "carniv":
+            damage_dealt = base_cell_info["damage"]["carniv"]
+            if sprite.alive:
+                sprite.info["health"] -= damage_dealt
+            else:
+                mass = sprite.body.mass
+                newMass = mass - (damage_dealt / own_info["size"])
+                if newMass <= 0:
+                    self.environment.removeSprite(sprite)
+                else:
+                    sprite.body._set_mass(newMass)
+                cell.info["energy"] += damage_dealt
 
     def _cell_collision(self, cell, sprite):
         # cell is the sprite for THIS organism's cell
@@ -914,12 +964,16 @@ class Organism():
 
         max_energy = sum([ self.dna.cells[id]["energy_storage"] for id in self.living_cells() ])
         if self.total_energy() >= max_energy/1.01 and (time.time() - self.lastBirth) >= reproduction_limit:
-            if len(self.living_cells()) >= len(self.cells)/2:
+            total_health = sum([ self.dna.cells[id]["max_health"] for id in self.cells ])
+            current_health = sum([ self.cells[id].info["health"] for id in self.living_cells() ])
+            health_perc = num2perc(current_health, total_health)
+            if random.random()*100. <= health_perc:
                 self.reproduce(severity=self.environment.info["mutation_severity"])
-                for cell_id in self.cells:
-                    sprite = self.cells[cell_id]
-                    if sprite.alive:
-                        sprite.info["energy"] = sprite.info["energy"]/2
+
+            for cell_id in self.cells:
+                sprite = self.cells[cell_id]
+                if sprite.alive:
+                    sprite.info["energy"] = sprite.info["energy"]/2
 
         for cell_id in self.cells.copy():
             sprite = self.cells[cell_id]
@@ -952,6 +1006,11 @@ class Organism():
             #        sprite.info["energy"] /= 2
 
             if sprite.info["energy"] <= 0:
+                #self.kill_cell(sprite)
+                damage_dealt = starvation_rate * uDiff
+                sprite.info["health"] -= damage_dealt
+
+            if sprite.info["health"] <= 0:
                 self.kill_cell(sprite)
 
     def build_body(self):

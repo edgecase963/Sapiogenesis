@@ -49,6 +49,7 @@ def updateUI(window, environment):
     environment.info["mutation_severity"] = mutation_severity / 100.
     if selected:
         window.energy_val.setText( str(int(selected.total_energy())) )
+        window.health_val.setText( str(int(selected.health_percent())) + "%" )
 
 def cell_double_clicked(sprite, environment):
     pass
@@ -104,6 +105,11 @@ def feed_btn_clicked(window, environment):
             if sprite.alive:
                 cell_info = selected.dna.cells[cell_id]
                 sprite.info["energy"] = cell_info["energy_storage"]
+
+def reproduce_clicked(window, environment):
+    selected = environment.info["selected"]
+    if selected:
+        selected.reproduce(severity=environment.info["mutation_severity"])
 
 def add_creature_clicked(window, environment):
     minCellRange = window.min_cell_range_spinbox.value()
@@ -167,6 +173,7 @@ def setup_window_buttons(window, environment):
 
     window.add_random_creature_event = lambda: add_creature_clicked(window, environment)
     window.kill_event = lambda: kill_btn_clicked(window, environment)
+    window.reproduce_event = lambda: reproduce_clicked(window, environment)
     window.copy_event = lambda: copy_clicked(window, environment)
     window.paste_event = lambda: paste_clicked(window, environment)
     window.disperse_cells_event = lambda: disperse_cells_clicked(window, environment)

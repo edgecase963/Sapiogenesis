@@ -13,6 +13,8 @@ class Ui_MainWindow(Ui_MainWindow):
         pass
     def kill_event(self):
         pass
+    def reproduce_event(self):
+        pass
     def copy_event(self):
         pass
     def paste_event(self):
@@ -102,12 +104,14 @@ def rightMenuShow(self):
     addAction = QtWidgets.QAction(u"Add Random Organism", triggered=self.add_random_creature_event)
     healAction = QtWidgets.QAction(u"Heal", triggered=self.heal_event)
     killAction = QtWidgets.QAction(u"Kill", triggered=self.kill_event)
+    reproduceAction = QtWidgets.QAction(u"Reproduce", triggered=self.reproduce_event)
     copyAction = QtWidgets.QAction(u"Copy", triggered=self.copy_event)
     pasteAction = QtWidgets.QAction(u"Paste", triggered=self.paste_event)
     disperseCellsAction = QtWidgets.QAction(u"Disperse All Dead Cells", triggered=self.disperse_cells_event)
     rightMenu.addAction(addAction)
     rightMenu.addAction(healAction)
     rightMenu.addAction(killAction)
+    rightMenu.addAction(reproduceAction)
     rightMenu.addAction(copyAction)
     rightMenu.addAction(pasteAction)
     rightMenu.addAction(disperseCellsAction)

@@ -235,7 +235,7 @@
         <number>999999999</number>
        </property>
        <property name="value">
-        <number>500</number>
+        <number>1500</number>
        </property>
       </widget>
       <widget class="QPushButton" name="rem_co2_btn">
@@ -273,7 +273,7 @@
         <number>999999999</number>
        </property>
        <property name="value">
-        <number>500</number>
+        <number>1500</number>
        </property>
       </widget>
       <widget class="QPushButton" name="set_co2_btn">
@@ -311,7 +311,7 @@
         <number>999999999</number>
        </property>
        <property name="value">
-        <number>20000</number>
+        <number>30000</number>
        </property>
       </widget>
      </widget>
@@ -1071,7 +1071,7 @@
        <string/>
       </property>
       <property name="text">
-       <string>0</string>
+       <string>0%</string>
       </property>
      </widget>
      <widget class="QLabel" name="health_label">
