@@ -562,14 +562,14 @@ class DNA():
             return new_dna
         addedCells = random.randrange(-countRange, countRange)
 
-        while current_count + addedCells <= 1:
+        while current_count + addedCells < 2:
             addedCells = random.randrange(-countRange, countRange)
 
         if addedCells < 0:
             for i in range(positive(addedCells)):
                 lCells = randomizeList(new_dna._lower_cells())
                 rCell = lCells[0]
-                if rCell in self.cells:
+                if rCell in self.cells and not self.cells[rCell]["first"]:
                     new_dna.remove_cell(rCell)
         elif addedCells > 0:
             for i in range(addedCells):
