@@ -35,6 +35,9 @@ cell_dispersion_rate = 6
 reproduction_limit = 6
 # The amount of time (in seconds) an organism has to wait before reproducing again
 
+heal_rate = 3
+# The percentage of health to heal each second if the cell has enough energy
+
 mass_cutoff = 1
 # If a dead cell's mass becomes less than this, it will be removed (dispersed completely)
 
@@ -92,7 +95,7 @@ base_cell_info = {
     "damage": {
         # The damage each cell does when in contact with a cell from another organism
         "barrier": 0,
-        "carniv": 60,
+        "carniv": 90,
         "co2C": 0,
         "eye": 0,
         "olfactory": 0,
@@ -137,7 +140,7 @@ def getDirection(angle):
 def randomizeList(l):
     return sorted(l, key=lambda x: random.random())
 
-def viable_organism_position(pos, dna, environment):
+def viable_organism_position2(pos, dna, environment):
     overlappingSprites = []
     for cell_id in dna.cells:
         relPos = dna.cells[cell_id]["relative_pos"]
@@ -164,6 +167,41 @@ def viable_organism_position(pos, dna, environment):
                     overlappingSprites.append(sprite)
     return True, overlappingSprites
 
+def viable_organism_position(pos, dna, environment):
+    orgList = environment.info["organism_list"]
+    dead_cells = [sprite for sprite in environment.sprites if not sprite.alive]
+    overlappingSprites = []
+
+
+    for cell_id in dna.cells:
+        rel_pos = dna.cells[cell_id]["relative_pos"]
+        new_pos = [pos[0] + rel_pos[0], pos[1] + rel_pos[1]]
+        cellSize = dna.cells[cell_id]["size"]
+
+        if new_pos[0] < 0:
+            return False, []
+        elif new_pos[0] + cellSize > environment.width:
+            return False, []
+        elif new_pos[1] < 0:
+            return False, []
+        elif new_pos[1] + cellSize > environment.height:
+            return False, []
+
+        for org in orgList:
+            rect = org.get_rect()
+
+            if new_pos[0] > rect[0] and new_pos[0] < rect[2]: # Within X boundaries
+                if new_pos[1] > rect[1] and new_pos[1] < rect[3]: # Within Y boundaries
+                    return False, []
+
+            for sprite in dead_cells:
+                spritePos = sprite.getPos()
+                spriteRadius = sprite.radius
+                dist = calculateDistance(new_pos[0], new_pos[1], spritePos[0], spritePos[1])
+                if dist <= (spriteRadius*2) + (cellSize*2):
+                    overlappingSprites.append(sprite)
+
+    return True, overlappingSprites
 
 def get_new_orgnism_position(old_organism, dna, environment):
     orgSize = old_organism.dna.get_size()
@@ -227,6 +265,17 @@ class DNA():
         #        <Cell_ID_2>: [<X_Direction>, <Y_Direction>]
         #   }
         #}
+
+        self.brain_structure = {}
+        # Structure: {
+        #    "input": [<cell_id>, <cell_id>, <cell_id>, "health", "energy", "pain"],
+        #    "hidden": [<integer>, <integer>, <integer>],
+        #    "output": [<cell_id>, <cell_id>, <cell_id>]
+        #}
+        # The inputs are taken from cells such as eyes, olfactory, etc
+        # Some inputs are a percentage of health or energy (hunger) and even pain (amount of damage this cell is taking currently)
+        # The hidden layers are randomized and are the most maleable. They can be easily mutated
+        # The output list contains cell IDs of cells that are able to actually DO things (such as push)
 
         self.base_info = {"distanceThreshold": 2.2, "mirror_x": False, "mirror_y": False, "maximum_creation_tries": 30}
         # Structure: {
@@ -642,6 +691,7 @@ class Organism():
 
         self.lastUpdated = time.time()
         self.lastBirth = time.time()
+        self.generation = 0
 
     def _growth_position(self, newCellID, rel_pos=None):
         if not rel_pos:
@@ -761,6 +811,28 @@ class Organism():
             if self.cells[cell_id].alive:
                 living_cells.append(cell_id)
         return living_cells
+
+    def get_rect(self):
+        fCell = self.dna.first_cell()
+        minX = self.cells[fCell].body.position[0]
+        maxX = self.cells[fCell].body.position[0]
+        minY = self.cells[fCell].body.position[1]
+        maxY = self.cells[fCell].body.position[1]
+
+        for cell_id in self.living_cells():
+            pos = self.cells[cell_id].body.position
+
+            if pos[0] < minX:
+                minX = pos[0]
+            if pos[0] > maxX:
+                maxX = pos[0]
+
+            if pos[1] < minY:
+                minY = pos[1]
+            if pos[1] > maxY:
+                maxY = pos[1]
+
+        return [minX, minY, maxX, maxY]
 
     def _revive_cell_angle(self, cell_id):
         # BACKBURNER
@@ -885,11 +957,9 @@ class Organism():
             else:
                 mass = sprite.body.mass
                 newMass = mass - (damage_dealt / own_info["size"])
-                if newMass <= 0:
-                    self.environment.removeSprite(sprite)
-                else:
+                if newMass > 0:
                     sprite.body._set_mass(newMass)
-                cell.info["energy"] += damage_dealt
+                    cell.info["energy"] += damage_dealt
 
     def _cell_collision(self, cell, sprite):
         # cell is the sprite for THIS organism's cell
@@ -946,6 +1016,7 @@ class Organism():
             return
 
         organism = Organism(new_pos, self.environment, dna=new_dna)
+        organism.generation = self.generation + 1
         self.environment.info["organism_list"].append(organism)
         organism.build_body()
 
@@ -997,6 +1068,14 @@ class Organism():
 
             if sprite.info["energy"] > cell_info["energy_storage"]:
                 sprite.info["energy"] = cell_info["energy_storage"]
+
+            if sprite.info["energy"] >= cell_info["energy_storage"]/2 and sprite.info["health"] < cell_info["max_health"]:
+                perc_health = perc2num( heal_rate, cell_info["max_health"] )
+                added_health = perc_health * uDiff
+
+                sprite.info["health"] += added_health
+                if sprite.info["health"] > cell_info["max_health"]:
+                    sprite.info["health"] = cell_info["max_health"]
 
             #if sprite.info["energy"] >= cell_info["energy_storage"]/1.01 and self.dead_children(sprite):
             #    dead_list = self.dead_children(sprite)
@@ -1069,10 +1148,12 @@ def gradual_dispersion(environment, sprite, uDiff):
         disperse_cell(sprite)
     else:
         newMass = mass - dispersion_rate
-        sprite.body._set_mass(newMass)
-
-        renewedCo2 = dispersion_rate * co2_dispersion_ratio
-        environment.info["co2"] += renewedCo2
+        if newMass > 0:
+            sprite.body._set_mass(newMass)
+            renewedCo2 = dispersion_rate * co2_dispersion_ratio
+            environment.info["co2"] += renewedCo2
+        else:
+            disperse_cell(sprite)
 
 
 def update_organisms(environment):

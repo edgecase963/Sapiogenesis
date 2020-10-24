@@ -43,6 +43,9 @@ def updateUI(window, environment):
     mirror_y_chance = window.mirror_y_slider.value()
     mutation_severity = window.severity_slider.value()
 
+    if selected:
+        window.generation_val.setText(str(selected.generation))
+
     window.mirror_x_lcd.setProperty("value", mirror_x_chance)
     window.mirror_y_lcd.setProperty("value", mirror_y_chance)
     window.severity_lcd.setProperty("value", mutation_severity)
