@@ -172,33 +172,37 @@ def viable_organism_position(pos, dna, environment):
     dead_cells = [sprite for sprite in environment.sprites if not sprite.alive]
     overlappingSprites = []
 
+    dna_rect = dna.get_rect()
 
-    for cell_id in dna.cells:
-        rel_pos = dna.cells[cell_id]["relative_pos"]
-        new_pos = [pos[0] + rel_pos[0], pos[1] + rel_pos[1]]
-        cellSize = dna.cells[cell_id]["size"]
+    dna_rect = [
+        dna_rect[0] + pos[0],
+        dna_rect[1] + pos[1],
+        dna_rect[2] + pos[0],
+        dna_rect[3] + pos[1]
+    ]
 
-        if new_pos[0] < 0:
-            return False, []
-        elif new_pos[0] + cellSize > environment.width:
-            return False, []
-        elif new_pos[1] < 0:
-            return False, []
-        elif new_pos[1] + cellSize > environment.height:
-            return False, []
+    if dna_rect[0] < 0:
+        return False, []
+    elif dna_rect[2] > environment.width:
+        return False, []
+    elif dna_rect[1] < 0:
+        return False, []
+    elif dna_rect[3] > environment.height:
+        return False, []
 
-        for org in orgList:
-            rect = org.get_rect()
+    for org in orgList:
+        rect = org.get_rect()
 
-            if new_pos[0] > rect[0] and new_pos[0] < rect[2]: # Within X boundaries
-                if new_pos[1] > rect[1] and new_pos[1] < rect[3]: # Within Y boundaries
-                    return False, []
+        if (dna_rect[0] > rect[0] and dna_rect[0] < rect[2]) or (dna_rect[2] > rect[0] and dna_rect[2] < rect[2]): # Within X boundaries
+            if (dna_rect[1] > rect[1] and dna_rect[1] < rect[3]) or (dna_rect[3] > rect[1] and dna_rect[3] < rect[3]): # Within Y boundaries
+                return False, []
 
-            for sprite in dead_cells:
-                spritePos = sprite.getPos()
-                spriteRadius = sprite.radius
-                dist = calculateDistance(new_pos[0], new_pos[1], spritePos[0], spritePos[1])
-                if dist <= (spriteRadius*2) + (cellSize*2):
+        for sprite in dead_cells:
+            spritePos = sprite.getPos()
+            spriteRadius = sprite.radius
+
+            if spritePos[0] > dna_rect[0] and spritePos[0] < dna_rect[2]: # Within X boundaries
+                if spritePos[1] > dna_rect[1] and spritePos[1] < dna_rect[3]:
                     overlappingSprites.append(sprite)
 
     return True, overlappingSprites
@@ -206,7 +210,7 @@ def viable_organism_position(pos, dna, environment):
 def get_new_orgnism_position(old_organism, dna, environment):
     orgSize = old_organism.dna.get_size()
     newSize = dna.get_size()
-    dist = [(orgSize[0]/1.1) + (newSize[0]/1.1), (orgSize[1]/1.1) + (newSize[1]/1.1)]
+    dist = [(orgSize[0]/1.3) + (newSize[0]/1.3), (orgSize[1]/1.3) + (newSize[1]/1.3)]
 
     degList = list(range(360))
     #rDegList = sorted(degList, key=lambda x: random.random())
@@ -266,7 +270,11 @@ class DNA():
         #   }
         #}
 
-        self.brain_structure = {}
+        self.brain_structure = {
+            "input": ["health", "energy"],
+            "hidden": [],
+            "output": []
+        }
         # Structure: {
         #    "input": [<cell_id>, <cell_id>, <cell_id>, "health", "energy", "pain"],
         #    "hidden": [<integer>, <integer>, <integer>],
@@ -365,24 +373,36 @@ class DNA():
                 break
         return pList
 
-    def get_size(self):
-        minX = 0
-        maxX = 0
-        minY = 0
-        maxY = 0
+    def get_rect(self):
+        # The is a rect of the relative positions of the cells in this DNA class - not their in-world position
+        fCell = self.first_cell()
+        minX = self.cells[fCell]["relative_pos"][0]
+        maxX = self.cells[fCell]["relative_pos"][0]
+        minY = self.cells[fCell]["relative_pos"][1]
+        maxY = self.cells[fCell]["relative_pos"][1]
 
         for cell_id in self.cells:
             pos = self.cells[cell_id]["relative_pos"]
 
             if pos[0] < minX:
                 minX = pos[0]
-            elif pos[0] > maxX:
+            if pos[0] > maxX:
                 maxX = pos[0]
 
             if pos[1] < minY:
                 minY = pos[1]
-            elif pos[1] > maxY:
+            if pos[1] > maxY:
                 maxY = pos[1]
+
+        return [minX, minY, maxX, maxY]
+
+    def get_size(self):
+        rect = self.get_rect()
+
+        minX = rect[0]
+        minY = rect[1]
+        maxX = rect[2]
+        maxY = rect[3]
 
         if minX < 0:
             minX = -minX
@@ -570,6 +590,12 @@ class DNA():
                 self._apply_mirror(cell_id, grow_from, grow_direction)
         return True
 
+    def randomize_hidden_layer(self):
+        maxRange = len(self.brain_structure["input"]) * 2
+        minRange = 2
+
+        hidden_size = random.randrange(minRange, maxRange)
+
     def randomize(self, cellRange=[3,30], sizeRange=[6,42], massRange=[5,20], mirror_x=[0.6, 0.4], mirror_y=[0.6, 0.4]):
         self.cellRange = cellRange
         self.sizeRange = sizeRange
@@ -600,6 +626,17 @@ class DNA():
                 )
             first_cell = False
         print("Mirror X: {}\nMirror Y: {}\n\n".format(self.base_info["mirror_x"], self.base_info["mirror_y"]))
+
+        for cell_id in self.cells:
+            cell_info = self.cells[cell_id]
+
+            if cell_info["type"] == "push":
+                self.brain_structure["output"].append(cell_id)
+            elif cell_info["type"] == "eye":
+                self.brain_structure["input"].append(cell_id)
+            elif cell_info["type"] == "rotate":
+                self.brain_structure["input"].append(cell_id)
+
         return self
 
     def mutate_cell_count(self, severity):
@@ -1012,7 +1049,6 @@ class Organism():
 
         new_pos = get_new_orgnism_position(self, new_dna, self.environment)
         if not new_pos:
-            print("FAIL")
             return
 
         organism = Organism(new_pos, self.environment, dna=new_dna)
@@ -1039,7 +1075,8 @@ class Organism():
             current_health = sum([ self.cells[id].info["health"] for id in self.living_cells() ])
             health_perc = num2perc(current_health, total_health)
             if random.random()*100. <= health_perc:
-                self.reproduce(severity=self.environment.info["mutation_severity"])
+                if not self.environment.info["population"] >= self.environment.info["population_limit"]:
+                    self.reproduce(severity=self.environment.info["mutation_severity"])
 
             for cell_id in self.cells:
                 sprite = self.cells[cell_id]

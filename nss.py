@@ -18,13 +18,14 @@ import shatterbox
 
 
 def updateUI(window, environment):
-    time_passed = time.time() - env.info["startTime"]
+    time_passed = time.time() - environment.info["startTime"]
 
-    if env.info["co2"] < 0:
-        env.info["co2"] = 0
+    if environment.info["co2"] < 0:
+        environment.info["co2"] = 0
 
-    co2 = env.info["co2"]
+    co2 = environment.info["co2"]
     population = len([i for i in env.info["organism_list"] if i.alive()])
+    environment.info["population"] = population
     selected = env.info["selected"]
     window.co2_val.setText( str(int(co2)) )
     window.time_val.setText( str(int(time_passed)) )
@@ -38,6 +39,7 @@ def updateUI(window, environment):
         window.max_mass_range_spinbox.setProperty("value", window.min_mass_range_spinbox.value()+1)
 
     sprites.reproduction_limit = window.rep_time_val.value()
+    environment.info["population_limit"] = window.max_pop_val.value()
 
     mirror_x_chance = window.mirror_x_slider.value()
     mirror_y_chance = window.mirror_y_slider.value()
@@ -189,13 +191,15 @@ if __name__ == "__main__":
 
         env_info = {
             "startTime": time.time(),
-            "co2": 20000,
+            "co2": 30000,
             "selected": None,
             "lastPosition": [0,0],
             "organism_list": [],
             "copied": None,
             "mutation_severity": 0.5,
-            "reproduction_limit": 6
+            "reproduction_limit": 6,
+            "population": 0,
+            "population_limit": 120
         }
 
 
