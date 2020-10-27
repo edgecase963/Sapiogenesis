@@ -167,7 +167,12 @@ class Network(torch.nn.Module):
     def mutateLayers(self, magnitude):
         # `magnitude` : 0.0 - 1.0
         newHidden = []
-        lengthChange = magnitude * 10.
+        lengthChange = round(magnitude * 10.)
+
+        try:
+            random.randrange(-lengthChange, lengthChange)
+        except ValueError:
+            return
 
         lengthChange = random.randrange(-lengthChange, lengthChange)
 
@@ -190,7 +195,7 @@ class Network(torch.nn.Module):
                     newLayer = random.randrange( min(self.hiddenList), max(self.hiddenList)+1 )
                 newHidden.append(newLayer)
 
-        sizeChange = magnitude * 10.
+        sizeChange = round(magnitude * 10.)
 
         for i in range(len(newHidden)):
             newAmt = random.randrange(-sizeChange, sizeChange)
@@ -203,7 +208,12 @@ class Network(torch.nn.Module):
     def mutateBias(self, magnitude):
         # `magnitude` : 0.0 - 1.0
         with torch.no_grad():
-            mRange = magnitude * 100.
+            mRange = round(magnitude * 100.)
+
+            try:
+                random.randrange(-mRange, mRange) / 100.
+            except ValueError:
+                return
 
             for n in self.inputLayer.bias:
                 diff = random.randrange(-mRange, mRange) / 100.
@@ -241,7 +251,7 @@ if __name__ == "__main__":
     inputData = torch.tensor( [[0,0], [0,1], [1,0], [1,1]] ).float()
     targetData = torch.tensor( [[0,1,1,1]] ).float().resize_(4,1)
 
-    net = Network(2, [3], 1)
+    net = Network(2, [3, 3], 1)
 
     print("Input Data: {}".format(inputData))
 

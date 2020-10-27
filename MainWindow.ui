@@ -792,11 +792,11 @@
      <attribute name="title">
       <string>Reproduction</string>
      </attribute>
-     <widget class="QLCDNumber" name="severity_lcd">
+     <widget class="QLCDNumber" name="physical_severity_lcd">
       <property name="geometry">
        <rect>
         <x>465</x>
-        <y>35</y>
+        <y>50</y>
         <width>50</width>
         <height>21</height>
        </rect>
@@ -815,7 +815,7 @@
       <property name="geometry">
        <rect>
         <x>310</x>
-        <y>10</y>
+        <y>5</y>
         <width>151</width>
         <height>25</height>
        </rect>
@@ -839,17 +839,17 @@
        <string>Mutation Severity</string>
       </property>
      </widget>
-     <widget class="QSlider" name="severity_slider">
+     <widget class="QSlider" name="physical_severity_slider">
       <property name="geometry">
        <rect>
         <x>310</x>
-        <y>35</y>
+        <y>50</y>
         <width>151</width>
         <height>21</height>
        </rect>
       </property>
       <property name="statusTip">
-       <string>How severe the mutations are when an organism reproduces</string>
+       <string>How severe the physical mutations are when organisms reproduce</string>
       </property>
       <property name="orientation">
        <enum>Qt::Horizontal</enum>
@@ -959,6 +959,128 @@
       </property>
       <property name="value">
        <number>120</number>
+      </property>
+     </widget>
+     <widget class="QSlider" name="neural_severity_slider">
+      <property name="geometry">
+       <rect>
+        <x>310</x>
+        <y>90</y>
+        <width>151</width>
+        <height>21</height>
+       </rect>
+      </property>
+      <property name="statusTip">
+       <string>How severe the brain mutations are when organisms reproduce</string>
+      </property>
+      <property name="orientation">
+       <enum>Qt::Horizontal</enum>
+      </property>
+      <property name="tickInterval">
+       <number>0</number>
+      </property>
+     </widget>
+     <widget class="QLCDNumber" name="neural_severity_lcd">
+      <property name="geometry">
+       <rect>
+        <x>465</x>
+        <y>90</y>
+        <width>50</width>
+        <height>21</height>
+       </rect>
+      </property>
+      <property name="smallDecimalPoint">
+       <bool>false</bool>
+      </property>
+      <property name="mode">
+       <enum>QLCDNumber::Dec</enum>
+      </property>
+      <property name="segmentStyle">
+       <enum>QLCDNumber::Flat</enum>
+      </property>
+     </widget>
+     <widget class="QLabel" name="physical_severity_label">
+      <property name="geometry">
+       <rect>
+        <x>310</x>
+        <y>30</y>
+        <width>151</width>
+        <height>25</height>
+       </rect>
+      </property>
+      <property name="font">
+       <font>
+        <pointsize>11</pointsize>
+        <weight>50</weight>
+        <bold>false</bold>
+       </font>
+      </property>
+      <property name="toolTip">
+       <string extracomment="The amount of CO2 in this world"/>
+      </property>
+      <property name="statusTip">
+       <string/>
+      </property>
+      <property name="whatsThis">
+       <string/>
+      </property>
+      <property name="text">
+       <string>Physical</string>
+      </property>
+     </widget>
+     <widget class="QLabel" name="neural_severity_label">
+      <property name="geometry">
+       <rect>
+        <x>310</x>
+        <y>70</y>
+        <width>151</width>
+        <height>25</height>
+       </rect>
+      </property>
+      <property name="font">
+       <font>
+        <pointsize>11</pointsize>
+        <weight>50</weight>
+        <bold>false</bold>
+       </font>
+      </property>
+      <property name="toolTip">
+       <string extracomment="The amount of CO2 in this world"/>
+      </property>
+      <property name="statusTip">
+       <string/>
+      </property>
+      <property name="whatsThis">
+       <string/>
+      </property>
+      <property name="text">
+       <string>Neural</string>
+      </property>
+     </widget>
+     <widget class="Line" name="line_3">
+      <property name="geometry">
+       <rect>
+        <x>310</x>
+        <y>30</y>
+        <width>130</width>
+        <height>3</height>
+       </rect>
+      </property>
+      <property name="orientation">
+       <enum>Qt::Horizontal</enum>
+      </property>
+     </widget>
+     <widget class="QCheckBox" name="mutations_checkbox">
+      <property name="geometry">
+       <rect>
+        <x>460</x>
+        <y>10</y>
+        <width>65</width>
+        <height>23</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>Match</string>
       </property>
      </widget>
     </widget>

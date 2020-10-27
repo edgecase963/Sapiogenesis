@@ -11,6 +11,7 @@ from PyQt5 import QtWidgets
 from userInterface import Ui_MainWindow
 from threading import Thread
 from pymunk import Vec2d
+from torch import tensor
 
 sys.path.insert(1, "../../Programs/shatterbox")
 
@@ -235,8 +236,185 @@ def get_new_orgnism_position(old_organism, dna, environment):
 
 
 class Brain():
-    def __init__(self):
-        pass
+    def __init__(self, dna, structure=None):
+        self.dna = dna
+        self.network = None
+
+        self.base_structure = {
+            "input": ["health", "energy", "rotation"],
+            "input_bias": [],
+            "hidden": [],
+            "hidden_bias": [],
+            "output": ["move", "rotate"],
+            "output_bias": []
+        }
+
+        self.base_structure["input_bias"] = [ random.random() for i in range( len(self.base_structure["input"]) ) ]
+        self.base_structure["output_bias"] = [ random.random() for i in range( len(self.base_structure["output"]) ) ]
+
+        if structure:
+            self.structure = structure
+        else:
+            self.structure = self.base_structure.copy()
+        # Structure: {
+        #    "input": [<cell_id>, <cell_id>, <cell_id>, "health", "energy", "pain"],
+        #    "hidden": [<integer>, <integer>, <integer>],
+        #    "output": [<cell_id>, <cell_id>, <cell_id>]
+        #}
+        # The inputs are taken from cells such as eyes, olfactory, etc
+        # Some inputs are a percentage of health or energy (hunger) and even pain (amount of damage this cell is taking currently)
+        # The hidden layers are randomized and are the most maleable. They can be easily mutated
+        # The output list contains cell IDs of cells that are able to actually DO things (such as push)
+
+    def randomize_hidden_layer(self):
+        self.structure["hidden"] = []
+        maxRange = len(self.structure["input"]) * 2
+        minRange = 2
+
+        for i in range( random.randrange(2, 5) ): # Number of layers
+            layer_size = random.randrange(minRange, maxRange)
+            self.structure["hidden"].append(layer_size)
+
+    def setup_network(self, rebuilding=False):
+        for cell_id in self.dna.cells:
+            cell_info = self.dna.cells[cell_id]
+
+            if cell_info["type"] == "push":
+                if not cell_id in self.structure["output"]:
+                    self.structure["output"].append(cell_id)
+            elif cell_info["type"] == "rotate":
+                if not cell_id in self.structure["output"]:
+                    self.structure["output"].append(cell_id)
+            #elif cell_info["type"] == "eye":
+            #    self.structure["input"].append(cell_id)
+
+        if not rebuilding or not self.structure["hidden"]:
+            # If this brain is being re-built (after a cell's reproduction) OR there is no hidden layers
+            self.randomize_hidden_layer()
+
+        if not self.structure["input"] or not self.structure["hidden"] or not self.structure["output"]:
+            print("Missing layer - Unable to set up network\n")
+            print("Structure: {}\n".format(self.structure))
+            return
+
+        layers = [
+            len(self.structure["input"]),
+            self.structure["hidden"],
+            len(self.structure["output"])
+        ]
+        self.network = networks.Network(*layers)
+
+    def rebuild_network(self):
+        #~ Remove all inputs/outputs to cells that are no longer in the cell's DNA
+        for correspondent in self.structure["input"][:]:
+            if not correspondent in self.base_structure["input"] and not correspondent in self.dna.cells:
+                self.structure["input"].remove(correspondent)
+        for correspondent in self.structure["output"][:]:
+            if not correspondent in self.base_structure["input"] and not correspondent in self.dna.cells:
+                self.structure["input"].remove(correspondent)
+        #~
+
+        self.setup_network(rebuilding=True) # Ensure that any new cells are accounted for in the brain's structure
+
+    def _get_eye_input(self, cell_id, environment, organism):
+        cell = organism.cells[cell_id]
+        for sprite in environment.sprites:
+            pass
+            # BACKBURNER
+    def _get_health_input(self, organism):
+        return organism.health_percent() / 100.
+    def _get_energy_input(self, organism):
+        current_energy = sum([organism.cells[id].info["energy"] for id in organism.living_cells()])
+        max_energy = sum([self.dna.cells[id]["energy_storage"] for id in self.dna.cells])
+
+        energy_perc = num2perc(current_energy, max_energy)
+
+        return energy_perc / 100.
+    def _get_rotation_input(self, organism):
+        rotation = organism.rotation()
+        if rotation:
+            return rotation / 100.
+        else:
+            return 0.0
+
+    def _activate_cell(self, organism, correspondent, neuro_output, uDiff):
+        if correspondent in organism.cells:
+            # correspondent is a cell_id
+            cell_id = correspondent
+            sprite = organism.cells[cell_id]
+            if positive( neuro_output.tolist() ) >= .3:
+                sprite.info["in_use"] = True
+                sprite.info["push_angle"] = neuro_output.tolist()
+            else:
+                sprite.info["in_use"] = False
+        elif correspondent == "move":
+            for cell_id in organism.living_cells():
+                cell_info = self.dna.cells[cell_id]
+                sprite = organism.cells[cell_id]
+
+                if not sprite.info["in_use"]:
+                    continue
+
+                if cell_info["type"] == "push":
+                    speed = cell_info["size"] * cell_info["mass"]
+                    speed *= neuro_output.tolist()
+
+                    current_speed = sprite.body.velocity
+
+                    push_direction = [ math.cos(sprite.info["push_angle"]), math.sin(sprite.info["push_angle"]) ]
+                    push_direction = [i*speed for i in push_direction]
+                    push_direction = [ push_direction[0]+current_speed[0], push_direction[1]+current_speed[1] ]
+                    #push_direction = [i*uDiff for i in push_direction]
+                    push_direction = Vec2d(push_direction)
+
+                    sprite.body.velocity = push_direction
+        elif correspondent == "rotate":
+            for cell_id in organism.living_cells():
+                cell_info = self.dna.cells[cell_id]
+                sprite = organism.cells[cell_id]
+
+                if not sprite.info["in_use"]:
+                    continue
+
+                if cell_info["type"] == "rotate":
+                    speed = cell_info["size"] * cell_info["mass"]
+                    speed *= neuro_output.tolist()
+                    speed *= uDiff
+
+                    sprite.body.angular_velocity += speed
+
+    def activate(self, environment, organism, uDiff):
+        input_vals = []
+        for i in self.structure["input"]:
+            if isinstance(i, int):
+                cell_info = self.dna.cells[i]
+                pass
+            if isinstance(i, str):
+                if i == "health":
+                    input_vals.append( self._get_health_input(organism) )
+                elif i == "energy":
+                    input_vals.append( self._get_energy_input(organism) )
+                elif i == "rotation":
+                    input_vals.append( self._get_rotation_input(organism) )
+        input_vals = tensor(input_vals).float()
+        output_vals = {}
+
+        if self.network:
+            output = self.network(input_vals)
+            for i, cell_id in enumerate(self.structure["output"]):
+                outVal = output[i]
+                output_vals[cell_id] = outVal
+
+            for correspondent in output_vals:
+                # correspondent is the corresponding `output` value in the output list - either a `cell_id` or other (such as "move")
+                self._activate_cell(organism, correspondent, output_vals[correspondent], uDiff)
+
+    def mutate(self, severity=.3):
+        print(severity)
+        if self.network:
+            self.network.mutateBias(severity)
+            self.network.mutateLayers(severity)
+
 
 
 class DNA():
@@ -270,20 +448,7 @@ class DNA():
         #   }
         #}
 
-        self.brain_structure = {
-            "input": ["health", "energy"],
-            "hidden": [],
-            "output": []
-        }
-        # Structure: {
-        #    "input": [<cell_id>, <cell_id>, <cell_id>, "health", "energy", "pain"],
-        #    "hidden": [<integer>, <integer>, <integer>],
-        #    "output": [<cell_id>, <cell_id>, <cell_id>]
-        #}
-        # The inputs are taken from cells such as eyes, olfactory, etc
-        # Some inputs are a percentage of health or energy (hunger) and even pain (amount of damage this cell is taking currently)
-        # The hidden layers are randomized and are the most maleable. They can be easily mutated
-        # The output list contains cell IDs of cells that are able to actually DO things (such as push)
+        self.brain = Brain(self)
 
         self.base_info = {"distanceThreshold": 2.2, "mirror_x": False, "mirror_y": False, "maximum_creation_tries": 30}
         # Structure: {
@@ -590,12 +755,6 @@ class DNA():
                 self._apply_mirror(cell_id, grow_from, grow_direction)
         return True
 
-    def randomize_hidden_layer(self):
-        maxRange = len(self.brain_structure["input"]) * 2
-        minRange = 2
-
-        hidden_size = random.randrange(minRange, maxRange)
-
     def randomize(self, cellRange=[3,30], sizeRange=[6,42], massRange=[5,20], mirror_x=[0.6, 0.4], mirror_y=[0.6, 0.4]):
         self.cellRange = cellRange
         self.sizeRange = sizeRange
@@ -625,17 +784,8 @@ class DNA():
                     first_cell=first_cell
                 )
             first_cell = False
-        print("Mirror X: {}\nMirror Y: {}\n\n".format(self.base_info["mirror_x"], self.base_info["mirror_y"]))
 
-        for cell_id in self.cells:
-            cell_info = self.cells[cell_id]
-
-            if cell_info["type"] == "push":
-                self.brain_structure["output"].append(cell_id)
-            elif cell_info["type"] == "eye":
-                self.brain_structure["input"].append(cell_id)
-            elif cell_info["type"] == "rotate":
-                self.brain_structure["input"].append(cell_id)
+        self.brain.setup_network()
 
         return self
 
@@ -700,7 +850,7 @@ class DNA():
 
         return new_dna
 
-    def mutate(self, severity):
+    def mutate(self, severity, neural_severity):
         # `severity` : 0.0 - 1.0
         new_dna = self.copy()
         new_dna = new_dna.mutate_cell_count(severity)
@@ -709,6 +859,8 @@ class DNA():
             new_dna = new_dna.mutate_cell_types(severity)
 
         new_dna = new_dna.mutate_cell_masses(severity)
+
+        new_dna.brain.mutate(neural_severity)
 
         return new_dna
 
@@ -769,7 +921,8 @@ class Organism():
         newCell.info = {
             "health": cell_info["max_health"],
             "energy": cell_info["energy_storage"]/2,
-            "in_use": False
+            "in_use": False,
+            "push_angle": math.pi
         }
         newCell.alive = alive
         newCell.creationTime = time.time()
@@ -1043,9 +1196,9 @@ class Organism():
             spare_co2 = spare_energy / co2_conversion_ratio
             self.environment.info["co2"] += spare_co2
 
-    def reproduce(self, severity=0.5):
+    def reproduce(self, severity=0.5, neural_severity=0.5):
         self.lastBirth = time.time()
-        new_dna = self.dna.mutate(severity=severity)
+        new_dna = self.dna.mutate(severity=severity, neural_severity=neural_severity)
 
         new_pos = get_new_orgnism_position(self, new_dna, self.environment)
         if not new_pos:
@@ -1076,7 +1229,10 @@ class Organism():
             health_perc = num2perc(current_health, total_health)
             if random.random()*100. <= health_perc:
                 if not self.environment.info["population"] >= self.environment.info["population_limit"]:
-                    self.reproduce(severity=self.environment.info["mutation_severity"])
+                    self.reproduce(
+                        severity=self.environment.info["mutation_severity"],
+                        neural_severity=self.environment.info["brain_mutation_severity"]
+                    )
 
             for cell_id in self.cells:
                 sprite = self.cells[cell_id]
@@ -1156,6 +1312,8 @@ class Organism():
                     sprite2 = self.cells[id]
                     sprite.connectTo(sprite2)
 
+        self.brain = self.dna.brain
+
 
 
 def disperse_cell(sprite):
@@ -1196,14 +1354,15 @@ def gradual_dispersion(environment, sprite, uDiff):
 def update_organisms(environment):
     # For this to work properly the environment must have the variable `lastUpdated` which holds a time.time() value
     # The environment must also have the ".info" variable which holds a dictionary containing "oganism_list" as a value
+    uDiff = time.time() - environment.lastUpdated
+    environment.lastUpdated = time.time()
+
     for org in environment.info["organism_list"][:]:
         if org.alive():
             org.update()
+            org.dna.brain.activate(environment, org, uDiff)
         else:
             environment.info["organism_list"].remove(org)
-
-    uDiff = time.time() - environment.lastUpdated
-    environment.lastUpdated = time.time()
 
     for sprite in environment.sprites:
         if not sprite.alive:
@@ -1233,8 +1392,6 @@ if __name__ == "__main__":
         org2 = Organism([500,500], env)
 
         fCell = org.dna.first_cell()
-
-        print(org.dna.growth_pattern[fCell])
 
         org.build_body()
         org2.build_body()

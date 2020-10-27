@@ -41,17 +41,25 @@ def updateUI(window, environment):
     sprites.reproduction_limit = window.rep_time_val.value()
     environment.info["population_limit"] = window.max_pop_val.value()
 
+
     mirror_x_chance = window.mirror_x_slider.value()
     mirror_y_chance = window.mirror_y_slider.value()
-    mutation_severity = window.severity_slider.value()
+
+    mutation_severity = window.physical_severity_slider.value()
+    neural_mutation_severity = window.neural_severity_slider.value()
 
     if selected:
-        window.generation_val.setText(str(selected.generation))
+        window.generation_val.setText( str(selected.generation) )
+        if selected.dna.brain.network:
+            neurons = sum([ len(layer.bias) for layer in selected.dna.brain.network.layers() ])
+            window.neurons_val.setText( str(neurons) )
 
     window.mirror_x_lcd.setProperty("value", mirror_x_chance)
     window.mirror_y_lcd.setProperty("value", mirror_y_chance)
-    window.severity_lcd.setProperty("value", mutation_severity)
+    window.physical_severity_lcd.setProperty("value", mutation_severity)
+    window.neural_severity_lcd.setProperty("value", neural_mutation_severity)
     environment.info["mutation_severity"] = mutation_severity / 100.
+    environment.info["brain_mutation_severity"] = neural_mutation_severity / 100.
     if selected:
         window.energy_val.setText( str(int(selected.total_energy())) )
         window.health_val.setText( str(int(selected.health_percent())) + "%" )
@@ -114,7 +122,10 @@ def feed_btn_clicked(window, environment):
 def reproduce_clicked(window, environment):
     selected = environment.info["selected"]
     if selected:
-        selected.reproduce(severity=environment.info["mutation_severity"])
+        selected.reproduce(
+            severity=environment.info["mutation_severity"],
+            neural_severity=environment.info["brain_mutation_severity"]
+        )
 
 def add_creature_clicked(window, environment):
     minCellRange = window.min_cell_range_spinbox.value()
@@ -128,8 +139,6 @@ def add_creature_clicked(window, environment):
 
     mirror_x = window.mirror_x_slider.value() / 100.
     mirror_y = window.mirror_y_slider.value() / 100.
-
-    print("Mirror: {}, {}".format(mirror_x, mirror_y))
 
     dna = sprites.DNA().randomize(
         cellRange=[minCellRange, maxCellRange],
@@ -168,6 +177,11 @@ def set_co2_clicked(window, environment):
     value = window.set_co2_spinbox.value()
     environment.info["co2"] = value
 
+def slider_changed(val, window):
+    if window.mutations_checkbox.isChecked():
+        window.physical_severity_slider.setProperty("value", val)
+        window.neural_severity_slider.setProperty("value", val)
+
 def setup_window_buttons(window, environment):
     window.add_co2_btn.mouseReleaseEvent = lambda event: add_co2_clicked(window, environment)
     window.rem_co2_btn.mouseReleaseEvent = lambda event: rem_co2_clicked(window, environment)
@@ -183,6 +197,12 @@ def setup_window_buttons(window, environment):
     window.paste_event = lambda: paste_clicked(window, environment)
     window.disperse_cells_event = lambda: disperse_cells_clicked(window, environment)
 
+    window.physical_severity_slider.lastChanged = time.time()
+    window.neural_severity_slider.lastChanged = time.time()
+
+    window.physical_severity_slider.valueChanged.connect(lambda v: slider_changed(v, window))
+    window.neural_severity_slider.valueChanged.connect(lambda v: slider_changed(v, window))
+
 
 if __name__ == "__main__":
         app = QtWidgets.QApplication(sys.argv)
@@ -197,6 +217,7 @@ if __name__ == "__main__":
             "organism_list": [],
             "copied": None,
             "mutation_severity": 0.5,
+            "brain_mutation_severity": 0.5,
             "reproduction_limit": 6,
             "population": 0,
             "population_limit": 120
@@ -216,7 +237,9 @@ if __name__ == "__main__":
 
         myapp.mirror_x_slider.setProperty("value", 40)
         myapp.mirror_y_slider.setProperty("value", 40)
-        myapp.severity_slider.setProperty("value", 50)
+
+        myapp.physical_severity_slider.setProperty("value", 50)
+        myapp.neural_severity_slider.setProperty("value", 50)
 
         env.mousePressFunc = lambda event, pos: mousePressEvent(event, pos, env)
         env.mouseReleaseFunc = lambda event, pos: mouseReleaseEvent(event, pos, env)
