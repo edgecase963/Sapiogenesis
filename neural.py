@@ -22,6 +22,14 @@ def positive(x):
         return x
     return -x
 
+def getAngle(x1, y1, x2, y2):
+    myradians = math.atan2(y2-y1, x2-x1)
+    return myradians
+
+def getDirection(angle):
+    direction = [math.cos(angle), math.sin(angle)]
+    return direction
+
 
 
 class NeuralNet(torch.nn.Module):
@@ -108,7 +116,7 @@ class Brain():
         self.base_output = ["rotation", "speed", "direction"]
 
         self.output_lengths = {
-            "eye": 1
+            "eye": 3
         }
 
         # Each network is executed and their outputs are collected and used as inputs for the final network
@@ -120,21 +128,31 @@ class Brain():
 
         cell = organism.cells[cell_id]
         if not cell.alive:
-            return 0
+            return [0, 0, 0]
 
         cell_info = self.dna.cells[cell_id]
         sightRange = cell_info["size"] * 6
         sprites_in_range = []
+
+        closest_sprite = [None, 0]
+        angle = 0
+        direction = [0, 0]
 
         for sprite in spriteList:
             cell_pos = cell.getPos()
             sprite_pos = sprite.getPos()
             dist = calculateDistance(cell_pos[0], cell_pos[1], sprite_pos[0], sprite_pos[1])
 
-            if dist <= sightRange:
-                sprites_in_range.append(sprite)
+            if not closest_sprite[0] or dist < closest_sprite[1]:
+                closest_sprite[0] = sprite
+                closest_sprite[1] = dist
 
-        return len(sprites_in_range)
+                angle = getAngle(cell_pos[0], cell_pos[1], sprite_pos[0], sprite_pos[1])
+                direction = getDirection(angle)
+
+        eye_input = [closest_sprite[1], direction[0], direction[1]]
+
+        return eye_input
 
     def _get_health_input(self, organism):
         return organism.health_percent() / 100.
@@ -265,7 +283,7 @@ class Brain():
 
                         if cell_info["type"] == "eye":
                             inp = self._get_eye_input(cell_id, environment, organism)
-                            visual_inputs.append(inp)
+                            visual_inputs.extend(inp)
 
             if self.base_input["movement"]:
                 for correspondent in self.base_input["movement"]:
