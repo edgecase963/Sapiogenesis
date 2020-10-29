@@ -60,10 +60,6 @@ class NeuralNet(torch.nn.Module):
             layers.extend(net.layers())
         return layers
 
-    def setupLayers(self):
-        for net in self.networks:
-            layers = net.layers()
-
     def layerSizes(self):
         layer_sizes = [self.inputSize]
         for s in self.hiddenList:
