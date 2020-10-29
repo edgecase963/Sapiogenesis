@@ -51,7 +51,7 @@ def updateUI(window, environment):
     if selected:
         window.generation_val.setText( str(selected.generation) )
         if selected.dna.brain.network:
-            neurons = sum([ len(layer.bias) for layer in selected.dna.brain.network.layers() ])
+            neurons = 0
             window.neurons_val.setText( str(neurons) )
 
     window.mirror_x_lcd.setProperty("value", mirror_x_chance)
