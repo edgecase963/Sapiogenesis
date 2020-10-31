@@ -8,6 +8,23 @@ from pymunk import Vec2d
 
 
 
+cell_types = {
+    "barrier": 0,
+    "carniv": 2,
+    "eye": 4,
+    "olfactory": 6,
+    "co2C": 8,
+    "push": 10,
+    "pheremone": 12,
+    "body": 14,
+    "rotate": 16,
+    "dead": 18,
+    "heart": 20
+}
+# This is used to create inputs for eye cells
+
+
+
 def num2perc(num, maxNum):
     return ((float(num) / float(maxNum)) * 100.0)
 
@@ -106,13 +123,21 @@ class Brain():
             "movement": ["rotation", "speed", "direction"],
             "body": ["health", "energy"]
         }
+        # Structure: {
+        #   "visual": [<cell_id>, <cell_id>],
+        #   "chemical": [<cell_id>, <cell_id>],
+        #   "movement": ["rotation", "speed", "direction"],
+        #   "body": ["health", "energy"]
+        #}
+        # If an item in any of these lists is an integer, then it corresponds to a cell's ID
+        # If it is a string, then it corresponds to a specific attribute of the organism
 
         self.allowed_types = ["eye"]
 
         self.base_output = ["rotation", "speed", "direction"]
 
         self.output_lengths = {
-            "eye": 3
+            "eye": len(cell_types) * 2
         }
 
         # Each network is executed and their outputs are collected and used as inputs for the final network
@@ -122,31 +147,32 @@ class Brain():
     def _get_eye_input(self, cell_id, environment, organism):
         spriteList = [sprite for sprite in environment.sprites if sprite.organism != organism]
 
+        eye_input = [0] * len(cell_types)*2
+
         cell = organism.cells[cell_id]
         if not cell.alive:
-            return [0, 0, 0]
+            return eye_input
 
         cell_info = self.dna.cells[cell_id]
         sightRange = cell_info["size"] * 6
-        sprites_in_range = []
-
-        closest_sprite = [None, 0]
-        angle = 0
-        direction = [0, 0]
 
         for sprite in spriteList:
             cell_pos = cell.getPos()
             sprite_pos = sprite.getPos()
+            sprite_id = sprite.cell_id
+            sprite_info = sprite.organism.dna.cells[sprite_id]
+
             dist = calculateDistance(cell_pos[0], cell_pos[1], sprite_pos[0], sprite_pos[1])
 
-            if not closest_sprite[0] or dist < closest_sprite[1]:
-                closest_sprite[0] = sprite
-                closest_sprite[1] = dist
+            if dist <= sightRange:
+                lp = cell_types[sprite_info["type"]]
 
-                angle = getAngle(cell_pos[0], cell_pos[1], sprite_pos[0], sprite_pos[1])
-                direction = getDirection(angle)
-
-        eye_input = [closest_sprite[1], direction[0], direction[1]]
+                if not eye_input[lp]:
+                    eye_input[lp] = 1.0
+                    eye_input[lp+1] = dist
+                elif eye_input[lp+1] > dist:
+                    eye_input[lp] = 1.0
+                    eye_input[lp+1] = dist
 
         return eye_input
 
@@ -172,12 +198,12 @@ class Brain():
 
     def _random_hidden(self, inputSize):
         hidden_cells = []
-        for i in range(random.randrange(2, 8)):
-            nSize = random.randrange(2, 8)
+        for i in range(random.randrange(2, 6)):
+            nSize = random.randrange(2, 6)
             hidden_cells.append(nSize)
         return hidden_cells
     def _random_output(self, hidden_cells):
-        return random.randrange(2, 8)
+        return random.randrange(2, 6)
 
     def setup_networks(self, rebuilding=False):
         self.pre_networks = []
@@ -332,5 +358,6 @@ class Brain():
 if __name__ == "__main__":
     net1 = networks.Network(2, [3], 4)
     net2 = networks.Network(4, [3], 1)
+    net3 = networks.Network(6, [3], 1)
 
-    brain = NeuralNet([net1, net2])
+    brain = NeuralNet([net1, net2], net3)
