@@ -12,7 +12,7 @@ from userInterface import Ui_MainWindow
 from threading import Thread
 from pymunk import Vec2d
 from torch import tensor
-from neural import Brain
+import neural
 
 sys.path.insert(1, "../../Programs/shatterbox")
 
@@ -51,6 +51,14 @@ starvation_rate = 300
 
 neural_update_delay = .2
 # How long to wait before activating an organism's brain - helps reduce lag
+
+learning_update_delay = .4
+# How long to wait before training an organism
+
+training_epochs = 1
+# How many epochs to train a network for per training interval
+
+training_dopamine_threshold = 1.
 
 base_cell_info = {
     "health": {
@@ -270,7 +278,17 @@ class DNA():
         #   }
         #}
 
-        self.brain = Brain(self)
+        #self.brain = Brain(self)
+
+        self._base_brain_structure = {
+            "input_size": 6,
+            "inputs": ["energy", "health", "rotation", "speed", "x_direction", "y_direction"],
+            "hidden_layers": [], # [<integer>, <integer>, <integer>]
+            "output_size": 0,
+            "outputs": ["rotation", "speed", "x_direction", "y_direction"]
+        }
+
+        self.brain_structure = self._base_brain_structure.copy()
 
         self.base_info = {"distanceThreshold": 2.2, "mirror_x": False, "mirror_y": False, "maximum_creation_tries": 30}
         # Structure: {
@@ -577,6 +595,14 @@ class DNA():
                 self._apply_mirror(cell_id, grow_from, grow_direction)
         return True
 
+    def _setup_brain_structure(self):
+        self.brain_structure = self._base_brain_structure.copy()
+
+        for cell_id in self.cells:
+            cell_info = self.cells[cell_id]
+            if cell_info["type"] == "eye":
+                self.brain_structure["input_size"] += 4
+
     def randomize(self, cellRange=[3,30], sizeRange=[6,42], massRange=[5,20], mirror_x=[0.6, 0.4], mirror_y=[0.6, 0.4]):
         self.cellRange = cellRange
         self.sizeRange = sizeRange
@@ -606,8 +632,6 @@ class DNA():
                     first_cell=first_cell
                 )
             first_cell = False
-
-        self.brain.setup_networks()
 
         return self
 
@@ -672,6 +696,9 @@ class DNA():
 
         return new_dna
 
+    def mutate_brain_structure(self, severity):
+        pass
+
     def mutate(self, severity, neural_severity):
         # `severity` : 0.0 - 1.0
         new_dna = self.copy()
@@ -682,9 +709,7 @@ class DNA():
 
         new_dna = new_dna.mutate_cell_masses(severity)
 
-        new_dna.brain.rebuild()
-
-        new_dna.brain.mutate(neural_severity)
+        self.mutate_brain_structure(neural_severity)
 
         return new_dna
 
@@ -700,11 +725,16 @@ class Organism():
         self.cells = {}
         # Structure: {<Cell_ID>: <Sprite_Class>}
 
+
         self.movement = {
             "speed": 0,
-            "direction": 0.0,
+            "direction": [0.0, 0.0],
             "rotation": 0
         }
+        self.lastEnergy = 0.0 # Used to calculate the organism's dopamine
+        self.lastHealth = 0.0 # Used to calculate the organism's pain
+        self.dopamine = 0.0
+        self.pain = 0.0
 
         self.brain = None
 
@@ -918,10 +948,14 @@ class Organism():
                 dead_cells.append(cell_id)
         return dead_cells
 
+    def max_energy(self):
+        return sum([ self.dna.cells[id]["energy_storage"] for id in self.living_cells() ])
     def total_energy(self):
         # Returns the total amount of energy within this organism
         energyList = [self.cells[i].info["energy"] for i in self.living_cells()]
         return sum(energyList)
+    def energy_percent(self):
+        return num2perc( self.total_energy(), self.max_energy() )
 
     def max_health(self):
         return sum([self.dna.cells[id]["max_health"] for id in self.cells])
@@ -976,7 +1010,7 @@ class Organism():
                 sprite.info["health"] -= damage_dealt
             else:
                 mass = sprite.body.mass
-                newMass = mass - (damage_dealt / own_info["size"]) * 2
+                newMass = mass - (damage_dealt / own_info["mass"]) * 2
                 if newMass > 0:
                     sprite.body._set_mass(newMass)
                     cell.info["energy"] += damage_dealt
@@ -1039,9 +1073,103 @@ class Organism():
         self.environment.info["organism_list"].append(organism)
         organism.build_body()
 
+    def _update_cell(self, cell_id, uDiff):
+        sprite = self.cells[cell_id]
+        cell_info = self.dna.cells[cell_id]
+
+        if sprite.info["health"] <= 0:
+            self.kill_cell(sprite)
+            return
+
+        if cell_info["type"] == "push" and sprite.alive:
+            if self.movement["speed"] >= .1:
+                push_x = self.movement["direction"][0]
+                push_y = self.movement["direction"][1]
+
+                speed = self.movement["speed"] * cell_info["size"] * cell_info["mass"]
+                speed *= (uDiff * 3)
+
+                new_velocity = [push_x*speed, push_y*speed]
+                new_velocity = Vec2d(new_velocity)
+
+                sprite.body.velocity += new_velocity
+                sprite.info["in_use"] = True
+            else:
+                sprite.info["in_use"] = False
+
+        if cell_info["type"] == "rotate" and sprite.alive:
+            sprite.body.angular_velocity += self.movement["rotation"]
+
+        if not sprite.alive:
+            return
+
+        if sprite.info["in_use"]:
+            energy_usage = cell_info["energy_usage"][1]
+        else:
+            energy_usage = cell_info["energy_usage"][0]
+
+        sprite.info["energy"] -= energy_usage * uDiff
+
+        if sprite.info["energy"] < 0:
+            sprite.info["energy"] = 0
+
+        if cell_info["type"] == "co2C":
+            self.convert_co2(cell_id, uDiff)
+
+        if sprite.info["energy"] > cell_info["energy_storage"]:
+            sprite.info["energy"] = cell_info["energy_storage"]
+
+        if sprite.info["energy"] >= cell_info["energy_storage"]/2 and sprite.info["health"] < cell_info["max_health"]:
+            perc_health = perc2num( heal_rate, cell_info["max_health"] )
+            added_health = perc_health * uDiff
+
+            sprite.info["health"] += added_health
+            if sprite.info["health"] > cell_info["max_health"]:
+                sprite.info["health"] = cell_info["max_health"]
+
+        #if sprite.info["energy"] >= cell_info["energy_storage"]/1.01 and self.dead_children(sprite):
+        #    dead_list = self.dead_children(sprite)
+        #    print(len(dead_list))
+        #    if dead_list:
+        #        self.revive_cell(dead_list[0])
+        #        sprite.info["energy"] /= 2
+
+        if sprite.info["energy"] <= 0:
+            #self.kill_cell(sprite)
+            damage_dealt = starvation_rate * uDiff
+            sprite.info["health"] -= damage_dealt
+
     def update(self):
         uDiff = time.time() - self.lastUpdated
         self.lastUpdated = time.time()
+
+        health_diff = self.health_percent() - self.lastHealth
+        energy_diff = self.energy_percent() - self.lastEnergy
+
+        self.pain = health_diff / uDiff
+        self.dopamine = energy_diff / uDiff
+        self.dopamine -= self.pain
+
+        if self.pain > 0:
+            self.pain = 0.0
+
+        self.pain = positive(self.pain)
+
+        #if health_diff > 0:
+        #    self.pain = 0.0
+        #else:
+        #    self.pain = 1.0
+
+        #if energy_diff > 0:
+        #    self.dopamine = 1.0
+        #else:
+        #    self.dopamine = 0.0
+
+        self.lastHealth = self.health_percent()
+        self.lastEnergy = self.energy_percent()
+
+        #print("Pain:     {}".format( self.pain ))
+        #print("Dopamine: {}\n".format( self.dopamine ))
 
         cells_alive = self.living_cells()
         if len(cells_alive) == 1:
@@ -1052,7 +1180,7 @@ class Organism():
             sprite = self.cells[fCell]
             self.pos = sprite.body.position
 
-        max_energy = sum([ self.dna.cells[id]["energy_storage"] for id in self.living_cells() ])
+        max_energy = self.max_energy()
         if self.total_energy() >= max_energy/1.01 and (time.time() - self.lastBirth) >= reproduction_limit:
             total_health = sum([ self.dna.cells[id]["max_health"] for id in self.cells ])
             current_health = sum([ self.cells[id].info["health"] for id in self.living_cells() ])
@@ -1070,70 +1198,10 @@ class Organism():
                     sprite.info["energy"] = sprite.info["energy"]/2
 
         for cell_id in self.cells.copy():
-            sprite = self.cells[cell_id]
-            cell_info = self.dna.cells[cell_id]
+            self._update_cell(cell_id, uDiff)
 
-            if cell_info["type"] == "push" and sprite.alive:
-                if self.movement["speed"] >= .2:
-                    push_direction = self.movement["direction"] + math.radians(self.rotation())
-                    push_x = math.cos(push_direction)
-                    push_y = math.sin(push_direction)
-
-                    speed = self.movement["speed"] * cell_info["size"] * cell_info["mass"]
-                    speed *= (uDiff * 3)
-
-                    new_velocity = [push_x*speed, push_y*speed]
-                    new_velocity = Vec2d(new_velocity)
-
-                    sprite.body.velocity += new_velocity
-                    sprite.info["in_use"] = True
-                else:
-                    sprite.info["in_use"] = False
-
-            if cell_info["type"] == "rotate" and sprite.alive:
-                sprite.body.angular_velocity += self.movement["rotation"]
-
-            if not sprite.alive:
-                continue
-
-            if sprite.info["in_use"]:
-                energy_usage = cell_info["energy_usage"][1]
-            else:
-                energy_usage = cell_info["energy_usage"][0]
-
-            sprite.info["energy"] -= energy_usage * uDiff
-
-            if sprite.info["energy"] < 0:
-                sprite.info["energy"] = 0
-
-            if cell_info["type"] == "co2C":
-                self.convert_co2(cell_id, uDiff)
-
-            if sprite.info["energy"] > cell_info["energy_storage"]:
-                sprite.info["energy"] = cell_info["energy_storage"]
-
-            if sprite.info["energy"] >= cell_info["energy_storage"]/2 and sprite.info["health"] < cell_info["max_health"]:
-                perc_health = perc2num( heal_rate, cell_info["max_health"] )
-                added_health = perc_health * uDiff
-
-                sprite.info["health"] += added_health
-                if sprite.info["health"] > cell_info["max_health"]:
-                    sprite.info["health"] = cell_info["max_health"]
-
-            #if sprite.info["energy"] >= cell_info["energy_storage"]/1.01 and self.dead_children(sprite):
-            #    dead_list = self.dead_children(sprite)
-            #    print(len(dead_list))
-            #    if dead_list:
-            #        self.revive_cell(dead_list[0])
-            #        sprite.info["energy"] /= 2
-
-            if sprite.info["energy"] <= 0:
-                #self.kill_cell(sprite)
-                damage_dealt = starvation_rate * uDiff
-                sprite.info["health"] -= damage_dealt
-
-            if sprite.info["health"] <= 0:
-                self.kill_cell(sprite)
+    def build_brain(self):
+        self.brain = neural.setup_network(self.dna)
 
     def build_body(self):
         self.cells = {}
@@ -1162,8 +1230,10 @@ class Organism():
                     sprite2 = self.cells[id]
                     sprite.connectTo(sprite2)
 
-        self.brain = self.dna.brain
+        self.lastHealth = self.health_percent()
+        self.lastEnergy = self.energy_percent()
 
+        self.build_brain()
 
 
 def disperse_cell(sprite):
@@ -1211,10 +1281,18 @@ def update_organisms(environment):
         if org.alive():
             org.update()
 
-            brain_uDiff = time.time() - org.dna.brain.lastUpdated
+            brain_uDiff = time.time() - org.brain.lastUpdated
             if brain_uDiff >= neural_update_delay:
-                neural_thread = Thread( target=org.dna.brain.activate, args=[environment, org, uDiff] )
+                neural_thread = Thread( target=org.brain.activate, args=[environment, org, uDiff] )
                 neural_thread.run()
+
+            train_uDiff = time.time() - org.brain.lastTrained
+            if train_uDiff >= learning_update_delay and positive(org.dopamine) >= training_dopamine_threshold:
+                neural.train_network(org, epochs=training_epochs)
+                #org.brain.train_networks(org)
+
+            if org.dopamine < training_dopamine_threshold:
+                org.brain.mutateBias(.1)
         else:
             environment.info["organism_list"].remove(org)
 
@@ -1224,11 +1302,12 @@ def update_organisms(environment):
         if sprite.pos().x() < 0 or sprite.pos().x() > environment.width or sprite.pos().y() < 0 or sprite.pos().y() > environment.height:
             if sprite.alive:
                 organism = sprite.organism
-                if organism in environment.info["organism_list"]:
-                    for cell_id in organism.cells:
-                        sprite = organism.cells[cell_id]
-                        environment.removeSprite(sprite)
-                    environment.info["organism_list"].remove(organism)
+                sprite.info["health"] = 0
+                #if organism in environment.info["organism_list"]:
+                #    for cell_id in organism.cells:
+                #        sprite = organism.cells[cell_id]
+                #        environment.removeSprite(sprite)
+                #    environment.info["organism_list"].remove(organism)
             else:
                 environment.removeSprite(sprite)
 

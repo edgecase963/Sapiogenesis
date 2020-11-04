@@ -46,7 +46,6 @@ class World_View(QtWidgets.QGraphicsView):
 
     def __init__(self, cWidget):
         super(World_View, self).__init__(cWidget)
-        self.setBackgroundBrush( QtGui.QBrush( QtGui.QColor(180,180,255) ) )
 
     def wheelEvent(self, event):
         self._zoom

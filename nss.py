@@ -41,6 +41,12 @@ def updateUI(window, environment):
     sprites.reproduction_limit = window.rep_time_val.value()
     environment.info["population_limit"] = window.max_pop_val.value()
 
+    #~ Brain section
+    sprites.neural_update_delay = window.neural_interval_spinbox.value()
+    sprites.learning_update_delay = window.training_interval_spinbox.value()
+    sprites.training_epochs = window.epochs_spinbox.value()
+    sprites.training_dopamine_threshold = window.learn_thresh_val.value()
+    #~
 
     mirror_x_chance = window.mirror_x_slider.value()
     mirror_y_chance = window.mirror_y_slider.value()
@@ -50,8 +56,8 @@ def updateUI(window, environment):
 
     if selected:
         window.generation_val.setText( str(selected.generation) )
-        if selected.dna.brain.network:
-            neurons = sum( [len(layer.bias) for layer in selected.dna.brain.network.layers()] )
+        if selected.brain:
+            neurons = sum( [len(layer.bias) for layer in selected.brain.layers()] )
             window.neurons_val.setText( str(neurons) )
 
     window.mirror_x_lcd.setProperty("value", mirror_x_chance)
@@ -60,9 +66,17 @@ def updateUI(window, environment):
     window.neural_severity_lcd.setProperty("value", neural_mutation_severity)
     environment.info["mutation_severity"] = mutation_severity / 100.
     environment.info["brain_mutation_severity"] = neural_mutation_severity / 100.
+
+    #~ Sprite section
     if selected:
         window.energy_val.setText( str(int(selected.total_energy())) )
         window.health_val.setText( str(int(selected.health_percent())) + "%" )
+
+        window.neural_loss_val.setText( str( round(selected.brain.lastLoss, 3) ) )
+        window.neural_inputs_val.setText( str(selected.brain.inputSize) )
+        window.iterations_val.setText( str(selected.brain.trainer.iterations) )
+        window.dopamine_val.setText( str(round(selected.dopamine, 3)) )
+    #~
 
 def cell_double_clicked(sprite, environment):
     pass

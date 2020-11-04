@@ -4,6 +4,7 @@ import random
 import copy
 import time
 import matplotlib.pyplot as plt
+import pytorch_lightning as pl
 
 
 
@@ -78,7 +79,7 @@ class Trainer():
         loss = self.loss_fn(result, target)
 
         self.optimizer.zero_grad()
-        loss.backward()
+        loss.backward(retain_graph=True)
         self.optimizer.step()
 
         self.iterations += 1
@@ -108,7 +109,7 @@ class Trainer():
 
 
 
-class Network(torch.nn.Module):
+class Network(pl.LightningModule):
     def __init__(self, inputSize, hiddenLayers, outputSize, optimizer="adam", learning_rate="default"):
         # inputSize    : <int>
         # hiddenLayers : [<int>, <int>, <int>]
