@@ -48,6 +48,7 @@ def updateUI(window, environment):
     sprites.learning_update_delay = window.training_interval_spinbox.value()
     sprites.training_epochs = window.epochs_spinbox.value()
     sprites.training_dopamine_threshold = window.learn_thresh_val.value()
+    sprites.neural.memory_limit = window.epoch_memory_spinbox.value()
     #~
 
     mirror_x_chance = window.mirror_x_slider.value()

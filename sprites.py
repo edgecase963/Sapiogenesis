@@ -272,8 +272,6 @@ class DNA():
         #   }
         #}
 
-        #self.brain = Brain(self)
-
         self._base_brain_structure = {
             "input_size": 6,
             "inputs": ["energy", "health", "rotation", "speed", "x_direction", "y_direction"],
@@ -1364,7 +1362,6 @@ def update_organisms(environment):
             train_uDiff = time.time() - org.brain.lastTrained
             if train_uDiff >= learning_update_delay and positive(org.dopamine) >= training_dopamine_threshold:
                 neural.train_network(org, epochs=training_epochs)
-                #org.brain.train_networks(org)
         else:
             environment.info["organism_list"].remove(org)
 

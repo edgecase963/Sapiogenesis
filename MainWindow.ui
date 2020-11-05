@@ -1151,7 +1151,7 @@
        <string extracomment="The amount of CO2 in this world"/>
       </property>
       <property name="statusTip">
-       <string>How long to wait in between an organism's &quot;thoughts&quot; - e.g. update the neural network (higher = faster)</string>
+       <string>How long to wait in between an organism's &quot;thoughts&quot; - e.g. update the neural network (higher = faster, lower = faster thinking)</string>
       </property>
       <property name="whatsThis">
        <string/>
@@ -1223,7 +1223,7 @@
        <string extracomment="The amount of CO2 in this world"/>
       </property>
       <property name="statusTip">
-       <string>How long to wait before training neural networks (higher = faster)</string>
+       <string>How long to wait before training neural networks (higher = faster, lower = faster training)</string>
       </property>
       <property name="whatsThis">
        <string/>
@@ -1317,13 +1317,63 @@
        <string extracomment="The amount of CO2 in this world"/>
       </property>
       <property name="statusTip">
-       <string>The amount of dopamine difference required to memorize a situation and learn from it (higher = faster)</string>
+       <string>The amount of dopamine difference required to memorize a situation and learn from it (higher = faster, lower = more detailed memory)</string>
       </property>
       <property name="whatsThis">
        <string/>
       </property>
       <property name="text">
        <string>Learning Threshold:</string>
+      </property>
+     </widget>
+     <widget class="QLabel" name="epoch_memory_label">
+      <property name="geometry">
+       <rect>
+        <x>240</x>
+        <y>45</y>
+        <width>151</width>
+        <height>25</height>
+       </rect>
+      </property>
+      <property name="font">
+       <font>
+        <weight>75</weight>
+        <bold>true</bold>
+       </font>
+      </property>
+      <property name="toolTip">
+       <string extracomment="The amount of CO2 in this world"/>
+      </property>
+      <property name="statusTip">
+       <string>How many epochs back to remember for training (lower = faster, higher = better training)</string>
+      </property>
+      <property name="whatsThis">
+       <string/>
+      </property>
+      <property name="text">
+       <string>Epoch Memory:</string>
+      </property>
+     </widget>
+     <widget class="QSpinBox" name="epoch_memory_spinbox">
+      <property name="geometry">
+       <rect>
+        <x>390</x>
+        <y>45</y>
+        <width>80</width>
+        <height>30</height>
+       </rect>
+      </property>
+      <property name="minimum">
+       <number>10</number>
+      </property>
+      <property name="maximum">
+       <number>9999</number>
+      </property>
+      <property name="singleStep">
+       <number>10</number>
+      </property>
+      <property name="value">
+       <number>80</number>
       </property>
      </widget>
     </widget>
