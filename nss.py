@@ -18,15 +18,18 @@ import shatterbox
 
 
 def updateUI(window, environment):
-    time_passed = time.time() - env.info["startTime"]
+    time_passed = time.time() - environment.info["startTime"]
 
-    if env.info["co2"] < 0:
-        env.info["co2"] = 0
+    if environment.info["co2"] < 0:
+        environment.info["co2"] = 0
 
-    co2 = env.info["co2"]
+    co2 = environment.info["co2"]
+    oxygen = environment.info["oxygen"]
     population = len([i for i in env.info["organism_list"] if i.alive()])
+    environment.info["population"] = population
     selected = env.info["selected"]
     window.co2_val.setText( str(int(co2)) )
+    window.oxygen_val.setText( str(int(oxygen)) )
     window.time_val.setText( str(int(time_passed)) )
     window.pop_val.setText( str(int(population)) )
 
@@ -37,13 +40,48 @@ def updateUI(window, environment):
     if window.min_mass_range_spinbox.value() >= window.max_mass_range_spinbox.value():
         window.max_mass_range_spinbox.setProperty("value", window.min_mass_range_spinbox.value()+1)
 
+    sprites.reproduction_limit = window.rep_time_val.value()
+    environment.info["population_limit"] = window.max_pop_val.value()
+
+    #~ Brain section
+    sprites.neural_update_delay = window.neural_interval_spinbox.value()
+    sprites.learning_update_delay = window.training_interval_spinbox.value()
+    sprites.training_epochs = window.epochs_spinbox.value()
+    sprites.training_dopamine_threshold = window.learn_thresh_val.value()
+    #~
+
     mirror_x_chance = window.mirror_x_slider.value()
     mirror_y_chance = window.mirror_y_slider.value()
 
+    mutation_severity = window.physical_severity_slider.value()
+    neural_mutation_severity = window.neural_severity_slider.value()
+
+    if selected:
+        window.generation_val.setText( str(selected.generation) )
+        if selected.brain:
+            neurons = sum( [len(layer.bias) for layer in selected.brain.layers()] )
+            window.neurons_val.setText( str(neurons) )
+
     window.mirror_x_lcd.setProperty("value", mirror_x_chance)
     window.mirror_y_lcd.setProperty("value", mirror_y_chance)
+    window.physical_severity_lcd.setProperty("value", mutation_severity)
+    window.neural_severity_lcd.setProperty("value", neural_mutation_severity)
+    environment.info["mutation_severity"] = mutation_severity / 100.
+    environment.info["brain_mutation_severity"] = neural_mutation_severity / 100.
+
+    #~ Sprite section
     if selected:
         window.energy_val.setText( str(int(selected.total_energy())) )
+        window.health_val.setText( str(int(selected.health_percent())) + "%" )
+
+        dopamineText = str(round(selected.dopamine, 2))
+        dopamineText = dopamineText.split(".")[0] + "." + dopamineText.split(".")[1].zfill(2)
+
+        window.neural_loss_val.setText( str( round(selected.brain.lastLoss, 3) ) )
+        window.neural_inputs_val.setText( str(selected.brain.inputSize) )
+        window.iterations_val.setText( str(selected.brain.trainer.iterations) )
+        window.dopamine_val.setText( dopamineText )
+    #~
 
 def cell_double_clicked(sprite, environment):
     pass
@@ -100,6 +138,14 @@ def feed_btn_clicked(window, environment):
                 cell_info = selected.dna.cells[cell_id]
                 sprite.info["energy"] = cell_info["energy_storage"]
 
+def reproduce_clicked(window, environment):
+    selected = environment.info["selected"]
+    if selected:
+        selected.reproduce(
+            severity=environment.info["mutation_severity"],
+            neural_severity=environment.info["brain_mutation_severity"]
+        )
+
 def add_creature_clicked(window, environment):
     minCellRange = window.min_cell_range_spinbox.value()
     maxCellRange = window.max_cell_range_spinbox.value()
@@ -112,8 +158,6 @@ def add_creature_clicked(window, environment):
 
     mirror_x = window.mirror_x_slider.value() / 100.
     mirror_y = window.mirror_y_slider.value() / 100.
-
-    print("Mirror: {}, {}".format(mirror_x, mirror_y))
 
     dna = sprites.DNA().randomize(
         cellRange=[minCellRange, maxCellRange],
@@ -152,6 +196,11 @@ def set_co2_clicked(window, environment):
     value = window.set_co2_spinbox.value()
     environment.info["co2"] = value
 
+def slider_changed(val, window):
+    if window.mutations_checkbox.isChecked():
+        window.physical_severity_slider.setProperty("value", val)
+        window.neural_severity_slider.setProperty("value", val)
+
 def setup_window_buttons(window, environment):
     window.add_co2_btn.mouseReleaseEvent = lambda event: add_co2_clicked(window, environment)
     window.rem_co2_btn.mouseReleaseEvent = lambda event: rem_co2_clicked(window, environment)
@@ -162,9 +211,16 @@ def setup_window_buttons(window, environment):
 
     window.add_random_creature_event = lambda: add_creature_clicked(window, environment)
     window.kill_event = lambda: kill_btn_clicked(window, environment)
+    window.reproduce_event = lambda: reproduce_clicked(window, environment)
     window.copy_event = lambda: copy_clicked(window, environment)
     window.paste_event = lambda: paste_clicked(window, environment)
     window.disperse_cells_event = lambda: disperse_cells_clicked(window, environment)
+
+    window.physical_severity_slider.lastChanged = time.time()
+    window.neural_severity_slider.lastChanged = time.time()
+
+    window.physical_severity_slider.valueChanged.connect(lambda v: slider_changed(v, window))
+    window.neural_severity_slider.valueChanged.connect(lambda v: slider_changed(v, window))
 
 
 if __name__ == "__main__":
@@ -174,17 +230,24 @@ if __name__ == "__main__":
 
         env_info = {
             "startTime": time.time(),
-            "co2": 20000,
+            "co2": 30000,
+            "oxygen": 0,
             "selected": None,
             "lastPosition": [0,0],
             "organism_list": [],
-            "copied": None
+            "copied": None,
+            "mutation_severity": 0.5,
+            "brain_mutation_severity": 0.5,
+            "reproduction_limit": 6,
+            "population": 0,
+            "population_limit": 120
         }
 
 
         myapp.setupUi(window)
         #myapp.setupEnvironment()
         env = shatterbox.setupEnvironment(myapp.worldView, myapp.scene)
+        env.space.add_collision_handler(1,0).begin = sprites.eye_segment_handler
         env.info = env_info
         env.lastUpdated = time.time()
 
@@ -195,6 +258,9 @@ if __name__ == "__main__":
 
         myapp.mirror_x_slider.setProperty("value", 40)
         myapp.mirror_y_slider.setProperty("value", 40)
+
+        myapp.physical_severity_slider.setProperty("value", 50)
+        myapp.neural_severity_slider.setProperty("value", 50)
 
         env.mousePressFunc = lambda event, pos: mousePressEvent(event, pos, env)
         env.mouseReleaseFunc = lambda event, pos: mouseReleaseEvent(event, pos, env)
