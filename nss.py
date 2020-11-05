@@ -24,10 +24,12 @@ def updateUI(window, environment):
         environment.info["co2"] = 0
 
     co2 = environment.info["co2"]
+    oxygen = environment.info["oxygen"]
     population = len([i for i in env.info["organism_list"] if i.alive()])
     environment.info["population"] = population
     selected = env.info["selected"]
     window.co2_val.setText( str(int(co2)) )
+    window.oxygen_val.setText( str(int(oxygen)) )
     window.time_val.setText( str(int(time_passed)) )
     window.pop_val.setText( str(int(population)) )
 
@@ -72,10 +74,13 @@ def updateUI(window, environment):
         window.energy_val.setText( str(int(selected.total_energy())) )
         window.health_val.setText( str(int(selected.health_percent())) + "%" )
 
+        dopamineText = str(round(selected.dopamine, 2))
+        dopamineText = dopamineText.split(".")[0] + "." + dopamineText.split(".")[1].zfill(2)
+
         window.neural_loss_val.setText( str( round(selected.brain.lastLoss, 3) ) )
         window.neural_inputs_val.setText( str(selected.brain.inputSize) )
         window.iterations_val.setText( str(selected.brain.trainer.iterations) )
-        window.dopamine_val.setText( str(round(selected.dopamine, 3)) )
+        window.dopamine_val.setText( dopamineText )
     #~
 
 def cell_double_clicked(sprite, environment):
@@ -226,6 +231,7 @@ if __name__ == "__main__":
         env_info = {
             "startTime": time.time(),
             "co2": 30000,
+            "oxygen": 0,
             "selected": None,
             "lastPosition": [0,0],
             "organism_list": [],
@@ -241,6 +247,7 @@ if __name__ == "__main__":
         myapp.setupUi(window)
         #myapp.setupEnvironment()
         env = shatterbox.setupEnvironment(myapp.worldView, myapp.scene)
+        env.space.add_collision_handler(1,0).begin = sprites.eye_segment_handler
         env.info = env_info
         env.lastUpdated = time.time()
 

@@ -5,6 +5,7 @@ import networks
 import math
 import numpy
 import copy
+import pymunk
 
 from PyQt5 import QtCore, QtGui
 from PyQt5 import QtWidgets
@@ -23,12 +24,12 @@ import shatterbox
 cell_types = ["barrier", "carniv", "eye", "olfactory", "co2C", "push", "pheremone", "body", "rotate"]
 dead_image = "dead.png"
 
-co2_dispersion_ratio = 20
+#co2_dispersion_ratio = 20
 # The dispersion ratio for dead cells.
 # This is used to calculate how much CO2 is added back into the environment when a dead cell is dispersed
 # Dispersion equation: <dispersion_ratio> * (<cell_size> / 2) * (<cell_mass> / 2)
 
-co2_conversion_ratio = 26
+co2_conversion_ratio = 12
 # The amount of energy generated from 1 CO2 particle
 
 cell_dispersion_rate = 6
@@ -59,6 +60,9 @@ training_epochs = 1
 # How many epochs to train a network for per training interval
 
 training_dopamine_threshold = 1.
+
+eyesight_multiplier = 8
+# This multiplied by an eye cell's size is how far away that eye can see
 
 base_cell_info = {
     "health": {
@@ -153,33 +157,6 @@ def getDirection(angle):
 def randomizeList(l):
     return sorted(l, key=lambda x: random.random())
 
-def viable_organism_position2(pos, dna, environment):
-    overlappingSprites = []
-    for cell_id in dna.cells:
-        relPos = dna.cells[cell_id]["relative_pos"]
-        cellSize = dna.cells[cell_id]["size"]
-        newPos = [ pos[0] + relPos[0], pos[1] + relPos[1] ]
-        if newPos[0] < 0:
-            return False, []
-        elif newPos[0] + cellSize > environment.width:
-            return False, []
-        elif newPos[1] < 0:
-            return False, []
-        elif newPos[1] + cellSize > environment.height:
-            return False, []
-
-        for sprite in environment.sprites:
-            spritePos = sprite.getPos()
-            spriteRadius = sprite.radius
-            dist = calculateDistance(pos[0], pos[1], spritePos[0], spritePos[1])
-
-            if dist <= (spriteRadius*2) + (cellSize*2):
-                if sprite.alive:
-                    return False, []
-                else:
-                    overlappingSprites.append(sprite)
-    return True, overlappingSprites
-
 def viable_organism_position(pos, dna, environment):
     orgList = environment.info["organism_list"]
     dead_cells = [sprite for sprite in environment.sprites if not sprite.alive]
@@ -205,6 +182,8 @@ def viable_organism_position(pos, dna, environment):
 
     for org in orgList:
         rect = org.get_rect()
+
+        # Rect = [min_x, min_y, max_x, max_y]
 
         if (dna_rect[0] > rect[0] and dna_rect[0] < rect[2]) or (dna_rect[2] > rect[0] and dna_rect[2] < rect[2]): # Within X boundaries
             if (dna_rect[1] > rect[1] and dna_rect[1] < rect[3]) or (dna_rect[3] > rect[1] and dna_rect[3] < rect[3]): # Within Y boundaries
@@ -243,7 +222,22 @@ def get_new_orgnism_position(old_organism, dna, environment):
         if viable:
             for sprite in overlappingSprites:
                 environment.removeSprite(sprite)
+                sprite.info["removed"] = True
             return [xPos, yPos]
+
+def eye_segment_handler(arbiter, space, data):
+    if isinstance(arbiter.shapes[0], pymunk.Segment) or isinstance(arbiter.shapes[1], pymunk.Segment):
+        return False
+    if arbiter.shapes[1].sensor:
+        return False
+    sensor = arbiter.shapes[0].sprite
+    sprite = arbiter.shapes[1].sprite
+    if not sensor.alive:
+        return False
+    if sensor.organism != sprite.organism:
+        if not sprite in sensor.info["view"]:
+            sensor.info["view"].append(sprite)
+    return False
 
 
 
@@ -388,15 +382,16 @@ class DNA():
 
         for cell_id in self.cells:
             pos = self.cells[cell_id]["relative_pos"]
+            radius = self.cells[cell_id]["size"]/2
 
-            if pos[0] < minX:
+            if pos[0]-radius < minX:
                 minX = pos[0]
-            if pos[0] > maxX:
+            if pos[0]+radius > maxX:
                 maxX = pos[0]
 
-            if pos[1] < minY:
+            if pos[1]-radius < minY:
                 minY = pos[1]
-            if pos[1] > maxY:
+            if pos[1]+radius > maxY:
                 maxY = pos[1]
 
         return [minX, minY, maxX, maxY]
@@ -714,6 +709,7 @@ class DNA():
         return new_dna
 
 
+
 class Organism():
     def __init__(self, pos, environment, dna=None):
         if not dna:
@@ -733,7 +729,10 @@ class Organism():
         }
         self.lastEnergy = 0.0 # Used to calculate the organism's dopamine
         self.lastHealth = 0.0 # Used to calculate the organism's pain
-        self.dopamine = 0.0
+        self.dopamine_average = 0
+        self.dopamine_memory = [0]*100
+        self.dopamine_usage = 0.0
+        self.dopamine = 0.0 # The current dopamine output
         self.pain = 0.0
 
         self.brain = None
@@ -782,12 +781,29 @@ class Organism():
             "health": cell_info["max_health"],
             "energy": cell_info["energy_storage"]/2,
             "in_use": False,
-            "push_angle": math.pi # The direction this sprite is moving (in radians)
+            "sight": [],
+            "view": [],
+            "removed": False,
+            "colliding": []
         }
         newCell.alive = alive
         newCell.creationTime = time.time()
 
         newCell.mouseDoubleClickEvent = lambda event: self.cell_double_clicked(newCell)
+
+        if cell_info["type"] == "eye" and newCell.alive:
+            num_bodies = 6
+            sightRange = cell_info["size"] * eyesight_multiplier
+
+            newBody, newShape = shatterbox.makeCircle(sightRange, friction=0.0, elasticity=0.0, mass=1)
+            newShape.sensor = True
+            newShape.collision_type = 1
+            newShape.sprite = newCell
+            newBody.position = pos
+
+            joint = pymunk.PinJoint(newBody, newCell.body, [0,0], [0,0])
+
+            newCell.info["sight"] = [newBody, newShape, joint]
 
         return newCell
 
@@ -821,7 +837,7 @@ class Organism():
         cell_info = sprite.base_info
 
         new_cell_info = cell_info.copy()
-        new_cell_info["type"] = "body"
+        new_cell_info["type"] = "dead"
 
         #pos = sprite.body.position
         pos = [sprite.body.position[0], sprite.body.position[1]]
@@ -871,15 +887,16 @@ class Organism():
 
         for cell_id in self.living_cells():
             pos = self.cells[cell_id].body.position
+            radius = self.cells[cell_id].radius
 
-            if pos[0] < minX:
+            if pos[0]-radius < minX:
                 minX = pos[0]
-            if pos[0] > maxX:
+            if pos[0]+radius > maxX:
                 maxX = pos[0]
 
-            if pos[1] < minY:
+            if pos[1]-radius < minY:
                 minY = pos[1]
-            if pos[1] > maxY:
+            if pos[1]+radius > maxY:
                 maxY = pos[1]
 
         return [minX, minY, maxX, maxY]
@@ -981,7 +998,10 @@ class Organism():
 
         newCell = self._make_dead_cell(sprite)
         self.environment.removeSprite(sprite)
+        sprite.info["removed"] = True
         self.environment.add_sprite(newCell)
+
+        self.environment.space.remove(*sprite.info["sight"])
 
         newCell.body.velocity = sprite.body.velocity
         newCell.body.angular_velocity = sprite.body.angular_velocity
@@ -1004,16 +1024,21 @@ class Organism():
         own_info = cell.base_info
         other_info = sprite.base_info
 
-        if own_info["type"] == "carniv":
-            damage_dealt = base_cell_info["damage"]["carniv"]
-            if sprite.alive:
-                sprite.info["health"] -= damage_dealt
-            else:
-                mass = sprite.body.mass
-                newMass = mass - (damage_dealt / own_info["mass"]) * 2
-                if newMass > 0:
-                    sprite.body._set_mass(newMass)
-                    cell.info["energy"] += damage_dealt
+        if not sprite in cell.info["colliding"]:
+            cell.info["colliding"].append(sprite)
+        if not cell in sprite.info["colliding"]:
+            sprite.info["colliding"].append(cell)
+
+        #if own_info["type"] == "carniv":
+        #    damage_dealt = base_cell_info["damage"]["carniv"]
+        #    if sprite.alive:
+        #        sprite.info["health"] -= damage_dealt
+        #    else:
+        #        mass = sprite.body.mass
+        #        newMass = mass - (damage_dealt / own_info["mass"]) * 2
+        #        if newMass > 0:
+        #            sprite.body._set_mass(newMass)
+        #            cell.organism.add_energy(damage_dealt)
 
     def _cell_collision(self, cell, sprite):
         # cell is the sprite for THIS organism's cell
@@ -1048,9 +1073,11 @@ class Organism():
             cell_info = sprite.base_info
             conversion_perc = num2perc(cell_info["size"], self.environment.width + self.environment.height)
             conversion_ratio = conversion_perc * uDiff
+
             co2 = perc2num(conversion_ratio, self.environment.info["co2"])
 
             self.environment.info["co2"] -= co2
+            self.environment.info["oxygen"] += co2
             #added_energy = co2 * (cell_info["mass"] / 3) * (cell_info["size"] / 3)
             added_energy = co2 * co2_conversion_ratio
 
@@ -1059,6 +1086,18 @@ class Organism():
             #spare_co2 = spare_energy / (cell_info["mass"] / 3) / (cell_info["size"] / 3)
             spare_co2 = spare_energy / co2_conversion_ratio
             self.environment.info["co2"] += spare_co2
+            self.environment.info["oxygen"] -= spare_co2
+
+    def convert_o2(self, cell_id, uDiff):
+        sprite = self.cells[cell_id]
+        if sprite.alive:
+            cell_info = sprite.base_info
+            conversion_perc = num2perc(cell_info["size"], self.environment.width + self.environment.height)
+            conversion_ratio = conversion_perc * uDiff
+            oxygen = perc2num(conversion_ratio, self.environment.info["oxygen"])
+
+            self.environment.info["oxygen"] -= oxygen
+            self.environment.info["co2"] += oxygen
 
     def reproduce(self, severity=0.5, neural_severity=0.5):
         self.lastBirth = time.time()
@@ -1081,10 +1120,43 @@ class Organism():
             self.kill_cell(sprite)
             return
 
+        if not sprite.alive:
+            return
+
+        if cell_info["type"] == "eye":
+            cShape = sprite.info["sight"][1]
+            for cell in sprite.info["view"][:]:
+                if not cShape.shapes_collide(cell.shape).points or cell.info["removed"]:
+                    sprite.info["view"].remove(cell)
+
+        for cell in sprite.info["colliding"]:
+            if not sprite.shape.shapes_collide(cell.shape).points or cell.info["removed"]:
+                sprite.info["colliding"].remove(cell)
+
+        if cell_info["type"] == "carniv":
+            damage_dealt = base_cell_info["damage"]["carniv"]
+            for cell in sprite.info["colliding"]:
+                if cell.alive:
+                    cell.info["health"] -= damage_dealt
+                else:
+                    mass = cell.body.mass
+                    newMass = mass - (damage_dealt / sprite.base_info["size"])
+
+                    sprite.organism.add_energy(damage_dealt * 3)
+
+                    if newMass > 0:
+                        cell.body._set_mass(newMass)
+                    else:
+                        cell.body._set_mass(0)
+
+
         if cell_info["type"] == "push" and sprite.alive:
             if self.movement["speed"] >= .1:
                 push_x = self.movement["direction"][0]
                 push_y = self.movement["direction"][1]
+
+                if self.movement["speed"] > 1.0:
+                    self.movement["speed"] = 1.0
 
                 speed = self.movement["speed"] * cell_info["size"] * cell_info["mass"]
                 speed *= (uDiff * 3)
@@ -1100,9 +1172,6 @@ class Organism():
         if cell_info["type"] == "rotate" and sprite.alive:
             sprite.body.angular_velocity += self.movement["rotation"]
 
-        if not sprite.alive:
-            return
-
         if sprite.info["in_use"]:
             energy_usage = cell_info["energy_usage"][1]
         else:
@@ -1115,6 +1184,8 @@ class Organism():
 
         if cell_info["type"] == "co2C":
             self.convert_co2(cell_id, uDiff)
+        else:
+            self.convert_o2(cell_id, uDiff)
 
         if sprite.info["energy"] > cell_info["energy_storage"]:
             sprite.info["energy"] = cell_info["energy_storage"]
@@ -1143,33 +1214,30 @@ class Organism():
         uDiff = time.time() - self.lastUpdated
         self.lastUpdated = time.time()
 
+        #~ Process dopamine and pain levels
         health_diff = self.health_percent() - self.lastHealth
         energy_diff = self.energy_percent() - self.lastEnergy
 
         self.pain = health_diff / uDiff
-        self.dopamine = energy_diff / uDiff
-        self.dopamine -= self.pain
+        self.dopamine_usage = energy_diff / uDiff
 
         if self.pain > 0:
             self.pain = 0.0
 
         self.pain = positive(self.pain)
+        self.dopamine_usage -= self.pain
 
-        #if health_diff > 0:
-        #    self.pain = 0.0
-        #else:
-        #    self.pain = 1.0
+        self.dopamine_memory.append(self.dopamine_usage)
+        self.dopamine_memory.pop(0)
 
-        #if energy_diff > 0:
-        #    self.dopamine = 1.0
-        #else:
-        #    self.dopamine = 0.0
+        self.dopamine_average = sum(self.dopamine_memory) / len(self.dopamine_memory)
+
+        #self.dopamine = self.dopamine_average + self.dopamine_usage
+        self.dopamine = self.dopamine_usage - self.dopamine_average
+        #~
 
         self.lastHealth = self.health_percent()
         self.lastEnergy = self.energy_percent()
-
-        #print("Pain:     {}".format( self.pain ))
-        #print("Dopamine: {}\n".format( self.dopamine ))
 
         cells_alive = self.living_cells()
         if len(cells_alive) == 1:
@@ -1177,8 +1245,7 @@ class Organism():
 
         fCell = self.dna.first_cell()
         if self.cells[fCell].alive:
-            sprite = self.cells[fCell]
-            self.pos = sprite.body.position
+            self.pos = self.cells[fCell].body.position
 
         max_energy = self.max_energy()
         if self.total_energy() >= max_energy/1.01 and (time.time() - self.lastBirth) >= reproduction_limit:
@@ -1222,6 +1289,7 @@ class Organism():
         for cell_id in self.cells:
             sprite = self.cells[cell_id]
             self.environment.add_sprite(sprite)
+            self.environment.space.add(*sprite.info["sight"])
 
         for cell_id in self.cells:
             sprite = self.cells[cell_id]
@@ -1239,15 +1307,17 @@ class Organism():
 def disperse_cell(sprite):
     organism = sprite.organism
     environment = organism.environment
-    cell_info = sprite.base_info
-    cell_id = sprite.cell_id
+    #cell_info = sprite.base_info
+    #cell_id = sprite.cell_id
 
-    mass = sprite.body.mass
+    #mass = sprite.body.mass
 
-    dispersed_co2 = co2_dispersion_ratio * (cell_info["size"] / 2) + mass
+    #dispersed_co2 = co2_dispersion_ratio * (cell_info["size"] / 2) + mass
 
-    environment.info["co2"] += dispersed_co2
+    #environment.info["co2"] += dispersed_co2
+    #environment.info["oxygen"] -= dispersed_co2
     environment.removeSprite(sprite)
+    sprite.info["removed"] = True
 
 def disperse_all_dead(environment):
     for sprite in environment.sprites[:]:
@@ -1257,6 +1327,8 @@ def disperse_all_dead(environment):
 def gradual_dispersion(environment, sprite, uDiff):
     mass = sprite.body.mass
     dispersion_rate = perc2num(cell_dispersion_rate, mass) * uDiff
+    organism = sprite.organism
+    cell_info = organism.dna.cells[sprite.cell_id]
     #dispersion_rate = cell_dispersion_rate * uDiff
 
     if mass < mass_cutoff:
@@ -1264,9 +1336,12 @@ def gradual_dispersion(environment, sprite, uDiff):
     else:
         newMass = mass - dispersion_rate
         if newMass > 0:
+            renewedCo2 = perc2num(dispersion_rate, environment.info["oxygen"])
+
             sprite.body._set_mass(newMass)
-            renewedCo2 = dispersion_rate * co2_dispersion_ratio
+
             environment.info["co2"] += renewedCo2
+            environment.info["oxygen"] -= renewedCo2
         else:
             disperse_cell(sprite)
 
@@ -1290,16 +1365,14 @@ def update_organisms(environment):
             if train_uDiff >= learning_update_delay and positive(org.dopamine) >= training_dopamine_threshold:
                 neural.train_network(org, epochs=training_epochs)
                 #org.brain.train_networks(org)
-
-            if org.dopamine < training_dopamine_threshold:
-                org.brain.mutateBias(.1)
         else:
             environment.info["organism_list"].remove(org)
 
     for sprite in environment.sprites:
         if not sprite.alive:
             gradual_dispersion(environment, sprite, uDiff)
-        if sprite.pos().x() < 0 or sprite.pos().x() > environment.width or sprite.pos().y() < 0 or sprite.pos().y() > environment.height:
+        sprite_pos = sprite.getPos()
+        if sprite_pos[0] < 0 or sprite_pos[0] > environment.width or sprite_pos[1] < 0 or sprite_pos[1] > environment.height:
             if sprite.alive:
                 organism = sprite.organism
                 sprite.info["health"] = 0
@@ -1310,6 +1383,7 @@ def update_organisms(environment):
                 #    environment.info["organism_list"].remove(organism)
             else:
                 environment.removeSprite(sprite)
+                sprite.info["removed"] = True
 
 
 if __name__ == "__main__":

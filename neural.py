@@ -27,6 +27,8 @@ output_lengths = {
     "eye": len(cell_types) * 4
 }
 
+memory_limit = 80
+
 
 
 def num2perc(num, maxNum):
@@ -55,40 +57,35 @@ def getDirection(angle):
 
 def activate(network, environment, organism, uDiff):
     def _get_eye_input(cell_id, environment, organism):
-        spriteList = [sprite for sprite in environment.sprites if sprite.organism != organism]
-
         eye_input = [0] * output_lengths["eye"]
 
-        cell = organism.cells[cell_id]
-        if not cell.alive:
+        sprite = organism.cells[cell_id]
+        sprite_pos = sprite.getPos()
+        if not sprite.alive:
             return eye_input
 
-        cell_info = organism.dna.cells[cell_id]
-        sightRange = cell_info["size"] * 6
+        sprite_info = sprite.base_info
 
-        for sprite in spriteList:
+        for cell in sprite.info["view"]:
             cell_pos = cell.getPos()
-            sprite_pos = sprite.getPos()
-            sprite_id = sprite.cell_id
-            sprite_info = sprite.organism.dna.cells[sprite_id]
+            cell_info = cell.base_info
 
-            dist = calculateDistance(cell_pos[0], cell_pos[1], sprite_pos[0], sprite_pos[1])
-            angle = getAngle(cell_pos[0], cell_pos[1], sprite_pos[0], sprite_pos[1])
+            dist = calculateDistance(sprite_pos[0], sprite_pos[1], cell_pos[0], cell_pos[1])
+            angle = getAngle(sprite_pos[0], sprite_pos[1], cell_pos[0], cell_pos[1])
             direction = [math.cos(angle), math.sin(angle)]
 
-            if dist <= sightRange:
-                lp = cell_types[sprite_info["type"]]
+            lp = cell_types[ cell_info["type"] ]
 
-                if not eye_input[lp]:
-                    eye_input[lp] = 1.0
-                    eye_input[lp+1] = direction[0]
-                    eye_input[lp+2] = direction[1]
-                    eye_input[lp+3] = dist
-                elif eye_input[lp+3] > dist:
-                    eye_input[lp] = 1.0
-                    eye_input[lp+1] = direction[0]
-                    eye_input[lp+2] = direction[1]
-                    eye_input[lp+3] = dist
+            if not eye_input[lp]:
+                eye_input[lp] = 1.0
+                eye_input[lp+1] = direction[0]
+                eye_input[lp+2] = direction[1]
+                eye_input[lp+3] = dist
+            elif eye_input[lp+3] > dist:
+                eye_input[lp] = 1.0
+                eye_input[lp+1] = direction[0]
+                eye_input[lp+2] = direction[1]
+                eye_input[lp+3] = dist
 
         return eye_input
     def _get_health_input(organism):
@@ -152,8 +149,8 @@ def activate(network, environment, organism, uDiff):
         network_output = network.forward(flat_inputs)
         #network_output = self.network.forward(all_inputs)
 
-        network.lastInput = flat_inputs.clone()
-        network.lastOutput = network_output.clone()
+        network.lastInput = flat_inputs.clone().detach().requires_grad_(True)
+        network.lastOutput = network_output.clone().detach().requires_grad_(True)
 
         for i, output_val in enumerate(network_output):
             correspondent = network.outputCells[i]
@@ -180,17 +177,22 @@ def train_network(organism, epochs=1):
         return
 
 
-    inputData = network.lastInput.clone()
-    targetData = network.lastOutput.clone()
-    #if organism.pain:
-    targetData = torch.tensor( [x * (organism.dopamine) for x in targetData] ).float()
-    print(organism.dopamine)
+    inputData = network.lastInput.clone().detach()
+    targetData = network.lastOutput.clone().detach()
+    if organism.pain:
+        targetData = torch.tensor( [reverse_val(x) for x in targetData] ).float()
+    #targetData = torch.tensor( [x * (organism.dopamine) for x in targetData] ).float()
 
     network.trainingInput.append( inputData.tolist() )
     network.trainingOutput.append( targetData.tolist() )
 
+    while len(network.trainingInput) > memory_limit:
+        network.trainingInput.pop(0)
+        network.trainingOutput.pop(0)
+
     for i in range(epochs):
         loss = network.trainer.train_epoch(torch.tensor(network.trainingInput), torch.tensor(network.trainingOutput))
+        #loss = network.trainer.train_epoch(inputData, targetData)
         network.lastLoss = loss
     network.lastTrained = time.time()
 
@@ -232,7 +234,7 @@ def setup_network(dna):
         for correspondent in base_input["body"]:
             inputCells.append(correspondent)
 
-    hiddenList = [random.randrange(inputSize, inputSize*2) for i in range(random.randrange(3, 9))]
+    hiddenList = [random.randrange(inputSize, round(inputSize*1.2)) for i in range(random.randrange(3, 6))]
 
     outputSize = len(base_output)
 
@@ -580,8 +582,8 @@ class Brain():
                 network_output = self.network.forward(flat_inputs)
                 #network_output = self.network.forward(all_inputs)
 
-                self.lastInput = flat_inputs.clone()
-                self.lastOutput = network_output.clone()
+                self.lastInput = flat_inputs.clone().detach()
+                self.lastOutput = network_output.clone().detach()
 
                 for i, output_val in enumerate(network_output):
                     correspondent = self.base_output[i]
@@ -605,8 +607,8 @@ class Brain():
         if not self.network:
             return
 
-        inputData = self.lastInput.clone()
-        targetData = self.lastOutput.clone()
+        inputData = self.lastInput.clone().detach()
+        targetData = self.lastOutput.clone().detach()
         if organism.dopamine < 0:
             targetData = torch.tensor( [self.reverse_val(x) for x in targetData] ).float()
 

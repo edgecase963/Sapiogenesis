@@ -62,7 +62,7 @@
        <property name="geometry">
         <rect>
          <x>110</x>
-         <y>70</y>
+         <y>80</y>
          <width>100</width>
          <height>25</height>
         </rect>
@@ -81,7 +81,7 @@
        <property name="geometry">
         <rect>
          <x>10</x>
-         <y>40</y>
+         <y>56</y>
          <width>60</width>
          <height>25</height>
         </rect>
@@ -106,7 +106,7 @@
        <property name="geometry">
         <rect>
          <x>10</x>
-         <y>70</y>
+         <y>80</y>
          <width>90</width>
          <height>25</height>
         </rect>
@@ -131,7 +131,7 @@
        <property name="geometry">
         <rect>
          <x>10</x>
-         <y>10</y>
+         <y>8</y>
          <width>60</width>
          <height>25</height>
         </rect>
@@ -159,7 +159,7 @@
        <property name="geometry">
         <rect>
          <x>70</x>
-         <y>10</y>
+         <y>8</y>
          <width>140</width>
          <height>25</height>
         </rect>
@@ -175,10 +175,54 @@
        <property name="geometry">
         <rect>
          <x>70</x>
-         <y>40</y>
+         <y>56</y>
          <width>140</width>
          <height>25</height>
         </rect>
+       </property>
+       <property name="text">
+        <string>0</string>
+       </property>
+      </widget>
+      <widget class="QLabel" name="oxygen_label">
+       <property name="geometry">
+        <rect>
+         <x>10</x>
+         <y>32</y>
+         <width>60</width>
+         <height>25</height>
+        </rect>
+       </property>
+       <property name="font">
+        <font>
+         <weight>75</weight>
+         <bold>true</bold>
+        </font>
+       </property>
+       <property name="toolTip">
+        <string extracomment="The amount of CO2 in this world"/>
+       </property>
+       <property name="statusTip">
+        <string>The amount of Oxygen in this environment</string>
+       </property>
+       <property name="whatsThis">
+        <string/>
+       </property>
+       <property name="text">
+        <string>Oxygen:</string>
+       </property>
+      </widget>
+      <widget class="QLabel" name="oxygen_val">
+       <property name="geometry">
+        <rect>
+         <x>79</x>
+         <y>32</y>
+         <width>131</width>
+         <height>25</height>
+        </rect>
+       </property>
+       <property name="toolTip">
+        <string/>
        </property>
        <property name="text">
         <string>0</string>
@@ -899,7 +943,7 @@
        <string extracomment="The amount of CO2 in this world"/>
       </property>
       <property name="statusTip">
-       <string>How much time an organism has to wait before reproducing</string>
+       <string>How much time an organism has to wait before reproducing again</string>
       </property>
       <property name="whatsThis">
        <string/>
@@ -927,7 +971,7 @@
        <string extracomment="The amount of CO2 in this world"/>
       </property>
       <property name="statusTip">
-       <string>If the population is over/at this value, organisms will not reproduce</string>
+       <string>If the population is over/at this value, organisms will not reproduce (Adding organisms manually bypasses this function)</string>
       </property>
       <property name="whatsThis">
        <string/>
@@ -1107,7 +1151,7 @@
        <string extracomment="The amount of CO2 in this world"/>
       </property>
       <property name="statusTip">
-       <string>How long to wait in between an organism's &quot;thoughts&quot; (update the neural network)</string>
+       <string>How long to wait in between an organism's &quot;thoughts&quot; - e.g. update the neural network (higher = faster)</string>
       </property>
       <property name="whatsThis">
        <string/>
@@ -1179,7 +1223,7 @@
        <string extracomment="The amount of CO2 in this world"/>
       </property>
       <property name="statusTip">
-       <string>How long to wait before training neural networks</string>
+       <string>How long to wait before training neural networks (higher = faster)</string>
       </property>
       <property name="whatsThis">
        <string/>
@@ -1207,7 +1251,7 @@
        <string extracomment="The amount of CO2 in this world"/>
       </property>
       <property name="statusTip">
-       <string>How many epochs to train per training interval</string>
+       <string>How many epochs to train per training interval (lower = faster)</string>
       </property>
       <property name="whatsThis">
        <string/>
@@ -1273,7 +1317,7 @@
        <string extracomment="The amount of CO2 in this world"/>
       </property>
       <property name="statusTip">
-       <string>The amount of dopamine difference required to memorize a situation and learn from it</string>
+       <string>The amount of dopamine difference required to memorize a situation and learn from it (higher = faster)</string>
       </property>
       <property name="whatsThis">
        <string/>
@@ -1357,6 +1401,9 @@
       <property name="toolTip">
        <string extracomment="This organism's generation"/>
       </property>
+      <property name="statusTip">
+       <string>How far down this organism is on its genetic timeline (offspring)</string>
+      </property>
       <property name="text">
        <string>Generation:</string>
       </property>
@@ -1378,6 +1425,9 @@
       </property>
       <property name="toolTip">
        <string extracomment="How many neurons are in this organism's brain"/>
+      </property>
+      <property name="statusTip">
+       <string>This organism's current dopamine level</string>
       </property>
       <property name="text">
        <string>Dopamine:</string>
@@ -1464,6 +1514,9 @@
       </property>
       <property name="toolTip">
        <string extracomment="How many neurons are in this organism's brain"/>
+      </property>
+      <property name="statusTip">
+       <string>How healthy this organism is (This also acts as the chance that this organism will produce offspring)</string>
       </property>
       <property name="text">
        <string>Health:</string>
@@ -1600,7 +1653,7 @@
        <string extracomment="How much energy this organism has"/>
       </property>
       <property name="statusTip">
-       <string>The loss of this organism's neural network (How sure it is of the connections its made between inputs and outputs)</string>
+       <string>The loss of this organism's neural network (The higher the value = the more confused this organism is)</string>
       </property>
       <property name="text">
        <string>Loss:</string>
