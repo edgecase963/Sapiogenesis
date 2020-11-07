@@ -252,77 +252,16 @@ def setup_network(dna):
         network.trainingInput = []
         network.trainingOutput = []
         network.lastLoss = 0
+
+        for layer in network.layers():
+            print(layer)
+
         return network
 
 
 
-class NeuralNet(torch.nn.Module):
-    def __init__(self, pre_networks, final_network, optimizer="adam", learning_rate="default"):
-
-        super(NeuralNet, self).__init__()
-
-        self.pre_networks = pre_networks
-        self.final_network = final_network
-
-        self.minHiddenSize = 2
-
-        self.inputSize = 0
-        self.hiddenList = []
-        self.outputSize = 0
-
-        self.optimizer = "adam"
-        self.learning_rate = "default"
-
-    def copy(self):
-        return copy.deepcopy(self)
-
-    def networks(self):
-        nets = []
-        nets.extend(self.pre_networks)
-        nets.append(self.final_network)
-        return nets
-
-    def layers(self):
-        layers = []
-        for net in self.networks():
-            layers.extend(net.layers())
-        return layers
-
-    def layerSizes(self):
-        layer_sizes = [self.inputSize]
-        for s in self.hiddenList:
-            layer_sizes.append(s)
-        layer_sizes.append(self.outputSize)
-        return layer_sizes
-
-    def forward(self, inputs):
-        # `inputs` should be a list containing tensors for each network
-        # Structure: [<tensor>, <tensor>]
-
-        result_list = []
-        for i, network in enumerate(self.pre_networks):
-            result = network(inputs[i])
-            result = torch.sigmoid(result)
-            result_list.append(result)
-
-        all_inputs = torch.cat(result_list)
-        output = self.final_network(all_inputs)
-
-        return output
-
-    def get_layers(self):
-        lList = []
-        lList.append(self.inputLayer)
-        for layer in self.hiddenLayers:
-            lList.append(layer)
-        lList.append(self.outputLayer)
-        return lList
-
-
 
 if __name__ == "__main__":
-    net1 = networks.Network(2, [3], 4)
-    net2 = networks.Network(4, [3], 1)
-    net3 = networks.Network(6, [3], 1)
+    net = networks.Network(2, [3], 1)
 
-    brain = NeuralNet([net1, net2], net3)
+    print( net.layers() )

@@ -40,8 +40,11 @@ def updateUI(window, environment):
     if window.min_mass_range_spinbox.value() >= window.max_mass_range_spinbox.value():
         window.max_mass_range_spinbox.setProperty("value", window.min_mass_range_spinbox.value()+1)
 
+    #~ Reproduction section
     sprites.reproduction_limit = window.rep_time_val.value()
     environment.info["population_limit"] = window.max_pop_val.value()
+    sprites.offspring_amount = window.offspring_val.value()
+    #~
 
     #~ Brain section
     sprites.neural_update_delay = window.neural_interval_spinbox.value()

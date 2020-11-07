@@ -282,7 +282,7 @@
         <number>100</number>
        </property>
        <property name="value">
-        <number>1500</number>
+        <number>1000</number>
        </property>
       </widget>
       <widget class="QPushButton" name="rem_co2_btn">
@@ -323,7 +323,7 @@
         <number>100</number>
        </property>
        <property name="value">
-        <number>1500</number>
+        <number>1000</number>
        </property>
       </widget>
       <widget class="QPushButton" name="set_co2_btn">
@@ -1125,6 +1125,62 @@
       </property>
       <property name="text">
        <string>Match</string>
+      </property>
+     </widget>
+     <widget class="QLabel" name="offspring_label">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>80</y>
+        <width>121</width>
+        <height>25</height>
+       </rect>
+      </property>
+      <property name="font">
+       <font>
+        <weight>75</weight>
+        <bold>true</bold>
+       </font>
+      </property>
+      <property name="toolTip">
+       <string extracomment="The amount of CO2 in this world"/>
+      </property>
+      <property name="statusTip">
+       <string>How many offspring to create when an organism reproduces</string>
+      </property>
+      <property name="whatsThis">
+       <string/>
+      </property>
+      <property name="text">
+       <string>Offspring</string>
+      </property>
+     </widget>
+     <widget class="QSpinBox" name="offspring_val">
+      <property name="geometry">
+       <rect>
+        <x>135</x>
+        <y>80</y>
+        <width>80</width>
+        <height>30</height>
+       </rect>
+      </property>
+      <property name="toolTip">
+       <string extracomment="Amount of CO2 to add"/>
+      </property>
+      <property name="statusTip">
+       <string/>
+      </property>
+      <property name="minimum">
+       <number>1</number>
+      </property>
+      <property name="maximum">
+       <number>30</number>
+      </property>
+      <property name="singleStep">
+       <number>1</number>
+      </property>
+      <property name="value">
+       <number>1</number>
       </property>
      </widget>
     </widget>

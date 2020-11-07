@@ -38,6 +38,9 @@ cell_dispersion_rate = 6
 reproduction_limit = 6
 # The amount of time (in seconds) an organism has to wait before reproducing again
 
+offspring_amount = 1
+# How many offspring to create when an organism reproduces
+
 heal_rate = 3
 # The percentage of health to heal each second if the cell has enough energy
 
@@ -202,7 +205,7 @@ def viable_organism_position(pos, dna, environment):
 def get_new_orgnism_position(old_organism, dna, environment):
     orgSize = old_organism.dna.get_size()
     newSize = dna.get_size()
-    dist = [(orgSize[0]/1.3) + (newSize[0]/1.3), (orgSize[1]/1.3) + (newSize[1]/1.3)]
+    dist = [ (orgSize[0]/1.3) + (newSize[0]/1.3), (orgSize[1]/1.3) + (newSize[1]/1.3) ]
 
     degList = list(range(360))
     #rDegList = sorted(degList, key=lambda x: random.random())
@@ -224,6 +227,7 @@ def get_new_orgnism_position(old_organism, dna, environment):
                 environment.removeSprite(sprite)
                 sprite.info["removed"] = True
             return [xPos, yPos]
+    return False
 
 def eye_segment_handler(arbiter, space, data):
     if isinstance(arbiter.shapes[0], pymunk.Segment) or isinstance(arbiter.shapes[1], pymunk.Segment):
@@ -728,7 +732,7 @@ class Organism():
         self.lastEnergy = 0.0 # Used to calculate the organism's dopamine
         self.lastHealth = 0.0 # Used to calculate the organism's pain
         self.dopamine_average = 0
-        self.dopamine_memory = [0]*100
+        self.dopamine_memory = [0]*200
         self.dopamine_usage = 0.0
         self.dopamine = 0.0 # The current dopamine output
         self.pain = 0.0
@@ -1097,7 +1101,7 @@ class Organism():
             self.environment.info["oxygen"] -= oxygen
             self.environment.info["co2"] += oxygen
 
-    def reproduce(self, severity=0.5, neural_severity=0.5):
+    def _reproduce_organism(self, severity, neural_severity):
         self.lastBirth = time.time()
         new_dna = self.dna.mutate(severity=severity, neural_severity=neural_severity)
 
@@ -1109,6 +1113,10 @@ class Organism():
         organism.generation = self.generation + 1
         self.environment.info["organism_list"].append(organism)
         organism.build_body()
+
+    def reproduce(self, severity=0.5, neural_severity=0.5):
+        for i in range(offspring_amount):
+            self._reproduce_organism(severity, neural_severity)
 
     def _update_cell(self, cell_id, uDiff):
         sprite = self.cells[cell_id]
@@ -1132,6 +1140,11 @@ class Organism():
                 sprite.info["colliding"].remove(cell)
 
         if cell_info["type"] == "carniv":
+            if sprite.info["colliding"]:
+                sprite.info["in_use"] = True
+            else:
+                sprite.info["in_use"] = False
+
             damage_dealt = base_cell_info["damage"]["carniv"]
             for cell in sprite.info["colliding"]:
                 if cell.alive:
@@ -1153,8 +1166,8 @@ class Organism():
                 push_x = self.movement["direction"][0]
                 push_y = self.movement["direction"][1]
 
-                if self.movement["speed"] > 1.0:
-                    self.movement["speed"] = 1.0
+                if self.movement["speed"] > 2.0:
+                    self.movement["speed"] = 2.0
 
                 speed = self.movement["speed"] * cell_info["size"] * cell_info["mass"]
                 speed *= (uDiff * 3)
