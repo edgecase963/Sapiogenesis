@@ -280,7 +280,7 @@ class DNA():
             "input_size": 6,
             "inputs": ["energy", "health", "rotation", "speed", "x_direction", "y_direction"],
             "hidden_layers": [], # [<integer>, <integer>, <integer>]
-            "output_size": 0,
+            "output_size": 4,
             "outputs": ["rotation", "speed", "x_direction", "y_direction"]
         }
 
@@ -597,8 +597,36 @@ class DNA():
 
         for cell_id in self.cells:
             cell_info = self.cells[cell_id]
+
             if cell_info["type"] == "eye":
-                self.brain_structure["input_size"] += 4
+                self.brain_structure["input_size"] += neural.output_lengths["eye"]
+
+        hiddenSize = random.randrange(3, 12)
+        hiddenLayers = []
+
+        if self.brain_structure["input_size"] > self.brain_structure["output_size"]:
+            decRange = numpy.linspace(
+                self.brain_structure["input_size"],
+                self.brain_structure["output_size"],
+                hiddenSize
+            )
+            decRange = list(decRange)
+        else:
+            decRange = numpy.linspace(
+                self.brain_structure["output_size"],
+                self.brain_structure["input_size"],
+                hiddenSize
+            )
+            decRange = list(decRange)
+            decRange = decRange.reverse()
+
+        for i in decRange:
+            hiddenLayerSize = int(random.triangular(1, i, i))
+            while hiddenLayerSize == 0:
+                hiddenLayerSize = int(random.triangular(1, i, i))
+            hiddenLayers.append(hiddenLayerSize)
+
+        self.brain_structure["hidden_layers"] = hiddenLayers
 
     def randomize(self, cellRange=[3,30], sizeRange=[6,42], massRange=[5,20], mirror_x=[0.6, 0.4], mirror_y=[0.6, 0.4]):
         self.cellRange = cellRange
@@ -629,6 +657,8 @@ class DNA():
                     first_cell=first_cell
                 )
             first_cell = False
+
+        self._setup_brain_structure()
 
         return self
 

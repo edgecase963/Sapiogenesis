@@ -233,7 +233,7 @@ def setup_network(dna):
         for correspondent in base_input["body"]:
             inputCells.append(correspondent)
 
-    hiddenList = [random.randrange(inputSize, round(inputSize*1.2)) for i in range(random.randrange(3, 6))]
+    hiddenList = dna.brain_structure["hidden_layers"]
 
     outputSize = len(base_output)
 
