@@ -25,19 +25,25 @@ class Ui_MainWindow(Ui_MainWindow):
     def setupUi(self, MainWindow):
         super(Ui_MainWindow, self).setupUi(MainWindow)
         self.worldView = World_View(self.centralwidget)
-        self.worldView.setGeometry(QtCore.QRect(15, 20, 1070, 600))
+        self.worldView.setGeometry(QtCore.QRect(15, 20, 1060, 600))
         self.worldView.setObjectName("worldView")
 
         self.worldView.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
         self.worldView.customContextMenuRequested[QtCore.QPoint].connect(self.rightMenuShow)
 
         self.scene = QtWidgets.QGraphicsScene(self.worldView)
-        self.scene.setSceneRect(0, 0, 3000, 1800)
+        self.scene.setSceneRect(0, 0, 3180, 1800)
         self.worldView.setScene(self.scene)
 
         self.worldView.fitInView()
 
         self.worldView.setBackgroundBrush( QtGui.QBrush( QtGui.QColor(180,180,255) ) )
+
+        #tempImg = QtGui.QPixmap("Images/background.jpg")
+        #tempImg = tempImg.scaled(self.scene.width(), self.scene.height())
+
+        #graphicsPixmapItem = QtWidgets.QGraphicsPixmapItem(tempImg)
+        #self.scene.addItem(graphicsPixmapItem)
 
 
 
