@@ -24,7 +24,8 @@ cell_types = {
 # This is used to create inputs for eye cells
 
 output_lengths = {
-    "eye": len(cell_types) * 4
+    "eye": len(cell_types) * 4,
+    "carniv": 1
 }
 
 memory_limit = 80
@@ -88,6 +89,11 @@ def activate(network, environment, organism, uDiff):
                 eye_input[lp+3] = dist
 
         return eye_input
+    def _get_carn_input(cell_id, environment, organism):
+        sprite = organism.cells[cell_id]
+        if sprite.alive and sprite.info["in_use"]:
+            return 1.0
+        return 0.0
     def _get_health_input(organism):
         return organism.health_percent() / 100.
     def _get_energy_input(organism):
@@ -119,6 +125,8 @@ def activate(network, environment, organism, uDiff):
             cell_type = organism.dna.cells[correspondent]["type"]
             if cell_type == "eye":
                 input_val = _get_eye_input(correspondent, environment, organism)
+            elif cell_type == "carniv":
+                input_val = _get_carn_input(correspondent, environment, organism)
         elif isinstance(correspondent, str):
             if correspondent == "health":
                 input_val = _get_health_input(organism)
@@ -213,6 +221,8 @@ def setup_network(dna):
 
         if cell_info["type"] == "eye":
             base_input["visual"].append(cell_id)
+        elif cell_info["type"] == "carniv":
+            base_input["body"].append(cell_id)
 
     inputSize = 0
     hiddenList = []
@@ -252,9 +262,6 @@ def setup_network(dna):
         network.trainingInput = []
         network.trainingOutput = []
         network.lastLoss = 0
-
-        for layer in network.layers():
-            print(layer)
 
         return network
 

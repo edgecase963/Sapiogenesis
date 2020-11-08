@@ -184,6 +184,8 @@ def viable_organism_position(pos, dna, environment):
         return False, []
 
     for org in orgList:
+        if not org.alive():
+            continue
         rect = org.get_rect()
 
         # Rect = [min_x, min_y, max_x, max_y]
@@ -600,8 +602,10 @@ class DNA():
 
             if cell_info["type"] == "eye":
                 self.brain_structure["input_size"] += neural.output_lengths["eye"]
+            elif cell_info["type"] == "carniv":
+                self.brain_structure["input_size"] += neural.output_lengths["carniv"]
 
-        hiddenSize = random.randrange(3, 12)
+        hiddenSize = random.randrange(2, 12)
         hiddenLayers = []
 
         if self.brain_structure["input_size"] > self.brain_structure["output_size"]:
@@ -620,10 +624,13 @@ class DNA():
             decRange = list(decRange)
             decRange = decRange.reverse()
 
+        minRange = min(decRange)-1
+        maxRange = max(decRange)
+
         for i in decRange:
-            hiddenLayerSize = int(random.triangular(1, i, i))
+            hiddenLayerSize = int(random.triangular(minRange, i, maxRange))
             while hiddenLayerSize == 0:
-                hiddenLayerSize = int(random.triangular(1, i, i))
+                hiddenLayerSize = int(random.triangular(minRange, i, maxRange))
             hiddenLayers.append(hiddenLayerSize)
 
         self.brain_structure["hidden_layers"] = hiddenLayers
@@ -723,8 +730,53 @@ class DNA():
 
         return new_dna
 
+    def mutate_brain_layers(self, severity):
+        oldHidden = self.brain_structure["hidden_layers"][:]
+        newHidden = []
+        lengthChange = round(severity * 10.)
+
+        try:
+            random.randrange(-lengthChange, lengthChange)
+        except ValueError:
+            return
+
+        #lengthChange = random.randrange(-lengthChange, lengthChange)
+        lengthChange = int(random.triangular(-lengthChange, 0, lengthChange))
+
+        if lengthChange > 0:
+            for i in range(lengthChange):
+                if len(oldHidden)-1 >= i:
+                    newLayer = oldHidden[i]
+                else:
+                    newLayer = random.randrange( min(oldHidden), max(oldHidden)+1 )
+                newHidden.append(newLayer)
+        else:
+            newLength = len(oldHidden) + lengthChange
+            if newLength < 1:
+                newLength = 1
+
+            for i in range(newLength):
+                if len(oldHidden)-1 >= i:
+                    newLayer = oldHidden[i]
+                else:
+                    newLayer = random.randrange( min(oldHidden), max(oldHidden)+1 )
+                newHidden.append(newLayer)
+
+        sizeChange = round(severity * 10.)
+
+        for i in range(len(newHidden)):
+            newAmt = int(random.triangular(-sizeChange, 0, sizeChange))
+            newHidden[i] = newHidden[i]-newAmt
+            if newHidden[i] < 2:
+                newHidden[i] = 2
+
+        self.brain_structure["hidden_layers"] = newHidden
+
     def mutate_brain_structure(self, severity):
-        pass
+        new_dna = self.copy()
+        new_dna.mutate_brain_layers(severity)
+
+        return new_dna
 
     def mutate(self, severity, neural_severity):
         # `severity` : 0.0 - 1.0
@@ -736,7 +788,7 @@ class DNA():
 
         new_dna = new_dna.mutate_cell_masses(severity)
 
-        self.mutate_brain_structure(neural_severity)
+        new_dna = new_dna.mutate_brain_structure(neural_severity)
 
         return new_dna
 
@@ -1273,8 +1325,8 @@ class Organism():
 
         self.dopamine_average = sum(self.dopamine_memory) / len(self.dopamine_memory)
 
-        #self.dopamine = self.dopamine_average + self.dopamine_usage
-        self.dopamine = self.dopamine_usage - self.dopamine_average
+        #self.dopamine = self.dopamine_usage - self.dopamine_average
+        self.dopamine = self.dopamine_usage
         #~
 
         self.lastHealth = self.health_percent()
