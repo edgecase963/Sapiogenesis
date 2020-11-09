@@ -74,12 +74,12 @@ base_cell_info = {
         "barrier": 60,
         "carniv": 15,
         "co2C": 8,
-        "eye": 6,
+        "eye": 5,
         "olfactory": 12,
         "push": 12,
         "pheremone": 12,
         "body": 12,
-        "heart": 8,
+        "heart": 6,
         "rotate": 12
     },
     "energy_usage": {
@@ -1229,18 +1229,22 @@ class Organism():
 
             damage_dealt = base_cell_info["damage"]["carniv"]
             for cell in sprite.info["colliding"]:
+                added_energy = damage_dealt
                 if cell.alive:
                     cell.info["health"] -= damage_dealt
                 else:
                     mass = cell.body.mass
                     newMass = mass - (damage_dealt / sprite.base_info["size"])
 
-                    sprite.organism.add_energy(damage_dealt * 3)
+                    added_energy *= cell.base_info["mass"]
+                    added_energy *= cell.base_info["size"]
 
                     if newMass > 0:
                         cell.body._set_mass(newMass)
                     else:
                         cell.body._set_mass(0)
+
+                sprite.organism.add_energy(added_energy)
 
 
         if cell_info["type"] == "push" and sprite.alive:
@@ -1320,13 +1324,13 @@ class Organism():
         self.pain = positive(self.pain)
         self.dopamine_usage -= self.pain
 
-        self.dopamine_memory.append(self.dopamine_usage)
+        self.dopamine_memory.append(self.dopamine)
         self.dopamine_memory.pop(0)
 
         self.dopamine_average = sum(self.dopamine_memory) / len(self.dopamine_memory)
 
-        #self.dopamine = self.dopamine_usage - self.dopamine_average
-        self.dopamine = self.dopamine_usage
+        self.dopamine = self.dopamine_usage - self.dopamine_average
+        #self.dopamine = self.dopamine_usage
         #~
 
         self.lastHealth = self.health_percent()
