@@ -657,7 +657,7 @@ class Ui_MainWindow(object):
 
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
-        MainWindow.setWindowTitle(_translate("MainWindow", "NSS"))
+        MainWindow.setWindowTitle(_translate("MainWindow", "Sapiogenesis"))
         self.pop_val.setText(_translate("MainWindow", "0"))
         self.time_label.setStatusTip(_translate("MainWindow", "The environment\'s age"))
         self.time_label.setText(_translate("MainWindow", "Time:"))
