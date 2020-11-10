@@ -102,7 +102,6 @@ class World_View(QtWidgets.QGraphicsView):
 
 def rightMenuShow(self):
     pos = QtGui.QCursor.pos()
-    print("Pos: {}".format(pos))
     #rightMenu = QtWidgets.QMenu(self.listView1)
     rightMenu = QtWidgets.QMenu()
 

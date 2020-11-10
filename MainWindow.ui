@@ -11,7 +11,7 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>NSS</string>
+   <string>Sapiogenesis</string>
   </property>
   <widget class="QWidget" name="centralwidget">
    <widget class="QGraphicsView" name="worldView">
@@ -1002,7 +1002,7 @@
        <number>5</number>
       </property>
       <property name="value">
-       <number>120</number>
+       <number>100</number>
       </property>
      </widget>
      <widget class="QSlider" name="neural_severity_slider">
@@ -1432,6 +1432,56 @@
        <number>80</number>
       </property>
      </widget>
+     <widget class="QSpinBox" name="input_memory_spinbox">
+      <property name="geometry">
+       <rect>
+        <x>390</x>
+        <y>80</y>
+        <width>80</width>
+        <height>30</height>
+       </rect>
+      </property>
+      <property name="minimum">
+       <number>2</number>
+      </property>
+      <property name="maximum">
+       <number>999</number>
+      </property>
+      <property name="singleStep">
+       <number>10</number>
+      </property>
+      <property name="value">
+       <number>30</number>
+      </property>
+     </widget>
+     <widget class="QLabel" name="input_memory_label">
+      <property name="geometry">
+       <rect>
+        <x>240</x>
+        <y>80</y>
+        <width>151</width>
+        <height>25</height>
+       </rect>
+      </property>
+      <property name="font">
+       <font>
+        <weight>75</weight>
+        <bold>true</bold>
+       </font>
+      </property>
+      <property name="toolTip">
+       <string extracomment="The amount of CO2 in this world"/>
+      </property>
+      <property name="statusTip">
+       <string>How many inputs back to remember (used for calculating the stimulation value)</string>
+      </property>
+      <property name="whatsThis">
+       <string/>
+      </property>
+      <property name="text">
+       <string>Input Memory:</string>
+      </property>
+     </widget>
     </widget>
    </widget>
    <widget class="QFrame" name="Organism_Frame">
@@ -1452,9 +1502,9 @@
     <widget class="QFrame" name="organism_info_frame">
      <property name="geometry">
       <rect>
-       <x>160</x>
+       <x>180</x>
        <y>10</y>
-       <width>181</width>
+       <width>161</width>
        <height>120</height>
       </rect>
      </property>
@@ -1544,7 +1594,7 @@
        <rect>
         <x>70</x>
         <y>10</y>
-        <width>101</width>
+        <width>81</width>
         <height>25</height>
        </rect>
       </property>
@@ -1560,7 +1610,7 @@
        <rect>
         <x>100</x>
         <y>35</y>
-        <width>81</width>
+        <width>61</width>
         <height>25</height>
        </rect>
       </property>
@@ -1576,7 +1626,7 @@
        <rect>
         <x>90</x>
         <y>60</y>
-        <width>71</width>
+        <width>61</width>
         <height>25</height>
        </rect>
       </property>
@@ -1592,7 +1642,7 @@
        <rect>
         <x>80</x>
         <y>85</y>
-        <width>81</width>
+        <width>71</width>
         <height>25</height>
        </rect>
       </property>
@@ -1730,7 +1780,7 @@
       <rect>
        <x>10</x>
        <y>10</y>
-       <width>141</width>
+       <width>161</width>
        <height>120</height>
       </rect>
      </property>
@@ -1765,12 +1815,12 @@
        <string>Loss:</string>
       </property>
      </widget>
-     <widget class="QLabel" name="neural_inputs_label">
+     <widget class="QLabel" name="stim_label">
       <property name="geometry">
        <rect>
         <x>10</x>
         <y>35</y>
-        <width>51</width>
+        <width>91</width>
         <height>25</height>
        </rect>
       </property>
@@ -1784,10 +1834,10 @@
        <string extracomment="This organism's generation"/>
       </property>
       <property name="statusTip">
-       <string>How many inputs this organism's neural network has</string>
+       <string>How much stimulation this organism is experiencing (The lower this value is, the more bored this creature is)</string>
       </property>
       <property name="text">
-       <string>Inputs:</string>
+       <string>Stimulation:</string>
       </property>
      </widget>
      <widget class="QLabel" name="iterations_label">
@@ -1820,7 +1870,7 @@
        <rect>
         <x>60</x>
         <y>10</y>
-        <width>81</width>
+        <width>101</width>
         <height>25</height>
        </rect>
       </property>
@@ -1831,12 +1881,12 @@
        <string>0</string>
       </property>
      </widget>
-     <widget class="QLabel" name="neural_inputs_val">
+     <widget class="QLabel" name="stim_val">
       <property name="geometry">
        <rect>
-        <x>65</x>
+        <x>105</x>
         <y>35</y>
-        <width>71</width>
+        <width>51</width>
         <height>25</height>
        </rect>
       </property>
@@ -1852,7 +1902,7 @@
        <rect>
         <x>70</x>
         <y>60</y>
-        <width>71</width>
+        <width>91</width>
         <height>25</height>
        </rect>
       </property>
@@ -1868,7 +1918,7 @@
        <rect>
         <x>80</x>
         <y>85</y>
-        <width>61</width>
+        <width>81</width>
         <height>25</height>
        </rect>
       </property>

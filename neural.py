@@ -24,10 +24,12 @@ cell_types = {
 # This is used to create inputs for eye cells
 
 output_lengths = {
-    "eye": len(cell_types) * 4
+    "eye": len(cell_types) * 4,
+    "carniv": 1
 }
 
 memory_limit = 80
+stimulation_memory = 30
 
 
 
@@ -53,6 +55,19 @@ def getDirection(angle):
     direction = [math.cos(angle), math.sin(angle)]
     return direction
 
+def calculateStimulation(network):
+    if not network.previousInputs:
+        return 0.0
+    while len(network.previousInputs) > stimulation_memory:
+        network.previousInputs.pop(0)
+
+    inputSum = sum(network.previousInputs)
+    inputAverages = [i/len(network.previousInputs) for i in inputSum]
+    #stimulation = sum(inputAverages)
+    stimulation = torch.mean( torch.tensor(inputAverages) )
+
+    return float(stimulation)
+
 
 
 def activate(network, environment, organism, uDiff):
@@ -64,11 +79,11 @@ def activate(network, environment, organism, uDiff):
         if not sprite.alive:
             return eye_input
 
-        sprite_info = sprite.base_info
+        sprite_info = sprite.cell_info
 
         for cell in sprite.info["view"]:
             cell_pos = cell.getPos()
-            cell_info = cell.base_info
+            cell_info = cell.cell_info
 
             dist = calculateDistance(sprite_pos[0], sprite_pos[1], cell_pos[0], cell_pos[1])
             angle = getAngle(sprite_pos[0], sprite_pos[1], cell_pos[0], cell_pos[1])
@@ -88,6 +103,11 @@ def activate(network, environment, organism, uDiff):
                 eye_input[lp+3] = dist
 
         return eye_input
+    def _get_carn_input(cell_id, environment, organism):
+        sprite = organism.cells[cell_id]
+        if sprite.alive and sprite.info["in_use"]:
+            return 1.0
+        return 0.0
     def _get_health_input(organism):
         return organism.health_percent() / 100.
     def _get_energy_input(organism):
@@ -119,6 +139,8 @@ def activate(network, environment, organism, uDiff):
             cell_type = organism.dna.cells[correspondent]["type"]
             if cell_type == "eye":
                 input_val = _get_eye_input(correspondent, environment, organism)
+            elif cell_type == "carniv":
+                input_val = _get_carn_input(correspondent, environment, organism)
         elif isinstance(correspondent, str):
             if correspondent == "health":
                 input_val = _get_health_input(organism)
@@ -145,6 +167,7 @@ def activate(network, environment, organism, uDiff):
         for i in all_inputs:
             flat_inputs.extend(i)
         flat_inputs = torch.tensor(flat_inputs).float()
+        network.previousInputs.append(flat_inputs)
 
         network_output = network.forward(flat_inputs)
         #network_output = self.network.forward(all_inputs)
@@ -162,6 +185,8 @@ def activate(network, environment, organism, uDiff):
                 organism.movement["direction"][0] = output_val.tolist()
             elif correspondent == "y_direction":
                 organism.movement["direction"][1] = output_val.tolist()
+
+    network.stimulation = calculateStimulation(network)
 
 
 def train_network(organism, epochs=1):
@@ -213,6 +238,8 @@ def setup_network(dna):
 
         if cell_info["type"] == "eye":
             base_input["visual"].append(cell_id)
+        elif cell_info["type"] == "carniv":
+            base_input["body"].append(cell_id)
 
     inputSize = 0
     hiddenList = []
@@ -252,9 +279,8 @@ def setup_network(dna):
         network.trainingInput = []
         network.trainingOutput = []
         network.lastLoss = 0
-
-        for layer in network.layers():
-            print(layer)
+        network.previousInputs = []
+        network.stimulation = 0
 
         return network
 

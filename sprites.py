@@ -74,12 +74,12 @@ base_cell_info = {
         "barrier": 60,
         "carniv": 15,
         "co2C": 8,
-        "eye": 6,
+        "eye": 5,
         "olfactory": 12,
         "push": 12,
         "pheremone": 12,
         "body": 12,
-        "heart": 8,
+        "heart": 6,
         "rotate": 12
     },
     "energy_usage": {
@@ -184,6 +184,8 @@ def viable_organism_position(pos, dna, environment):
         return False, []
 
     for org in orgList:
+        if not org.alive():
+            continue
         rect = org.get_rect()
 
         # Rect = [min_x, min_y, max_x, max_y]
@@ -286,7 +288,13 @@ class DNA():
 
         self.brain_structure = self._base_brain_structure.copy()
 
-        self.base_info = {"distanceThreshold": 2.2, "mirror_x": False, "mirror_y": False, "maximum_creation_tries": 30}
+        self.base_info = {
+            "distanceThreshold": 2.2,
+            "mirror_x": False,
+            "mirror_y": False,
+            "maximum_creation_tries": 30,
+            "curiosity": 0.5 # Ranges from 0.0 to 1.0
+        }
         # Structure: {
         #    "distanceThreshold": <integer>,
         #    "mirror_x": <boolean>,
@@ -600,8 +608,10 @@ class DNA():
 
             if cell_info["type"] == "eye":
                 self.brain_structure["input_size"] += neural.output_lengths["eye"]
+            elif cell_info["type"] == "carniv":
+                self.brain_structure["input_size"] += neural.output_lengths["carniv"]
 
-        hiddenSize = random.randrange(3, 12)
+        hiddenSize = random.randrange(2, 12)
         hiddenLayers = []
 
         if self.brain_structure["input_size"] > self.brain_structure["output_size"]:
@@ -620,10 +630,13 @@ class DNA():
             decRange = list(decRange)
             decRange = decRange.reverse()
 
+        minRange = min(decRange)-1
+        maxRange = max(decRange)
+
         for i in decRange:
-            hiddenLayerSize = int(random.triangular(1, i, i))
+            hiddenLayerSize = int(random.triangular(minRange, i, maxRange))
             while hiddenLayerSize == 0:
-                hiddenLayerSize = int(random.triangular(1, i, i))
+                hiddenLayerSize = int(random.triangular(minRange, i, maxRange))
             hiddenLayers.append(hiddenLayerSize)
 
         self.brain_structure["hidden_layers"] = hiddenLayers
@@ -723,8 +736,68 @@ class DNA():
 
         return new_dna
 
+    def mutate_brain_layers(self, severity):
+        oldHidden = self.brain_structure["hidden_layers"][:]
+        newHidden = []
+        lengthChange = round(severity * 10.)
+
+        try:
+            random.randrange(-lengthChange, lengthChange)
+        except ValueError:
+            return
+
+        #lengthChange = random.randrange(-lengthChange, lengthChange)
+        lengthChange = int(random.triangular(-lengthChange, 0, lengthChange))
+
+        if lengthChange > 0:
+            for i in range(lengthChange):
+                if len(oldHidden)-1 >= i:
+                    newLayer = oldHidden[i]
+                else:
+                    newLayer = random.randrange( min(oldHidden), max(oldHidden)+1 )
+                newHidden.append(newLayer)
+        else:
+            newLength = len(oldHidden) + lengthChange
+            if newLength < 1:
+                newLength = 1
+
+            for i in range(newLength):
+                if len(oldHidden)-1 >= i:
+                    newLayer = oldHidden[i]
+                else:
+                    newLayer = random.randrange( min(oldHidden), max(oldHidden)+1 )
+                newHidden.append(newLayer)
+
+        sizeChange = round(severity * 10.)
+
+        for i in range(len(newHidden)):
+            newAmt = int(random.triangular(-sizeChange, 0, sizeChange))
+            newHidden[i] = newHidden[i]-newAmt
+            if newHidden[i] < 2:
+                newHidden[i] = 2
+
+        self.brain_structure["hidden_layers"] = newHidden
+
+    def mutate_curiosity(self, severity):
+        new_dna = self.copy()
+        add_curiosity = random.random() - random.random()
+        add_curiosity *= severity
+        new_curiosity = self.base_info["curiosity"] + add_curiosity
+
+        if new_curiosity > 1.0:
+            new_curiosity = 1.0
+        elif new_curiosity < 0.0:
+            new_curiosity = 0.0
+
+        new_dna.base_info["curiosity"] = new_curiosity
+
+        return new_dna
+
     def mutate_brain_structure(self, severity):
-        pass
+        new_dna = self.copy()
+        new_dna.mutate_brain_layers(severity)
+
+        return new_dna
 
     def mutate(self, severity, neural_severity):
         # `severity` : 0.0 - 1.0
@@ -736,7 +809,9 @@ class DNA():
 
         new_dna = new_dna.mutate_cell_masses(severity)
 
-        self.mutate_brain_structure(neural_severity)
+        new_dna = new_dna.mutate_brain_structure(neural_severity)
+
+        new_dna = new_dna.mutate_curiosity(neural_severity)
 
         return new_dna
 
@@ -808,7 +883,7 @@ class Organism():
         newCell.cell_id = cell_id
         newCell.collision = lambda sprite: self._cell_collision(newCell, sprite)
         newCell.organism = self
-        newCell.base_info = cell_info
+        newCell.cell_info = cell_info
         newCell.info = {
             "health": cell_info["max_health"],
             "energy": cell_info["energy_storage"]/2,
@@ -866,7 +941,7 @@ class Organism():
 
     def _make_dead_cell(self, sprite):
         cell_id = sprite.cell_id
-        cell_info = sprite.base_info
+        cell_info = sprite.cell_info
 
         new_cell_info = cell_info.copy()
         new_cell_info["type"] = "dead"
@@ -1019,7 +1094,7 @@ class Organism():
         sprite.alive = False
         sprite.info["health"] = 0
         cell_id = sprite.cell_id
-        cell_info = sprite.base_info
+        cell_info = sprite.cell_info
 
         if not cell_info["first"]:
             parentID = self.dna.grows_from(cell_id)
@@ -1053,8 +1128,8 @@ class Organism():
         own_id = cell.cell_id
         other_id = sprite.cell_id
 
-        own_info = cell.base_info
-        other_info = sprite.base_info
+        own_info = cell.cell_info
+        other_info = sprite.cell_info
 
         if not sprite in cell.info["colliding"]:
             cell.info["colliding"].append(sprite)
@@ -1087,7 +1162,7 @@ class Organism():
         for cell_id in self.cells.copy():
             if self.cells[cell_id].alive:
                 sprite = self.cells[cell_id]
-                cell_info = sprite.base_info
+                cell_info = sprite.cell_info
 
                 sprite.info["energy"] += energy_per_cell + spare_energy
                 spare_energy = 0
@@ -1102,7 +1177,7 @@ class Organism():
     def convert_co2(self, cell_id, uDiff):
         sprite = self.cells[cell_id]
         if sprite.alive:
-            cell_info = sprite.base_info
+            cell_info = sprite.cell_info
             conversion_perc = num2perc(cell_info["size"], self.environment.width + self.environment.height)
             conversion_ratio = conversion_perc * uDiff
 
@@ -1123,7 +1198,7 @@ class Organism():
     def convert_o2(self, cell_id, uDiff):
         sprite = self.cells[cell_id]
         if sprite.alive:
-            cell_info = sprite.base_info
+            cell_info = sprite.cell_info
             conversion_perc = num2perc(cell_info["size"], self.environment.width + self.environment.height)
             conversion_ratio = conversion_perc * uDiff
             oxygen = perc2num(conversion_ratio, self.environment.info["oxygen"])
@@ -1177,18 +1252,22 @@ class Organism():
 
             damage_dealt = base_cell_info["damage"]["carniv"]
             for cell in sprite.info["colliding"]:
+                added_energy = damage_dealt
                 if cell.alive:
                     cell.info["health"] -= damage_dealt
                 else:
                     mass = cell.body.mass
-                    newMass = mass - (damage_dealt / sprite.base_info["size"])
+                    newMass = mass - (damage_dealt / sprite.cell_info["size"])
 
-                    sprite.organism.add_energy(damage_dealt * 3)
+                    added_energy *= cell.cell_info["mass"]
+                    added_energy *= cell.cell_info["size"]
 
                     if newMass > 0:
                         cell.body._set_mass(newMass)
                     else:
                         cell.body._set_mass(0)
+
+                sprite.organism.add_energy(added_energy)
 
 
         if cell_info["type"] == "push" and sprite.alive:
@@ -1268,13 +1347,13 @@ class Organism():
         self.pain = positive(self.pain)
         self.dopamine_usage -= self.pain
 
-        self.dopamine_memory.append(self.dopamine_usage)
+        self.dopamine_memory.append(self.dopamine)
         self.dopamine_memory.pop(0)
 
         self.dopamine_average = sum(self.dopamine_memory) / len(self.dopamine_memory)
 
-        #self.dopamine = self.dopamine_average + self.dopamine_usage
         self.dopamine = self.dopamine_usage - self.dopamine_average
+        #self.dopamine = self.dopamine_usage
         #~
 
         self.lastHealth = self.health_percent()
@@ -1348,7 +1427,7 @@ class Organism():
 def disperse_cell(sprite):
     organism = sprite.organism
     environment = organism.environment
-    #cell_info = sprite.base_info
+    #cell_info = sprite.cell_info
     #cell_id = sprite.cell_id
 
     #mass = sprite.body.mass
