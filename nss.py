@@ -52,6 +52,7 @@ def updateUI(window, environment):
     sprites.training_epochs = window.epochs_spinbox.value()
     sprites.training_dopamine_threshold = window.learn_thresh_val.value()
     sprites.neural.memory_limit = window.epoch_memory_spinbox.value()
+    sprites.neural.stimulation_memory = window.input_memory_spinbox.value()
     #~
 
     mirror_x_chance = window.mirror_x_slider.value()
@@ -82,7 +83,7 @@ def updateUI(window, environment):
         dopamineText = dopamineText.split(".")[0] + "." + dopamineText.split(".")[1].zfill(2)
 
         window.neural_loss_val.setText( str( round(selected.brain.lastLoss, 3) ) )
-        window.neural_inputs_val.setText( str(selected.brain.inputSize) )
+        window.stim_val.setText( str(float( round(selected.brain.stimulation, 2) )) )
         window.iterations_val.setText( str(selected.brain.trainer.iterations) )
         window.dopamine_val.setText( dopamineText )
     #~
@@ -244,7 +245,7 @@ if __name__ == "__main__":
             "brain_mutation_severity": 0.5,
             "reproduction_limit": 6,
             "population": 0,
-            "population_limit": 120
+            "population_limit": 100
         }
 
 

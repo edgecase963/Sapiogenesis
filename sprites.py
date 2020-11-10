@@ -288,7 +288,13 @@ class DNA():
 
         self.brain_structure = self._base_brain_structure.copy()
 
-        self.base_info = {"distanceThreshold": 2.2, "mirror_x": False, "mirror_y": False, "maximum_creation_tries": 30}
+        self.base_info = {
+            "distanceThreshold": 2.2,
+            "mirror_x": False,
+            "mirror_y": False,
+            "maximum_creation_tries": 30,
+            "curiosity": 0.5 # Ranges from 0.0 to 1.0
+        }
         # Structure: {
         #    "distanceThreshold": <integer>,
         #    "mirror_x": <boolean>,
@@ -772,6 +778,21 @@ class DNA():
 
         self.brain_structure["hidden_layers"] = newHidden
 
+    def mutate_curiosity(self, severity):
+        new_dna = self.copy()
+        add_curiosity = random.random() - random.random()
+        add_curiosity *= severity
+        new_curiosity = self.base_info["curiosity"] + add_curiosity
+
+        if new_curiosity > 1.0:
+            new_curiosity = 1.0
+        elif new_curiosity < 0.0:
+            new_curiosity = 0.0
+
+        new_dna.base_info["curiosity"] = new_curiosity
+
+        return new_dna
+
     def mutate_brain_structure(self, severity):
         new_dna = self.copy()
         new_dna.mutate_brain_layers(severity)
@@ -789,6 +810,8 @@ class DNA():
         new_dna = new_dna.mutate_cell_masses(severity)
 
         new_dna = new_dna.mutate_brain_structure(neural_severity)
+
+        new_dna = new_dna.mutate_curiosity(neural_severity)
 
         return new_dna
 
@@ -860,7 +883,7 @@ class Organism():
         newCell.cell_id = cell_id
         newCell.collision = lambda sprite: self._cell_collision(newCell, sprite)
         newCell.organism = self
-        newCell.base_info = cell_info
+        newCell.cell_info = cell_info
         newCell.info = {
             "health": cell_info["max_health"],
             "energy": cell_info["energy_storage"]/2,
@@ -918,7 +941,7 @@ class Organism():
 
     def _make_dead_cell(self, sprite):
         cell_id = sprite.cell_id
-        cell_info = sprite.base_info
+        cell_info = sprite.cell_info
 
         new_cell_info = cell_info.copy()
         new_cell_info["type"] = "dead"
@@ -1071,7 +1094,7 @@ class Organism():
         sprite.alive = False
         sprite.info["health"] = 0
         cell_id = sprite.cell_id
-        cell_info = sprite.base_info
+        cell_info = sprite.cell_info
 
         if not cell_info["first"]:
             parentID = self.dna.grows_from(cell_id)
@@ -1105,8 +1128,8 @@ class Organism():
         own_id = cell.cell_id
         other_id = sprite.cell_id
 
-        own_info = cell.base_info
-        other_info = sprite.base_info
+        own_info = cell.cell_info
+        other_info = sprite.cell_info
 
         if not sprite in cell.info["colliding"]:
             cell.info["colliding"].append(sprite)
@@ -1139,7 +1162,7 @@ class Organism():
         for cell_id in self.cells.copy():
             if self.cells[cell_id].alive:
                 sprite = self.cells[cell_id]
-                cell_info = sprite.base_info
+                cell_info = sprite.cell_info
 
                 sprite.info["energy"] += energy_per_cell + spare_energy
                 spare_energy = 0
@@ -1154,7 +1177,7 @@ class Organism():
     def convert_co2(self, cell_id, uDiff):
         sprite = self.cells[cell_id]
         if sprite.alive:
-            cell_info = sprite.base_info
+            cell_info = sprite.cell_info
             conversion_perc = num2perc(cell_info["size"], self.environment.width + self.environment.height)
             conversion_ratio = conversion_perc * uDiff
 
@@ -1175,7 +1198,7 @@ class Organism():
     def convert_o2(self, cell_id, uDiff):
         sprite = self.cells[cell_id]
         if sprite.alive:
-            cell_info = sprite.base_info
+            cell_info = sprite.cell_info
             conversion_perc = num2perc(cell_info["size"], self.environment.width + self.environment.height)
             conversion_ratio = conversion_perc * uDiff
             oxygen = perc2num(conversion_ratio, self.environment.info["oxygen"])
@@ -1234,10 +1257,10 @@ class Organism():
                     cell.info["health"] -= damage_dealt
                 else:
                     mass = cell.body.mass
-                    newMass = mass - (damage_dealt / sprite.base_info["size"])
+                    newMass = mass - (damage_dealt / sprite.cell_info["size"])
 
-                    added_energy *= cell.base_info["mass"]
-                    added_energy *= cell.base_info["size"]
+                    added_energy *= cell.cell_info["mass"]
+                    added_energy *= cell.cell_info["size"]
 
                     if newMass > 0:
                         cell.body._set_mass(newMass)
@@ -1404,7 +1427,7 @@ class Organism():
 def disperse_cell(sprite):
     organism = sprite.organism
     environment = organism.environment
-    #cell_info = sprite.base_info
+    #cell_info = sprite.cell_info
     #cell_id = sprite.cell_id
 
     #mass = sprite.body.mass
