@@ -10,10 +10,7 @@ from PyQt5 import QtCore, QtGui
 from PyQt5 import QtWidgets
 from userInterface import Ui_MainWindow
 import MainWindow
-
-sys.path.insert(1, "../../Programs/shatterbox")
-
-import shatterbox
+import physics
 
 
 
@@ -39,6 +36,8 @@ def updateUI(window, environment):
         window.max_size_range_spinbox.setProperty("value", window.min_size_range_spinbox.value()+1)
     if window.min_mass_range_spinbox.value() >= window.max_mass_range_spinbox.value():
         window.max_mass_range_spinbox.setProperty("value", window.min_mass_range_spinbox.value()+1)
+    if window.min_hid_val.value() >= window.max_hid_val.value():
+        window.max_hid_val.setProperty("value", window.min_hid_val.value()+1)
 
     #~ Reproduction section
     sprites.reproduction_limit = window.rep_time_val.value()
@@ -47,12 +46,12 @@ def updateUI(window, environment):
     #~
 
     #~ Brain section
-    sprites.neural_update_delay = window.neural_interval_spinbox.value()
-    sprites.learning_update_delay = window.training_interval_spinbox.value()
-    sprites.training_epochs = window.epochs_spinbox.value()
-    sprites.training_dopamine_threshold = window.learn_thresh_val.value()
-    sprites.neural.memory_limit = window.epoch_memory_spinbox.value()
-    sprites.neural.stimulation_memory = window.input_memory_spinbox.value()
+    #sprites.neural_update_delay = window.neural_interval_spinbox.value()
+    #sprites.learning_update_delay = window.training_interval_spinbox.value()
+    #sprites.training_epochs = window.epochs_spinbox.value()
+    #sprites.training_dopamine_threshold = window.learn_thresh_val.value()
+    #sprites.neural.memory_limit = window.epoch_memory_spinbox.value()
+    #sprites.neural.stimulation_memory = window.input_memory_spinbox.value()
     #~
 
     mirror_x_chance = window.mirror_x_slider.value()
@@ -164,12 +163,16 @@ def add_creature_clicked(window, environment):
     mirror_x = window.mirror_x_slider.value() / 100.
     mirror_y = window.mirror_y_slider.value() / 100.
 
+    min_hiddden_layers = window.min_hid_val.value()
+    max_hiddden_layers = window.max_hid_val.value()
+
     dna = sprites.DNA().randomize(
         cellRange=[minCellRange, maxCellRange],
         sizeRange=[minSizeRange, maxSizeRange],
         massRange=[minMassRange, maxMassRange],
         mirror_x=[1.0 - mirror_x, mirror_x],
-        mirror_y=[1.0 - mirror_y, mirror_y]
+        mirror_y=[1.0 - mirror_y, mirror_y],
+        hiddenRange=[min_hiddden_layers, max_hiddden_layers]
     )
 
     organism = sprites.Organism(environment.info["lastPosition"], env, dna=dna)
@@ -178,14 +181,13 @@ def add_creature_clicked(window, environment):
 def copy_clicked(window, environment):
     selected = environment.info["selected"]
     if selected:
-        environment.info["copied"] = selected
+        environment.info["copied"] = selected.dna.copy()
 
 def paste_clicked(window, environment):
-    copied = environment.info["copied"]
-    if copied:
-        newDna = copied.dna.copy()
+    copied_dna = environment.info["copied"]
+    if copied_dna:
         newPos = environment.info["lastPosition"]
-        newOrganism = sprites.Organism(newPos, environment, dna=newDna)
+        newOrganism = sprites.Organism(newPos, environment, dna=copied_dna.copy())
         add_organism(newOrganism, environment)
 
 def disperse_cells_clicked(window, environment):
@@ -205,6 +207,21 @@ def slider_changed(val, window):
     if window.mutations_checkbox.isChecked():
         window.physical_severity_slider.setProperty("value", val)
         window.neural_severity_slider.setProperty("value", val)
+
+def world_speed_changed(val, environment):
+    environment.worldSpeed = val
+def neural_interval_changed(val):
+    sprites.neural_update_delay = val
+def learning_delay_changed(val):
+    sprites.learning_update_delay = val
+def training_epochs_changed(val):
+    sprites.training_epochs = val
+def learning_threshold_changed(val):
+    sprites.training_dopamine_threshold = val
+def epoch_memory_changed(val):
+    sprites.neural.memory_limit = val
+def stim_memory_changed(val):
+    sprites.neural.stimulation_memory = val
 
 def setup_window_buttons(window, environment):
     window.add_co2_btn.mouseReleaseEvent = lambda event: add_co2_clicked(window, environment)
@@ -226,6 +243,16 @@ def setup_window_buttons(window, environment):
 
     window.physical_severity_slider.valueChanged.connect(lambda v: slider_changed(v, window))
     window.neural_severity_slider.valueChanged.connect(lambda v: slider_changed(v, window))
+    window.world_speed_spinbox.valueChanged.connect(lambda v: world_speed_changed(v, environment))
+
+    #~ Brain section
+    window.neural_interval_spinbox.valueChanged.connect(neural_interval_changed)
+    window.training_interval_spinbox.valueChanged.connect(learning_delay_changed)
+    window.epochs_spinbox.valueChanged.connect(training_epochs_changed)
+    window.learn_thresh_val.valueChanged.connect(learning_threshold_changed)
+    window.epoch_memory_spinbox.valueChanged.connect(epoch_memory_changed)
+    window.input_memory_spinbox.valueChanged.connect(stim_memory_changed)
+    #~
 
 
 if __name__ == "__main__":
@@ -245,13 +272,13 @@ if __name__ == "__main__":
             "brain_mutation_severity": 0.5,
             "reproduction_limit": 6,
             "population": 0,
-            "population_limit": 100
+            "population_limit": 60
         }
 
 
         myapp.setupUi(window)
         #myapp.setupEnvironment()
-        env = shatterbox.setupEnvironment(myapp.worldView, myapp.scene)
+        env = physics.setupEnvironment(myapp.worldView, myapp.scene)
         env.space.add_collision_handler(1,0).begin = sprites.eye_segment_handler
         env.info = env_info
         env.lastUpdated = time.time()

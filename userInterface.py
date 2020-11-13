@@ -39,6 +39,10 @@ class Ui_MainWindow(Ui_MainWindow):
 
         self.worldView.setBackgroundBrush( QtGui.QBrush( QtGui.QColor(180,180,255) ) )
 
+        logo = QtGui.QIcon("logo.png")
+
+        MainWindow.setWindowIcon(logo)
+
         #tempImg = QtGui.QPixmap("Images/background.jpg")
         #tempImg = tempImg.scaled(self.scene.width(), self.scene.height())
 

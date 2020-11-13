@@ -14,10 +14,7 @@ from threading import Thread
 from pymunk import Vec2d
 from torch import tensor
 import neural
-
-sys.path.insert(1, "../../Programs/shatterbox")
-
-import shatterbox
+import physics
 
 
 
@@ -29,43 +26,31 @@ dead_image = "dead.png"
 # This is used to calculate how much CO2 is added back into the environment when a dead cell is dispersed
 # Dispersion equation: <dispersion_ratio> * (<cell_size> / 2) * (<cell_mass> / 2)
 
-co2_conversion_ratio = 12
-# The amount of energy generated from 1 CO2 particle
+co2_conversion_ratio = 12 # The amount of energy generated from 1 CO2 particle
 
-cell_dispersion_rate = 6
-# The percentage of a dead cell's mass to disperse per second
+cell_dispersion_rate = 6 # The percentage of a dead cell's mass to disperse per second
 
-reproduction_limit = 6
-# The amount of time (in seconds) an organism has to wait before reproducing again
+reproduction_limit = 6 # The amount of time (in seconds) an organism has to wait before reproducing again
 
-offspring_amount = 1
-# How many offspring to create when an organism reproduces
+offspring_amount = 1 # How many offspring to create when an organism reproduces
 
-heal_rate = 3
-# The percentage of health to heal each second if the cell has enough energy
+heal_rate = 3 # The percentage of health to heal each second if the cell has enough energy
 
-mass_cutoff = 1
-# If a dead cell's mass becomes less than this, it will be removed (dispersed completely)
+mass_cutoff = 1 # If a dead cell's mass becomes less than this, it will be removed (dispersed completely)
 
-break_damage = 5
-# The amount of damage a cell does to its parent when it dies (break off from body) - multiplied by its size
+break_damage = 5 # The amount of damage a cell does to its parent when it dies (break off from body) - multiplied by its size
 
-starvation_rate = 300
-# The amount of damage to do to a cell each second if its energy equals 0
+starvation_rate = 300 # The amount of damage to do to a cell each second if its energy equals 0
 
-neural_update_delay = .2
-# How long to wait before activating an organism's brain - helps reduce lag
+neural_update_delay = .3 # How long to wait before activating an organism's brain - helps reduce lag
 
-learning_update_delay = .4
-# How long to wait before training an organism
+learning_update_delay = .5 # How long to wait before training an organism
 
-training_epochs = 1
-# How many epochs to train a network for per training interval
+training_epochs = 1 # How many epochs to train a network for per training interval
 
 training_dopamine_threshold = 1.
 
-eyesight_multiplier = 8
-# This multiplied by an eye cell's size is how far away that eye can see
+eyesight_multiplier = 8 # This multiplied by an eye cell's size is how far away that eye can see
 
 base_cell_info = {
     "health": {
@@ -204,7 +189,7 @@ def viable_organism_position(pos, dna, environment):
 
     return True, overlappingSprites
 
-def get_new_orgnism_position(old_organism, dna, environment):
+def get_new_organism_position(old_organism, dna, environment):
     orgSize = old_organism.dna.get_size()
     newSize = dna.get_size()
     dist = [ (orgSize[0]/1.3) + (newSize[0]/1.3), (orgSize[1]/1.3) + (newSize[1]/1.3) ]
@@ -282,6 +267,7 @@ class DNA():
             "input_size": 6,
             "inputs": ["energy", "health", "rotation", "speed", "x_direction", "y_direction"],
             "hidden_layers": [], # [<integer>, <integer>, <integer>]
+            "hidden_weights": [], # [ [<float>, <float>], [<float>, <float>, <float>], [<float>, <float>] ]
             "output_size": 4,
             "outputs": ["rotation", "speed", "x_direction", "y_direction"]
         }
@@ -600,7 +586,7 @@ class DNA():
                 self._apply_mirror(cell_id, grow_from, grow_direction)
         return True
 
-    def _setup_brain_structure(self):
+    def _setup_brain_structure(self, hiddenRange):
         self.brain_structure = self._base_brain_structure.copy()
 
         for cell_id in self.cells:
@@ -611,7 +597,7 @@ class DNA():
             elif cell_info["type"] == "carniv":
                 self.brain_structure["input_size"] += neural.output_lengths["carniv"]
 
-        hiddenSize = random.randrange(2, 12)
+        hiddenSize = random.randrange(hiddenRange[0], hiddenRange[1])
         hiddenLayers = []
 
         if self.brain_structure["input_size"] > self.brain_structure["output_size"]:
@@ -641,7 +627,11 @@ class DNA():
 
         self.brain_structure["hidden_layers"] = hiddenLayers
 
-    def randomize(self, cellRange=[3,30], sizeRange=[6,42], massRange=[5,20], mirror_x=[0.6, 0.4], mirror_y=[0.6, 0.4]):
+        tempNet = neural.setup_network(self)
+        for layer in tempNet.hiddenLayers:
+            self.brain_structure["hidden_weights"].append( layer.weight.tolist() )
+
+    def randomize(self, cellRange=[3,30], sizeRange=[6,42], massRange=[5,20], mirror_x=[0.6, 0.4], mirror_y=[0.6, 0.4], hiddenRange=[2, 8]):
         self.cellRange = cellRange
         self.sizeRange = sizeRange
         self.massRange = massRange
@@ -671,7 +661,7 @@ class DNA():
                 )
             first_cell = False
 
-        self._setup_brain_structure()
+        self._setup_brain_structure(hiddenRange)
 
         return self
 
@@ -778,6 +768,32 @@ class DNA():
 
         self.brain_structure["hidden_layers"] = newHidden
 
+        tempNet = neural.setup_network(self)
+
+        if not tempNet.hiddenLayers:
+            return # No hidden layers = no hidden weights to transfer over
+
+        #~ Weight preservation
+        #  This allows for the weights of the parent network to be passed on to the offspring network - regardless of shape
+        old_weights = self.brain_structure["hidden_weights"]
+        old_layers = [ neural.torch.tensor(layer).float() for layer in old_weights ]
+
+        self.brain_structure["hidden_weights"] = []
+
+        for i, layer in enumerate(tempNet.hiddenLayers):
+            newLayer = []
+            for i2, subLayer in enumerate(layer.weight.data):
+                try:
+                    oldSubLayer = old_layers[i][i2]
+                    newSubLayer = oldSubLayer.resize_(subLayer.shape)
+                except IndexError:
+                    newSubLayer = neural.torch.rand(subLayer.shape)
+                newLayer.append(newSubLayer.tolist())
+            if newLayer:
+                self.brain_structure["hidden_weights"].append(newLayer)
+        #~
+
+
     def mutate_curiosity(self, severity):
         new_dna = self.copy()
         add_curiosity = random.random() - random.random()
@@ -864,13 +880,13 @@ class Organism():
             image = "Images/{}.png".format(cell_info["type"])
         else:
             image = "Images/{}".format(dead_image)
-        body, shape = shatterbox.makeCircle(
+        body, shape = physics.makeCircle(
             cell_info["size"]/2,
             friction = cell_info["friction"],
             elasticity = cell_info["elasticity"],
             mass = cell_info["mass"]
         )
-        newCell = shatterbox.Sprite(
+        newCell = physics.Sprite(
             pos,
             cell_info["size"],
             cell_info["size"],
@@ -902,7 +918,7 @@ class Organism():
             num_bodies = 6
             sightRange = cell_info["size"] * eyesight_multiplier
 
-            newBody, newShape = shatterbox.makeCircle(sightRange, friction=0.0, elasticity=0.0, mass=1)
+            newBody, newShape = physics.makeCircle(sightRange, friction=0.0, elasticity=0.0, mass=1)
             newShape.sensor = True
             newShape.collision_type = 1
             newShape.sprite = newCell
@@ -1210,7 +1226,7 @@ class Organism():
         self.lastBirth = time.time()
         new_dna = self.dna.mutate(severity=severity, neural_severity=neural_severity)
 
-        new_pos = get_new_orgnism_position(self, new_dna, self.environment)
+        new_pos = get_new_organism_position(self, new_dna, self.environment)
         if not new_pos:
             return
 
@@ -1222,6 +1238,15 @@ class Organism():
     def reproduce(self, severity=0.5, neural_severity=0.5):
         for i in range(offspring_amount):
             self._reproduce_organism(severity, neural_severity)
+
+    def _update_brain_weights(self):
+        new_weights = []
+
+        for layer in self.brain.hiddenLayers:
+            layer_weights = layer.weight.data.tolist()
+            new_weights.append(layer_weights)
+
+        self.dna.brain_structure["hidden_weights"] = new_weights
 
     def _update_cell(self, cell_id, uDiff):
         sprite = self.cells[cell_id]
@@ -1275,8 +1300,13 @@ class Organism():
                 push_x = self.movement["direction"][0]
                 push_y = self.movement["direction"][1]
 
-                if self.movement["speed"] > 2.0:
-                    self.movement["speed"] = 2.0
+                rotation = self.rotation()
+
+                push_x += math.cos(math.radians(rotation))
+                push_y += math.sin(math.radians(rotation))
+
+                if self.movement["speed"] > 1.0:
+                    self.movement["speed"] = 1.0
 
                 speed = self.movement["speed"] * cell_info["size"] * cell_info["mass"]
                 speed *= (uDiff * 3)
@@ -1390,9 +1420,17 @@ class Organism():
     def build_brain(self):
         self.brain = neural.setup_network(self.dna)
 
+        for i, layer in enumerate(self.brain.hiddenLayers):
+            new_weights = self.dna.brain_structure["hidden_weights"][i]
+            new_weights = neural.torch.tensor(new_weights).float()
+
+            layer.weight.data = new_weights
+
     def build_body(self):
         self.cells = {}
         self.lastUpdated = time.time()
+
+        self.build_brain()
 
         fCell = self.dna.first_cell()
         # `fCell` holds information on the first cell that needs to be added
@@ -1421,7 +1459,6 @@ class Organism():
         self.lastHealth = self.health_percent()
         self.lastEnergy = self.energy_percent()
 
-        self.build_brain()
 
 
 def disperse_cell(sprite):
@@ -1512,7 +1549,7 @@ if __name__ == "__main__":
 
         myapp.setupUi(window)
         #myapp.setupEnvironment()
-        env = shatterbox.setupEnvironment(myapp.worldView, myapp.scene)
+        env = physics.setupEnvironment(myapp.worldView, myapp.scene)
 
         org = Organism([300,300], env)
         org2 = Organism([500,500], env)
