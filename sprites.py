@@ -50,6 +50,8 @@ training_epochs = 1 # How many epochs to train a network for per training interv
 
 training_dopamine_threshold = 1.
 
+age_limit = 300
+
 eyesight_multiplier = 8 # This multiplied by an eye cell's size is how far away that eye can see
 
 base_cell_info = {
@@ -841,6 +843,9 @@ class Organism():
         self.pos = pos   # [<x>, <y>]
         self.environment = environment
 
+        self.energy_consumed = 0.0
+        # The amount of energy this organism has consumed from other cells
+
         self.cells = {}
         # Structure: {<Cell_ID>: <Sprite_Class>}
 
@@ -862,6 +867,7 @@ class Organism():
 
         self.lastUpdated = time.time()
         self.lastBirth = time.time()
+        self.birthTime = time.time()
         self.generation = 0
 
     def _growth_position(self, newCellID, rel_pos=None):
@@ -1140,6 +1146,11 @@ class Organism():
             return True
         return False
 
+    def kill(self):
+        fCell = self.dna.first_cell()
+        if self.cells[fCell].alive:
+            self.kill_cell(self.cells[fCell])
+
     def collision(self, cell, sprite):
         own_id = cell.cell_id
         other_id = sprite.cell_id
@@ -1292,7 +1303,8 @@ class Organism():
                     else:
                         cell.body._set_mass(0)
 
-                sprite.organism.add_energy(added_energy)
+                #sprite.organism.add_energy(added_energy)
+                sprite.organism.energy_consumed += added_energy
 
 
         if cell_info["type"] == "push" and sprite.alive:
@@ -1304,9 +1316,6 @@ class Organism():
 
                 push_x += math.cos(math.radians(rotation))
                 push_y += math.sin(math.radians(rotation))
-
-                if self.movement["speed"] > 1.0:
-                    self.movement["speed"] = 1.0
 
                 speed = self.movement["speed"] * cell_info["size"] * cell_info["mass"]
                 speed *= (uDiff * 3)
@@ -1363,6 +1372,17 @@ class Organism():
     def update(self):
         uDiff = time.time() - self.lastUpdated
         self.lastUpdated = time.time()
+
+        if self.energy_consumed >= self.max_energy()/2:
+            self.energy_consumed = self.max_energy()/2
+        if self.energy_consumed < 0.001:
+            self.energy_consumed = 0
+
+        if self.energy_consumed:
+            digested_energy = perc2num(90, self.energy_consumed) * uDiff
+
+            self.energy_consumed -= digested_energy
+            self.energy_consumed += self.add_energy(digested_energy)
 
         #~ Process dopamine and pain levels
         health_diff = self.health_percent() - self.lastHealth
@@ -1510,6 +1530,9 @@ def update_organisms(environment):
     environment.lastUpdated = time.time()
 
     for org in environment.info["organism_list"][:]:
+        if time.time() - org.birthTime >= age_limit:
+            org.kill()
+
         if org.alive():
             org.update()
 

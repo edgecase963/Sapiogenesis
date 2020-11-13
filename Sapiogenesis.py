@@ -30,6 +30,9 @@ def updateUI(window, environment):
     window.time_val.setText( str(int(time_passed)) )
     window.pop_val.setText( str(int(population)) )
 
+    if selected and selected.alive():
+        window.age_val.setText( str(int(time.time() - selected.birthTime)) )
+
     if window.min_cell_range_spinbox.value() >= window.max_cell_range_spinbox.value():
         window.max_cell_range_spinbox.setProperty("value", window.min_cell_range_spinbox.value()+1)
     if window.min_size_range_spinbox.value() >= window.max_size_range_spinbox.value():
@@ -222,6 +225,8 @@ def epoch_memory_changed(val):
     sprites.neural.memory_limit = val
 def stim_memory_changed(val):
     sprites.neural.stimulation_memory = val
+def age_limit_changed(val):
+    sprites.age_limit = val
 
 def setup_window_buttons(window, environment):
     window.add_co2_btn.mouseReleaseEvent = lambda event: add_co2_clicked(window, environment)
@@ -254,6 +259,8 @@ def setup_window_buttons(window, environment):
     window.input_memory_spinbox.valueChanged.connect(stim_memory_changed)
     #~
 
+    window.age_limit_spinbox.valueChanged.connect(age_limit_changed)
+
 
 if __name__ == "__main__":
         app = QtWidgets.QApplication(sys.argv)
@@ -272,7 +279,7 @@ if __name__ == "__main__":
             "brain_mutation_severity": 0.5,
             "reproduction_limit": 6,
             "population": 0,
-            "population_limit": 60
+            "population_limit": 50
         }
 
 

@@ -212,7 +212,10 @@ def activate(network, environment, organism, uDiff):
             if correspondent == "rotation":
                 organism.movement["rotation"] = output_val.tolist()
             elif correspondent == "speed":
-                organism.movement["speed"] = output_val.tolist()
+                speed = output_val.tolist()
+                if speed > 1.0:
+                    speed = 1.0
+                organism.movement["speed"] = speed
             elif correspondent == "x_direction":
                 organism.movement["direction"][0] = output_val.tolist()
             elif correspondent == "y_direction":
@@ -233,11 +236,11 @@ def train_network(organism, epochs=1):
     if network.lastOutput == None or network.lastInput == None:
         return
 
-    inputData = network.lastInput.clone().detach()
-    targetData = network.lastOutput.clone().detach()
-    if organism.pain:
-        targetData = torch.tensor( [reverse_val(x) for x in targetData] ).float()
-    #targetData = torch.tensor( [x * (organism.dopamine) for x in targetData] ).float()
+    inputData = network.lastInput.clone()
+    targetData = network.lastOutput.clone()
+    #if organism.pain:
+    #    targetData = torch.tensor( [reverse_val(x) for x in targetData] ).float()
+    targetData = torch.tensor( [x * organism.dopamine for x in targetData] ).float()
 
     network.trainingInput.append( inputData.tolist() )
     network.trainingOutput.append( targetData.tolist() )

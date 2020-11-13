@@ -283,7 +283,7 @@ class Environment():
         self.width = width
         self.height = height
 
-        self.worldSpeed = .05
+        self.worldSpeed = .06
         self.updateSpeed = 30
 
         ch = self.space.add_collision_handler(0, 0)
