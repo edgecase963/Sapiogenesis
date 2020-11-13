@@ -24,7 +24,8 @@ cell_types = {
 # This is used to create inputs for eye cells
 
 output_lengths = {
-    "eye": len(cell_types) * 4,
+    "adv_eye": len(cell_types) * 4,
+    "eye": 4,
     "carniv": 1
 }
 
@@ -71,7 +72,7 @@ def calculateStimulation(network):
 
 
 def activate(network, environment, organism, uDiff):
-    def _get_eye_input(cell_id, environment, organism):
+    def _adv_get_eye_input(cell_id, environment, organism):
         eye_input = [0] * output_lengths["eye"]
 
         sprite = organism.cells[cell_id]
@@ -103,6 +104,37 @@ def activate(network, environment, organism, uDiff):
                 eye_input[lp+3] = dist
 
         return eye_input
+    def _get_eye_input(cell_id, environment, organism):
+        eye_input = [0] * 4
+        # [<-x>, <+x>, <-y>, <+y>]
+
+        sprite = organism.cells[cell_id]
+        sprite_pos = sprite.getPos()
+        sprite_angle = math.radians( organism.rotation() )
+        if not sprite.alive:
+            return eye_input
+
+        sprite_info = sprite.cell_info
+
+        for cell in sprite.info["view"]:
+            cell_pos = cell.getPos()
+            cell_info = cell.cell_info
+
+            angle = getAngle(sprite_pos[0], sprite_pos[1], cell_pos[0], cell_pos[1])
+            direction = [math.cos(angle+sprite_angle), math.sin(angle+sprite_angle)]
+
+            if direction[0] < 0:
+                eye_input[0] += 1
+            else:
+                eye_input[1] += 1
+
+            if direction[1] < 0:
+                eye_input[2] += 1
+            else:
+                eye_input[3] += 1
+
+        return eye_input
+
     def _get_carn_input(cell_id, environment, organism):
         sprite = organism.cells[cell_id]
         if sprite.alive and sprite.info["in_use"]:
@@ -220,6 +252,8 @@ def train_network(organism, epochs=1):
         network.lastLoss = loss
     network.lastTrained = time.time()
 
+    organism._update_brain_weights()
+
 
 def setup_network(dna):
     base_input = {
@@ -283,11 +317,3 @@ def setup_network(dna):
         network.stimulation = 0
 
         return network
-
-
-
-
-if __name__ == "__main__":
-    net = networks.Network(2, [3], 1)
-
-    print( net.layers() )
