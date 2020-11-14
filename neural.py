@@ -173,6 +173,13 @@ def activate(network, environment, organism, uDiff):
                 input_val = _get_eye_input(correspondent, environment, organism)
             elif cell_type == "carniv":
                 input_val = _get_carn_input(correspondent, environment, organism)
+        elif isinstance(correspondent, list):
+            if correspondent[0] == "touch":
+                sprite = organism.cells[correspondent[1]]
+                if sprite.info["colliding"]:
+                    input_val = 1.0
+                else:
+                    input_val = 0.0
         elif isinstance(correspondent, str):
             if correspondent == "health":
                 input_val = _get_health_input(organism)
@@ -274,8 +281,6 @@ def setup_network(dna):
 
     base_output = ["rotation", "speed", "x_direction", "y_direction"]
 
-    inputCells = []
-
     for cell_id in dna.cells:
         cell_info = dna.cells[cell_id]
 
@@ -284,6 +289,7 @@ def setup_network(dna):
         elif cell_info["type"] == "carniv":
             base_input["body"].append(cell_id)
 
+    inputCells = []
     inputSize = 0
     hiddenList = []
     outputSize = 0
@@ -302,6 +308,10 @@ def setup_network(dna):
         inputSize += len(base_input["body"])
         for correspondent in base_input["body"]:
             inputCells.append(correspondent)
+
+    for cell_id in dna.cells:
+        inputSize += 1
+        inputCells.append(["touch", cell_id])
 
     hiddenList = dna.brain_structure["hidden_layers"]
 

@@ -14,6 +14,11 @@ import physics
 
 
 
+default_o2_value = 30000
+default_oxygen_value = 0
+
+
+
 def updateUI(window, environment):
     time_passed = time.time() - environment.info["startTime"]
 
@@ -32,6 +37,7 @@ def updateUI(window, environment):
 
     if selected and selected.alive():
         window.age_val.setText( str(int(time.time() - selected.birthTime)) )
+        window.curiosity_val.setText( str(round(selected.dna.base_info["curiosity"], 2)) )
 
     if window.min_cell_range_spinbox.value() >= window.max_cell_range_spinbox.value():
         window.max_cell_range_spinbox.setProperty("value", window.min_cell_range_spinbox.value()+1)
@@ -129,6 +135,14 @@ def kill_btn_clicked(window, environment):
         sprite = selected.cells[fCell]
         if sprite.alive:
             selected.kill_cell(sprite)
+def heal_btn_clicked(window, environment):
+    selected = environment.info["selected"]
+    if selected:
+        for cell_id in selected.living_cells():
+            sprite = selected.cells[cell_id]
+            cell_info = sprite.cell_info
+
+            sprite.info["health"] = cell_info["max_health"]
 def feed_btn_clicked(window, environment):
     selected = environment.info["selected"]
     if selected:
@@ -137,6 +151,22 @@ def feed_btn_clicked(window, environment):
             if sprite.alive:
                 cell_info = selected.dna.cells[cell_id]
                 sprite.info["energy"] = cell_info["energy_storage"]
+def hurt_btn_clicked(window, environment):
+    selected = environment.info["selected"]
+    if selected:
+        for cell_id in selected.living_cells():
+            sprite = selected.cells[cell_id]
+            cell_info = sprite.cell_info
+
+            health_perc = sprites.perc2num( 10, cell_info["max_health"] )
+            sprite.info["health"] -= health_perc
+            if sprite.info["health"] < 0:
+                sprite.info["health"] = 0
+def save_organism_clicked(window, environment):
+    selected = environment.info["selected"]
+    if selected:
+        new_dna = selected.dna.copy()
+        pass
 
 def reproduce_clicked(window, environment):
     selected = environment.info["selected"]
@@ -221,6 +251,23 @@ def stim_memory_changed(val):
 def age_limit_changed(val):
     sprites.age_limit = val
 
+def feed_all_clicked(window, environment):
+    for org in environment.info["organism_list"]:
+        for cell_id in org.cells:
+            sprite = org.cells[cell_id]
+            if sprite.alive:
+                cell_info = org.dna.cells[cell_id]
+                sprite.info["energy"] = cell_info["energy_storage"]
+def kill_all_clicked(window, environment):
+    for org in environment.info["organism_list"]:
+        org.kill()
+def reset_clicked(window, environment):
+    kill_all_clicked(window, environment)
+    disperse_cells_clicked(window, environment)
+    environment.info["co2"] = default_o2_value
+    environment.info["oxygen"] = default_oxygen_value
+    environment.info["startTime"] = time.time()
+
 def setup_window_buttons(window, environment):
     window.add_co2_btn.mouseReleaseEvent = lambda event: add_co2_clicked(window, environment)
     window.rem_co2_btn.mouseReleaseEvent = lambda event: rem_co2_clicked(window, environment)
@@ -228,13 +275,21 @@ def setup_window_buttons(window, environment):
 
     window.kill_btn.mouseReleaseEvent = lambda event: kill_btn_clicked(window, environment)
     window.feed_btn.mouseReleaseEvent = lambda event: feed_btn_clicked(window, environment)
+    window.hurt_btn.mouseReleaseEvent = lambda event: hurt_btn_clicked(window, environment)
+    window.reproduce_btn.mouseReleaseEvent = lambda event: reproduce_clicked(window, environment)
+    window.save_organism_btn.mouseReleaseEvent = lambda event: save_organism_clicked(window, environment)
 
     window.add_random_creature_event = lambda: add_creature_clicked(window, environment)
+    window.heal_event = lambda: heal_btn_clicked(window, environment)
     window.kill_event = lambda: kill_btn_clicked(window, environment)
     window.reproduce_event = lambda: reproduce_clicked(window, environment)
     window.copy_event = lambda: copy_clicked(window, environment)
     window.paste_event = lambda: paste_clicked(window, environment)
     window.disperse_cells_event = lambda: disperse_cells_clicked(window, environment)
+
+    window.actionFeed_All_Organisms.triggered.connect(lambda: feed_all_clicked(window, environment))
+    window.actionKill_All.triggered.connect(lambda: kill_all_clicked(window, environment))
+    window.actionReset.triggered.connect(lambda: reset_clicked(window, environment))
 
     window.physical_severity_slider.lastChanged = time.time()
     window.neural_severity_slider.lastChanged = time.time()
@@ -262,8 +317,8 @@ if __name__ == "__main__":
 
         env_info = {
             "startTime": time.time(),
-            "co2": 30000,
-            "oxygen": 0,
+            "co2": default_o2_value,
+            "oxygen": default_oxygen_value,
             "selected": None,
             "lastPosition": [0,0],
             "organism_list": [],

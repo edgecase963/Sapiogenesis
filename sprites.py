@@ -177,8 +177,8 @@ def viable_organism_position(pos, dna, environment):
 
         # Rect = [min_x, min_y, max_x, max_y]
 
-        if (dna_rect[0] > rect[0] and dna_rect[0] < rect[2]) or (dna_rect[2] > rect[0] and dna_rect[2] < rect[2]): # Within X boundaries
-            if (dna_rect[1] > rect[1] and dna_rect[1] < rect[3]) or (dna_rect[3] > rect[1] and dna_rect[3] < rect[3]): # Within Y boundaries
+        if (dna_rect[0] > rect[0] and dna_rect[0] < rect[2]) or (dna_rect[2] > rect[0] and dna_rect[2] < rect[2]) or (rect[0] > dna_rect[0] and rect[2] < dna_rect[2]): # Within X boundaries
+            if (dna_rect[1] > rect[1] and dna_rect[1] < rect[3]) or (dna_rect[3] > rect[1] and dna_rect[3] < rect[3]) or (rect[1] > dna_rect[1] and rect[3] < dna_rect[3]): # Within Y boundaries
                 return False, []
 
         for sprite in dead_cells:
@@ -633,7 +633,7 @@ class DNA():
         for layer in tempNet.hiddenLayers:
             self.brain_structure["hidden_weights"].append( layer.weight.tolist() )
 
-    def randomize(self, cellRange=[3,30], sizeRange=[6,42], massRange=[5,20], mirror_x=[0.6, 0.4], mirror_y=[0.6, 0.4], hiddenRange=[2, 8]):
+    def randomize(self, cellRange=[3,30], sizeRange=[6,42], massRange=[5,20], mirror_x=[0.6, 0.4], mirror_y=[0.6, 0.4], hiddenRange=[2, 6]):
         self.cellRange = cellRange
         self.sizeRange = sizeRange
         self.massRange = massRange
@@ -651,6 +651,7 @@ class DNA():
 
         self.base_info["mirror_x"] = mirror_x
         self.base_info["mirror_y"] = mirror_y
+        self.base_info["curiosity"] = random.random()
 
         first_cell = True
         for i in range(random.randrange(cellRange[0], cellRange[1])):
@@ -794,7 +795,6 @@ class DNA():
             if newLayer:
                 self.brain_structure["hidden_weights"].append(newLayer)
         #~
-
 
     def mutate_curiosity(self, severity):
         new_dna = self.copy()
@@ -1165,17 +1165,6 @@ class Organism():
         if not cell in sprite.info["colliding"]:
             sprite.info["colliding"].append(cell)
 
-        #if own_info["type"] == "carniv":
-        #    damage_dealt = base_cell_info["damage"]["carniv"]
-        #    if sprite.alive:
-        #        sprite.info["health"] -= damage_dealt
-        #    else:
-        #        mass = sprite.body.mass
-        #        newMass = mass - (damage_dealt / own_info["mass"]) * 2
-        #        if newMass > 0:
-        #            sprite.body._set_mass(newMass)
-        #            cell.organism.add_energy(damage_dealt)
-
     def _cell_collision(self, cell, sprite):
         # cell is the sprite for THIS organism's cell
         # sprite is the sprite for the OTHER organism's cell
@@ -1242,16 +1231,19 @@ class Organism():
 
         new_pos = get_new_organism_position(self, new_dna, self.environment)
         if not new_pos:
-            return
+            return False
 
         organism = Organism(new_pos, self.environment, dna=new_dna)
         organism.generation = self.generation + 1
         self.environment.info["organism_list"].append(organism)
         organism.build_body()
+        return True
 
     def reproduce(self, severity=0.5, neural_severity=0.5):
         for i in range(offspring_amount):
-            self._reproduce_organism(severity, neural_severity)
+            success = self._reproduce_organism(severity, neural_severity)
+            if not success:
+                break
 
     def _update_brain_weights(self):
         new_weights = []
