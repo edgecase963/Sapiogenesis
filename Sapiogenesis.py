@@ -46,15 +46,7 @@ def updateUI(window, environment):
     sprites.reproduction_limit = window.rep_time_val.value()
     environment.info["population_limit"] = window.max_pop_val.value()
     sprites.offspring_amount = window.offspring_val.value()
-    #~
-
-    #~ Brain section
-    #sprites.neural_update_delay = window.neural_interval_spinbox.value()
-    #sprites.learning_update_delay = window.training_interval_spinbox.value()
-    #sprites.training_epochs = window.epochs_spinbox.value()
-    #sprites.training_dopamine_threshold = window.learn_thresh_val.value()
-    #sprites.neural.memory_limit = window.epoch_memory_spinbox.value()
-    #sprites.neural.stimulation_memory = window.input_memory_spinbox.value()
+    environment.info["weight_persistence"] = window.weight_pers_checkbox.isChecked()
     #~
 
     mirror_x_chance = window.mirror_x_slider.value()
@@ -86,6 +78,7 @@ def updateUI(window, environment):
 
         window.neural_loss_val.setText( str( round(selected.brain.lastLoss, 3) ) )
         window.stim_val.setText( str(float( round(selected.brain.stimulation, 2) )) )
+        window.boredom_val.setText( str(float( round(selected.brain.boredom, 2) )) )
         window.iterations_val.setText( str(selected.brain.trainer.iterations) )
         window.dopamine_val.setText( dopamineText )
     #~
@@ -279,7 +272,8 @@ if __name__ == "__main__":
             "brain_mutation_severity": 0.5,
             "reproduction_limit": 6,
             "population": 0,
-            "population_limit": 50
+            "population_limit": 50,
+            "weight_persistence": True
         }
 
 

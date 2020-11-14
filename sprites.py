@@ -50,7 +50,7 @@ training_epochs = 1 # How many epochs to train a network for per training interv
 
 training_dopamine_threshold = 1.
 
-age_limit = 300
+age_limit = 200
 
 eyesight_multiplier = 8 # This multiplied by an eye cell's size is how far away that eye can see
 
@@ -728,7 +728,7 @@ class DNA():
 
         return new_dna
 
-    def mutate_brain_layers(self, severity):
+    def mutate_brain_layers(self, severity, weight_persistence):
         oldHidden = self.brain_structure["hidden_layers"][:]
         newHidden = []
         lengthChange = round(severity * 10.)
@@ -772,8 +772,8 @@ class DNA():
 
         tempNet = neural.setup_network(self)
 
-        if not tempNet.hiddenLayers:
-            return # No hidden layers = no hidden weights to transfer over
+        if not tempNet.hiddenLayers or not weight_persistence:
+            return # No hidden layers = no hidden weights to transfer over (or weight persistence is not active)
 
         #~ Weight preservation
         #  This allows for the weights of the parent network to be passed on to the offspring network - regardless of shape
@@ -811,13 +811,13 @@ class DNA():
 
         return new_dna
 
-    def mutate_brain_structure(self, severity):
+    def mutate_brain_structure(self, severity, weight_persistence):
         new_dna = self.copy()
-        new_dna.mutate_brain_layers(severity)
+        new_dna.mutate_brain_layers(severity, weight_persistence)
 
         return new_dna
 
-    def mutate(self, severity, neural_severity):
+    def mutate(self, severity, neural_severity, weight_persistence=True):
         # `severity` : 0.0 - 1.0
         new_dna = self.copy()
         new_dna = new_dna.mutate_cell_count(severity)
@@ -827,7 +827,7 @@ class DNA():
 
         new_dna = new_dna.mutate_cell_masses(severity)
 
-        new_dna = new_dna.mutate_brain_structure(neural_severity)
+        new_dna = new_dna.mutate_brain_structure(neural_severity, weight_persistence)
 
         new_dna = new_dna.mutate_curiosity(neural_severity)
 
@@ -862,10 +862,12 @@ class Organism():
         self.dopamine_usage = 0.0
         self.dopamine = 0.0 # The current dopamine output
         self.pain = 0.0
+        self.dopamine_update_interval = .1
 
         self.brain = None
 
         self.lastUpdated = time.time()
+        self.last_updated_dopamine = time.time()
         self.lastBirth = time.time()
         self.birthTime = time.time()
         self.generation = 0
@@ -1235,7 +1237,8 @@ class Organism():
 
     def _reproduce_organism(self, severity, neural_severity):
         self.lastBirth = time.time()
-        new_dna = self.dna.mutate(severity=severity, neural_severity=neural_severity)
+        weight_persistence = self.environment.info["weight_persistence"]
+        new_dna = self.dna.mutate(severity=severity, neural_severity=neural_severity, weight_persistence=weight_persistence)
 
         new_pos = get_new_organism_position(self, new_dna, self.environment)
         if not new_pos:
@@ -1385,25 +1388,28 @@ class Organism():
             self.energy_consumed += self.add_energy(digested_energy)
 
         #~ Process dopamine and pain levels
-        health_diff = self.health_percent() - self.lastHealth
-        energy_diff = self.energy_percent() - self.lastEnergy
+        if time.time() - self.last_updated_dopamine >= self.dopamine_update_interval:
+            dopamine_uDiff = time.time() - self.last_updated_dopamine
+            health_diff = self.health_percent() - self.lastHealth
+            energy_diff = self.energy_percent() - self.lastEnergy
 
-        self.pain = health_diff / uDiff
-        self.dopamine_usage = energy_diff / uDiff
+            self.pain = health_diff / dopamine_uDiff
+            self.dopamine_usage = energy_diff / dopamine_uDiff
 
-        if self.pain > 0:
-            self.pain = 0.0
+            if self.pain > 0:
+                self.pain = 0.0
 
-        self.pain = positive(self.pain)
-        self.dopamine_usage -= self.pain
+            self.pain = positive(self.pain)
+            self.dopamine_usage -= self.pain
 
-        self.dopamine_memory.append(self.dopamine)
-        self.dopamine_memory.pop(0)
+            self.dopamine_memory.append(self.dopamine)
+            self.dopamine_memory.pop(0)
 
-        self.dopamine_average = sum(self.dopamine_memory) / len(self.dopamine_memory)
+            self.dopamine_average = sum(self.dopamine_memory) / len(self.dopamine_memory)
 
-        self.dopamine = self.dopamine_usage - self.dopamine_average
-        #self.dopamine = self.dopamine_usage
+            self.dopamine = self.dopamine_usage - self.dopamine_average
+            #self.dopamine = self.dopamine_usage
+            self.last_updated_dopamine = time.time()
         #~
 
         self.lastHealth = self.health_percent()

@@ -221,7 +221,13 @@ def activate(network, environment, organism, uDiff):
             elif correspondent == "y_direction":
                 organism.movement["direction"][1] = output_val.tolist()
 
+    curiosity = organism.dna.base_info["curiosity"]
     network.stimulation = calculateStimulation(network)
+
+    if network.stimulation and curiosity:
+        network.boredom = curiosity / network.stimulation
+    else:
+        network.boredom = 0.0
 
 
 def train_network(organism, epochs=1):
@@ -315,8 +321,9 @@ def setup_network(dna):
         network.lastInput = None
         network.trainingInput = []
         network.trainingOutput = []
-        network.lastLoss = 0
+        network.lastLoss = 0.0
         network.previousInputs = []
-        network.stimulation = 0
+        network.stimulation = 0.0
+        network.boredom = 0.0
 
         return network

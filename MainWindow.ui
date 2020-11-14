@@ -1354,7 +1354,7 @@
        <string/>
       </property>
       <property name="minimum">
-       <number>1</number>
+       <number>0</number>
       </property>
       <property name="maximum">
        <number>30</number>
@@ -1377,6 +1377,32 @@
       </property>
       <property name="orientation">
        <enum>Qt::Vertical</enum>
+      </property>
+     </widget>
+     <widget class="QCheckBox" name="weight_pers_checkbox">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>112</y>
+        <width>171</width>
+        <height>31</height>
+       </rect>
+      </property>
+      <property name="font">
+       <font>
+        <pointsize>11</pointsize>
+        <weight>75</weight>
+        <bold>true</bold>
+       </font>
+      </property>
+      <property name="statusTip">
+       <string>Weight persistence is when a parent organism passes on its neural &quot;weight&quot; - or knowledge - to its offspring</string>
+      </property>
+      <property name="text">
+       <string>Weight Persistence</string>
+      </property>
+      <property name="checked">
+       <bool>true</bool>
       </property>
      </widget>
     </widget>
@@ -1638,7 +1664,7 @@
        </rect>
       </property>
       <property name="minimum">
-       <number>2</number>
+       <number>10</number>
       </property>
       <property name="maximum">
        <number>999</number>
@@ -1701,7 +1727,7 @@
        <x>180</x>
        <y>10</y>
        <width>161</width>
-       <height>140</height>
+       <height>163</height>
       </rect>
      </property>
      <property name="frameShape">
@@ -1877,9 +1903,9 @@
      <widget class="QLabel" name="age_val">
       <property name="geometry">
        <rect>
-        <x>80</x>
+        <x>60</x>
         <y>110</y>
-        <width>71</width>
+        <width>91</width>
         <height>25</height>
        </rect>
       </property>
@@ -1895,7 +1921,7 @@
        <rect>
         <x>10</x>
         <y>110</y>
-        <width>70</width>
+        <width>41</width>
         <height>25</height>
        </rect>
       </property>
@@ -1913,6 +1939,47 @@
       </property>
       <property name="text">
        <string>Age:</string>
+      </property>
+     </widget>
+     <widget class="QLabel" name="boredom_label">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>135</y>
+        <width>70</width>
+        <height>25</height>
+       </rect>
+      </property>
+      <property name="font">
+       <font>
+        <weight>75</weight>
+        <bold>true</bold>
+       </font>
+      </property>
+      <property name="toolTip">
+       <string extracomment="How many neurons are in this organism's brain"/>
+      </property>
+      <property name="statusTip">
+       <string>How healthy this organism is (This also acts as the chance that this organism will produce offspring)</string>
+      </property>
+      <property name="text">
+       <string>Boredom:</string>
+      </property>
+     </widget>
+     <widget class="QLabel" name="boredom_val">
+      <property name="geometry">
+       <rect>
+        <x>90</x>
+        <y>135</y>
+        <width>61</width>
+        <height>25</height>
+       </rect>
+      </property>
+      <property name="toolTip">
+       <string/>
+      </property>
+      <property name="text">
+       <string>0</string>
       </property>
      </widget>
     </widget>
@@ -2248,7 +2315,7 @@
       <number>10</number>
      </property>
      <property name="value">
-      <number>300</number>
+      <number>200</number>
      </property>
     </widget>
    </widget>
