@@ -774,6 +774,8 @@ class Ui_MainWindow(object):
         self.actionKill_All.setObjectName("actionKill_All")
         self.actionReset = QtWidgets.QAction(MainWindow)
         self.actionReset.setObjectName("actionReset")
+        self.actionImport_Organism = QtWidgets.QAction(MainWindow)
+        self.actionImport_Organism.setObjectName("actionImport_Organism")
         self.menuFile.addAction(self.actionNew)
         self.menuFile.addAction(self.actionOpen)
         self.menuFile.addSeparator()
@@ -784,6 +786,8 @@ class Ui_MainWindow(object):
         self.menuWorld.addAction(self.actionFeed_All_Organisms)
         self.menuWorld.addAction(self.actionKill_All)
         self.menuWorld.addAction(self.actionReset)
+        self.menuWorld.addSeparator()
+        self.menuWorld.addAction(self.actionImport_Organism)
         self.menubar.addAction(self.menuFile.menuAction())
         self.menubar.addAction(self.menuWorld.menuAction())
 
@@ -927,3 +931,4 @@ class Ui_MainWindow(object):
         self.actionFeed_All_Organisms.setText(_translate("MainWindow", "Feed All"))
         self.actionKill_All.setText(_translate("MainWindow", "Kill All"))
         self.actionReset.setText(_translate("MainWindow", "Reset"))
+        self.actionImport_Organism.setText(_translate("MainWindow", "Import Organism"))

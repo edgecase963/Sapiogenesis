@@ -2419,6 +2419,8 @@
     <addaction name="actionFeed_All_Organisms"/>
     <addaction name="actionKill_All"/>
     <addaction name="actionReset"/>
+    <addaction name="separator"/>
+    <addaction name="actionImport_Organism"/>
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menuWorld"/>
@@ -2462,6 +2464,11 @@
   <action name="actionReset">
    <property name="text">
     <string>Reset</string>
+   </property>
+  </action>
+  <action name="actionImport_Organism">
+   <property name="text">
+    <string>Import Organism</string>
    </property>
   </action>
  </widget>

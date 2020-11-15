@@ -5,12 +5,13 @@ import networks
 import math
 import numpy
 import sprites
+import pickle
+import MainWindow
+import physics
 
 from PyQt5 import QtCore, QtGui
 from PyQt5 import QtWidgets
 from userInterface import Ui_MainWindow
-import MainWindow
-import physics
 
 
 
@@ -166,7 +167,11 @@ def save_organism_clicked(window, environment):
     selected = environment.info["selected"]
     if selected:
         new_dna = selected.dna.copy()
-        pass
+        filePath = QtWidgets.QFileDialog.getSaveFileName(window, "Select Directory")
+        filePath = filePath[0]
+        if filePath:
+            with open(filePath, "wb") as f:
+                pickle.dump(new_dna, f)
 
 def reproduce_clicked(window, environment):
     selected = environment.info["selected"]
@@ -267,47 +272,55 @@ def reset_clicked(window, environment):
     environment.info["co2"] = default_o2_value
     environment.info["oxygen"] = default_oxygen_value
     environment.info["startTime"] = time.time()
+def import_organism_clicked(window, environment):
+    filePath = QtWidgets.QFileDialog.getOpenFileName(window, "Select File")
+    filePath = filePath[0]
+    with open(filePath, "rb") as f:
+        new_dna = pickle.load(f)
 
-def setup_window_buttons(window, environment):
-    window.add_co2_btn.mouseReleaseEvent = lambda event: add_co2_clicked(window, environment)
-    window.rem_co2_btn.mouseReleaseEvent = lambda event: rem_co2_clicked(window, environment)
-    window.set_co2_btn.mouseReleaseEvent = lambda event: set_co2_clicked(window, environment)
+    environment.info["copied"] = new_dna
 
-    window.kill_btn.mouseReleaseEvent = lambda event: kill_btn_clicked(window, environment)
-    window.feed_btn.mouseReleaseEvent = lambda event: feed_btn_clicked(window, environment)
-    window.hurt_btn.mouseReleaseEvent = lambda event: hurt_btn_clicked(window, environment)
-    window.reproduce_btn.mouseReleaseEvent = lambda event: reproduce_clicked(window, environment)
-    window.save_organism_btn.mouseReleaseEvent = lambda event: save_organism_clicked(window, environment)
+def setup_window_buttons(window, myWindow, environment):
+    myWindow.add_co2_btn.mouseReleaseEvent = lambda event: add_co2_clicked(myWindow, environment)
+    myWindow.rem_co2_btn.mouseReleaseEvent = lambda event: rem_co2_clicked(myWindow, environment)
+    myWindow.set_co2_btn.mouseReleaseEvent = lambda event: set_co2_clicked(myWindow, environment)
 
-    window.add_random_creature_event = lambda: add_creature_clicked(window, environment)
-    window.heal_event = lambda: heal_btn_clicked(window, environment)
-    window.kill_event = lambda: kill_btn_clicked(window, environment)
-    window.reproduce_event = lambda: reproduce_clicked(window, environment)
-    window.copy_event = lambda: copy_clicked(window, environment)
-    window.paste_event = lambda: paste_clicked(window, environment)
-    window.disperse_cells_event = lambda: disperse_cells_clicked(window, environment)
+    myWindow.kill_btn.mouseReleaseEvent = lambda event: kill_btn_clicked(myWindow, environment)
+    myWindow.feed_btn.mouseReleaseEvent = lambda event: feed_btn_clicked(myWindow, environment)
+    myWindow.hurt_btn.mouseReleaseEvent = lambda event: hurt_btn_clicked(myWindow, environment)
+    myWindow.reproduce_btn.mouseReleaseEvent = lambda event: reproduce_clicked(myWindow, environment)
+    myWindow.save_organism_btn.mouseReleaseEvent = lambda event: save_organism_clicked(window, environment)
 
-    window.actionFeed_All_Organisms.triggered.connect(lambda: feed_all_clicked(window, environment))
-    window.actionKill_All.triggered.connect(lambda: kill_all_clicked(window, environment))
-    window.actionReset.triggered.connect(lambda: reset_clicked(window, environment))
+    myWindow.add_random_creature_event = lambda: add_creature_clicked(myWindow, environment)
+    myWindow.heal_event = lambda: heal_btn_clicked(myWindow, environment)
+    myWindow.kill_event = lambda: kill_btn_clicked(myWindow, environment)
+    myWindow.reproduce_event = lambda: reproduce_clicked(myWindow, environment)
+    myWindow.copy_event = lambda: copy_clicked(myWindow, environment)
+    myWindow.paste_event = lambda: paste_clicked(myWindow, environment)
+    myWindow.disperse_cells_event = lambda: disperse_cells_clicked(myWindow, environment)
 
-    window.physical_severity_slider.lastChanged = time.time()
-    window.neural_severity_slider.lastChanged = time.time()
+    myWindow.actionFeed_All_Organisms.triggered.connect(lambda: feed_all_clicked(myWindow, environment))
+    myWindow.actionKill_All.triggered.connect(lambda: kill_all_clicked(myWindow, environment))
+    myWindow.actionReset.triggered.connect(lambda: reset_clicked(myWindow, environment))
+    myWindow.actionImport_Organism.triggered.connect(lambda: import_organism_clicked(window, environment))
 
-    window.physical_severity_slider.valueChanged.connect(lambda v: slider_changed(v, window))
-    window.neural_severity_slider.valueChanged.connect(lambda v: slider_changed(v, window))
-    window.world_speed_spinbox.valueChanged.connect(lambda v: world_speed_changed(v, environment))
+    myWindow.physical_severity_slider.lastChanged = time.time()
+    myWindow.neural_severity_slider.lastChanged = time.time()
+
+    myWindow.physical_severity_slider.valueChanged.connect(lambda v: slider_changed(v, myWindow))
+    myWindow.neural_severity_slider.valueChanged.connect(lambda v: slider_changed(v, myWindow))
+    myWindow.world_speed_spinbox.valueChanged.connect(lambda v: world_speed_changed(v, environment))
 
     #~ Brain section
-    window.neural_interval_spinbox.valueChanged.connect(neural_interval_changed)
-    window.training_interval_spinbox.valueChanged.connect(learning_delay_changed)
-    window.epochs_spinbox.valueChanged.connect(training_epochs_changed)
-    window.learn_thresh_val.valueChanged.connect(learning_threshold_changed)
-    window.epoch_memory_spinbox.valueChanged.connect(epoch_memory_changed)
-    window.input_memory_spinbox.valueChanged.connect(stim_memory_changed)
+    myWindow.neural_interval_spinbox.valueChanged.connect(neural_interval_changed)
+    myWindow.training_interval_spinbox.valueChanged.connect(learning_delay_changed)
+    myWindow.epochs_spinbox.valueChanged.connect(training_epochs_changed)
+    myWindow.learn_thresh_val.valueChanged.connect(learning_threshold_changed)
+    myWindow.epoch_memory_spinbox.valueChanged.connect(epoch_memory_changed)
+    myWindow.input_memory_spinbox.valueChanged.connect(stim_memory_changed)
     #~
 
-    window.age_limit_spinbox.valueChanged.connect(age_limit_changed)
+    myWindow.age_limit_spinbox.valueChanged.connect(age_limit_changed)
 
 
 if __name__ == "__main__":
@@ -339,7 +352,7 @@ if __name__ == "__main__":
         env.info = env_info
         env.lastUpdated = time.time()
 
-        setup_window_buttons(myapp, env)
+        setup_window_buttons(window, myapp, env)
 
         env.preUpdateEvent = lambda: sprites.update_organisms(env)
         env.postUpdateEvent = lambda: updateUI(myapp, env)
