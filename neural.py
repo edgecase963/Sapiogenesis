@@ -251,19 +251,21 @@ def train_network(organism, epochs=1):
 
     inputData = network.lastInput.clone()
     targetData = network.lastOutput.clone()
-    #if organism.pain:
-    #    targetData = torch.tensor( [reverse_val(x) for x in targetData] ).float()
-    targetData = torch.tensor( [x * organism.dopamine for x in targetData] ).float()
+    if organism.pain:
+        targetData = torch.tensor( [x * -organism.pain for x in targetData] ).float()
+        #targetData = torch.tensor( [reverse_val(x) for x in targetData] ).float()
+    elif organism.dopamine > 0:
+        targetData = torch.tensor( [x * organism.dopamine for x in targetData] ).float()
 
-    network.trainingInput.append( inputData.tolist() )
-    network.trainingOutput.append( targetData.tolist() )
+    organism.dna.trainingInput.append( inputData.tolist() )
+    organism.dna.trainingOutput.append( targetData.tolist() )
 
-    while len(network.trainingInput) > memory_limit:
-        network.trainingInput.pop(0)
-        network.trainingOutput.pop(0)
+    while len(organism.dna.trainingInput) > memory_limit:
+        organism.dna.trainingInput.pop(0)
+        organism.dna.trainingOutput.pop(0)
 
     for i in range(epochs):
-        loss = network.trainer.train_epoch(torch.tensor(network.trainingInput), torch.tensor(network.trainingOutput))
+        loss = network.trainer.train_epoch(torch.tensor(organism.dna.trainingInput), torch.tensor(organism.dna.trainingOutput))
         #loss = network.trainer.train_epoch(inputData, targetData)
         network.lastLoss = loss
     network.lastTrained = time.time()
@@ -329,8 +331,6 @@ def setup_network(dna, learning_rate=0.01):
         network.lastTrained = time.time()
         network.lastOutput = None
         network.lastInput = None
-        network.trainingInput = []
-        network.trainingOutput = []
         network.lastLoss = 0.0
         network.previousInputs = []
         network.stimulation = 0.0

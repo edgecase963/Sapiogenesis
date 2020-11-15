@@ -277,10 +277,12 @@ def reset_clicked(window, environment):
 def import_organism_clicked(window, environment):
     filePath = QtWidgets.QFileDialog.getOpenFileName(window, "Select File")
     filePath = filePath[0]
-    with open(filePath, "rb") as f:
-        new_dna = pickle.load(f)
 
-    environment.info["copied"] = new_dna
+    if filePath:
+        with open(filePath, "rb") as f:
+            new_dna = pickle.load(f)
+
+        environment.info["copied"] = new_dna
 
 def setup_window_buttons(window, myWindow, environment):
     myWindow.add_co2_btn.mouseReleaseEvent = lambda event: add_co2_clicked(myWindow, environment)
@@ -345,7 +347,8 @@ if __name__ == "__main__":
             "population": 0,
             "population_limit": 50,
             "weight_persistence": True,
-            "learning_rate": 0.01
+            "learning_rate": 0.01,
+            "paused": False
         }
 
 

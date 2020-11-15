@@ -48,6 +48,8 @@ learning_update_delay = .5 # How long to wait before training an organism
 
 training_epochs = 1 # How many epochs to train a network for per training interval
 
+max_push_speed = 300
+
 training_dopamine_threshold = 1.
 
 age_limit = 200
@@ -276,6 +278,9 @@ class DNA():
         }
 
         self.brain_structure = self._base_brain_structure.copy()
+
+        self.trainingInput = []
+        self.trainingOutput = []
 
         self.base_info = {
             "distanceThreshold": 2.2,
@@ -821,6 +826,10 @@ class DNA():
     def mutate(self, severity, neural_severity, weight_persistence=True):
         # `severity` : 0.0 - 1.0
         new_dna = self.copy()
+
+        new_dna.trainingInput = []
+        new_dna.trainingOutput = []
+
         new_dna = new_dna.mutate_cell_count(severity)
 
         if random.random() <= severity:
@@ -1304,7 +1313,7 @@ class Organism():
 
 
         if cell_info["type"] == "push" and sprite.alive:
-            if self.movement["speed"] >= .1:
+            if positive(self.movement["speed"]) >= .1:
                 push_x = self.movement["direction"][0]
                 push_y = self.movement["direction"][1]
 
@@ -1313,8 +1322,8 @@ class Organism():
                 push_x += math.cos(math.radians(rotation))
                 push_y += math.sin(math.radians(rotation))
 
-                speed = self.movement["speed"] * cell_info["size"] * cell_info["mass"]
-                speed *= (uDiff * 3)
+                speed = self.movement["speed"] * max_push_speed
+                speed *= (uDiff)
 
                 new_velocity = [push_x*speed, push_y*speed]
                 new_velocity = Vec2d(new_velocity)
@@ -1527,6 +1536,7 @@ def update_organisms(environment):
     # For this to work properly the environment must have the variable `lastUpdated` which holds a time.time() value
     # The environment must also have the ".info" variable which holds a dictionary containing "oganism_list" as a value
     uDiff = time.time() - environment.lastUpdated
+    while environment.info["paused"]
     environment.lastUpdated = time.time()
 
     for org in environment.info["organism_list"][:]:
@@ -1542,8 +1552,9 @@ def update_organisms(environment):
                 neural_thread.run()
 
             train_uDiff = time.time() - org.brain.lastTrained
-            if train_uDiff >= learning_update_delay and positive(org.dopamine) >= training_dopamine_threshold:
-                neural.train_network(org, epochs=training_epochs)
+            if train_uDiff >= learning_update_delay:
+                if positive(org.dopamine) >= training_dopamine_threshold or org.pain:
+                    neural.train_network(org, epochs=training_epochs)
         else:
             environment.info["organism_list"].remove(org)
 
