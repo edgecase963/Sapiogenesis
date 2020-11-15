@@ -271,7 +271,8 @@ class DNA():
             "hidden_layers": [], # [<integer>, <integer>, <integer>]
             "hidden_weights": [], # [ [<float>, <float>], [<float>, <float>, <float>], [<float>, <float>] ]
             "output_size": 4,
-            "outputs": ["rotation", "speed", "x_direction", "y_direction"]
+            "outputs": ["rotation", "speed", "x_direction", "y_direction"],
+            "optimizer": "adam"
         }
 
         self.brain_structure = self._base_brain_structure.copy()
@@ -1436,7 +1437,8 @@ class Organism():
             self._update_cell(cell_id, uDiff)
 
     def build_brain(self):
-        self.brain = neural.setup_network(self.dna)
+        learning_rate = self.environment.info["learning_rate"]
+        self.brain = neural.setup_network(self.dna, learning_rate=learning_rate)
 
         for i, layer in enumerate(self.brain.hiddenLayers):
             new_weights = self.dna.brain_structure["hidden_weights"][i]

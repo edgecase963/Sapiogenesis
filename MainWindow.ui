@@ -1731,6 +1731,62 @@
        <string>Input Memory:</string>
       </property>
      </widget>
+     <widget class="QLabel" name="learning_rate_label">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>110</y>
+        <width>131</width>
+        <height>25</height>
+       </rect>
+      </property>
+      <property name="font">
+       <font>
+        <weight>75</weight>
+        <bold>true</bold>
+       </font>
+      </property>
+      <property name="toolTip">
+       <string extracomment="The amount of CO2 in this world"/>
+      </property>
+      <property name="statusTip">
+       <string>The learning rate used for neural networks. Will only be applied to organisms created after this is set</string>
+      </property>
+      <property name="whatsThis">
+       <string/>
+      </property>
+      <property name="text">
+       <string>Learning Rate:</string>
+      </property>
+     </widget>
+     <widget class="QDoubleSpinBox" name="learning_rate_val">
+      <property name="geometry">
+       <rect>
+        <x>140</x>
+        <y>110</y>
+        <width>80</width>
+        <height>30</height>
+       </rect>
+      </property>
+      <property name="statusTip">
+       <string>Pro Tip: Higher does not always mean smarter</string>
+      </property>
+      <property name="decimals">
+       <number>4</number>
+      </property>
+      <property name="minimum">
+       <double>0.001000000000000</double>
+      </property>
+      <property name="maximum">
+       <double>5.000000000000000</double>
+      </property>
+      <property name="singleStep">
+       <double>0.005000000000000</double>
+      </property>
+      <property name="value">
+       <double>0.010000000000000</double>
+      </property>
+     </widget>
     </widget>
    </widget>
    <widget class="QFrame" name="Organism_Frame">

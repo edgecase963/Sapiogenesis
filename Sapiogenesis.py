@@ -255,6 +255,8 @@ def stim_memory_changed(val):
     sprites.neural.stimulation_memory = val
 def age_limit_changed(val):
     sprites.age_limit = val
+def learning_rate_changed(val, environment):
+    environment.info["learning_rate"] = val
 
 def feed_all_clicked(window, environment):
     for org in environment.info["organism_list"]:
@@ -318,6 +320,7 @@ def setup_window_buttons(window, myWindow, environment):
     myWindow.learn_thresh_val.valueChanged.connect(learning_threshold_changed)
     myWindow.epoch_memory_spinbox.valueChanged.connect(epoch_memory_changed)
     myWindow.input_memory_spinbox.valueChanged.connect(stim_memory_changed)
+    myWindow.learning_rate_val.valueChanged.connect(lambda val: learning_rate_changed(val, environment))
     #~
 
     myWindow.age_limit_spinbox.valueChanged.connect(age_limit_changed)
@@ -341,7 +344,8 @@ if __name__ == "__main__":
             "reproduction_limit": 6,
             "population": 0,
             "population_limit": 50,
-            "weight_persistence": True
+            "weight_persistence": True,
+            "learning_rate": 0.01
         }
 
 

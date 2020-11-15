@@ -271,7 +271,7 @@ def train_network(organism, epochs=1):
     organism._update_brain_weights()
 
 
-def setup_network(dna):
+def setup_network(dna, learning_rate=0.01):
     base_input = {
         "visual": [],
         "chemical": [],
@@ -320,7 +320,7 @@ def setup_network(dna):
     if inputSize and hiddenList and outputSize:
         outputSize = len(base_output)
 
-        network = networks.Network(inputSize, hiddenList, outputSize)
+        network = networks.Network(inputSize, hiddenList, outputSize, optimizer=dna.brain_structure["optimizer"], learning_rate=learning_rate)
 
         network.inputCells = inputCells
         network.outputCells = base_output[:]
