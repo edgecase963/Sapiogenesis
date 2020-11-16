@@ -1536,8 +1536,9 @@ def update_organisms(environment):
     # For this to work properly the environment must have the variable `lastUpdated` which holds a time.time() value
     # The environment must also have the ".info" variable which holds a dictionary containing "oganism_list" as a value
     uDiff = time.time() - environment.lastUpdated
-    while environment.info["paused"]
     environment.lastUpdated = time.time()
+    if environment.info["paused"]:
+        return
 
     for org in environment.info["organism_list"][:]:
         if time.time() - org.birthTime >= age_limit:

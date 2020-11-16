@@ -15,6 +15,8 @@ class Ui_MainWindow(Ui_MainWindow):
         pass
     def reproduce_event(self):
         pass
+    def erase_mem_event(self):
+        pass
     def copy_event(self):
         pass
     def paste_event(self):
@@ -113,6 +115,7 @@ def rightMenuShow(self):
     healAction = QtWidgets.QAction(u"Heal", triggered=self.heal_event)
     killAction = QtWidgets.QAction(u"Kill", triggered=self.kill_event)
     reproduceAction = QtWidgets.QAction(u"Reproduce", triggered=self.reproduce_event)
+    eraseAction = QtWidgets.QAction(u"Erase Memory", triggered=self.erase_mem_event)
     copyAction = QtWidgets.QAction(u"Copy", triggered=self.copy_event)
     pasteAction = QtWidgets.QAction(u"Paste", triggered=self.paste_event)
     disperseCellsAction = QtWidgets.QAction(u"Disperse All Dead Cells", triggered=self.disperse_cells_event)
@@ -120,6 +123,7 @@ def rightMenuShow(self):
     rightMenu.addAction(healAction)
     rightMenu.addAction(killAction)
     rightMenu.addAction(reproduceAction)
+    rightMenu.addAction(eraseAction)
     rightMenu.addAction(copyAction)
     rightMenu.addAction(pasteAction)
     rightMenu.addAction(disperseCellsAction)

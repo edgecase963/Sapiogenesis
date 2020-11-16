@@ -1735,7 +1735,7 @@
       <property name="geometry">
        <rect>
         <x>10</x>
-        <y>110</y>
+        <y>115</y>
         <width>131</width>
         <height>25</height>
        </rect>
@@ -1763,7 +1763,7 @@
       <property name="geometry">
        <rect>
         <x>140</x>
-        <y>110</y>
+        <y>115</y>
         <width>80</width>
         <height>30</height>
        </rect>
@@ -2388,6 +2388,47 @@
        <string>Boredom:</string>
       </property>
      </widget>
+     <widget class="QLabel" name="pain_label">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>135</y>
+        <width>51</width>
+        <height>25</height>
+       </rect>
+      </property>
+      <property name="font">
+       <font>
+        <weight>75</weight>
+        <bold>true</bold>
+       </font>
+      </property>
+      <property name="toolTip">
+       <string extracomment="How many neurons are in this organism's brain"/>
+      </property>
+      <property name="statusTip">
+       <string>How bored this organism is (curiosity / stimulation)</string>
+      </property>
+      <property name="text">
+       <string>Pain:</string>
+      </property>
+     </widget>
+     <widget class="QLabel" name="pain_val">
+      <property name="geometry">
+       <rect>
+        <x>60</x>
+        <y>135</y>
+        <width>91</width>
+        <height>25</height>
+       </rect>
+      </property>
+      <property name="toolTip">
+       <string/>
+      </property>
+      <property name="text">
+       <string>0.0</string>
+      </property>
+     </widget>
     </widget>
     <widget class="QLabel" name="age_limit_label">
      <property name="geometry">
@@ -2477,6 +2518,9 @@
     <addaction name="actionReset"/>
     <addaction name="separator"/>
     <addaction name="actionImport_Organism"/>
+    <addaction name="separator"/>
+    <addaction name="actionPause"/>
+    <addaction name="actionResume"/>
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menuWorld"/>
@@ -2525,6 +2569,16 @@
   <action name="actionImport_Organism">
    <property name="text">
     <string>Import Organism</string>
+   </property>
+  </action>
+  <action name="actionPause">
+   <property name="text">
+    <string>Pause</string>
+   </property>
+  </action>
+  <action name="actionResume">
+   <property name="text">
+    <string>Resume</string>
    </property>
   </action>
  </widget>

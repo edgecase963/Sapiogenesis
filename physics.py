@@ -280,6 +280,24 @@ class Environment():
         self.space = pymunk.Space()
         self.space.gravity = gravity
 
+        self.info = {
+            "startTime": time.time(),
+            "co2": 30000,
+            "oxygen": 0,
+            "selected": None,
+            "lastPosition": [0,0],
+            "organism_list": [],
+            "copied": None,
+            "mutation_severity": 0.5,
+            "brain_mutation_severity": 0.5,
+            "reproduction_limit": 6,
+            "population": 0,
+            "population_limit": 50,
+            "weight_persistence": True,
+            "learning_rate": 0.01,
+            "paused": False
+        }
+
         self.width = width
         self.height = height
 
@@ -370,6 +388,9 @@ class Environment():
         pass
 
     def update(self, event):
+        if self.info["paused"]:
+            self.space.step(0.0)
+            return
         self.preUpdateEvent()
         self.space.step(self.worldSpeed)
         for sprite in self.sprites:
