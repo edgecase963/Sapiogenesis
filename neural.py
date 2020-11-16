@@ -254,7 +254,7 @@ def train_network(organism, epochs=1):
     if organism.pain:
         targetData = torch.tensor( [x * -organism.pain for x in targetData] ).float()
         #targetData = torch.tensor( [reverse_val(x) for x in targetData] ).float()
-    elif organism.dopamine > 0:
+    else:
         targetData = torch.tensor( [x * organism.dopamine for x in targetData] ).float()
 
     organism.dna.trainingInput.append( inputData.tolist() )

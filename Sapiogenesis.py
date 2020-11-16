@@ -8,6 +8,7 @@ import sprites
 import pickle
 import MainWindow
 import physics
+import copy
 
 from PyQt5 import QtCore, QtGui
 from PyQt5 import QtWidgets
@@ -171,6 +172,10 @@ def save_organism_clicked(window, environment):
             with open(filePath, "wb") as f:
                 pickle.dump(new_dna, f)
     resume_world(window, environment)
+def train_btn_clicked(window, environment):
+    selected = environment.info["selected"]
+    if selected:
+        sprites.neural.train_network(selected, epochs=sprites.training_epochs)
 
 def reproduce_clicked(window, environment):
     selected = environment.info["selected"]
@@ -292,12 +297,20 @@ def import_organism_clicked(window, environment):
     resume_world(window, environment)
 def pause_world(window, environment):
     environment.info["paused"] = True
+    environment.info["paused_time"] = time.time()
 def resume_world(window, environment):
     for org in environment.info["organism_list"]:
-        org.lastUpdated = time.time()
-        org.last_updated_dopamine = time.time()
-        org.brain.lastUpdated = time.time()
-        org.brain.lastTrained = time.time()
+        paused_time = environment.info["paused_time"]
+
+        last_updated_diff = paused_time - org.lastUpdated
+        last_updated_dopamine_diff = paused_time - org.last_updated_dopamine
+        brain_last_updated_diff = paused_time - org.brain.lastUpdated
+        brain_last_trained_diff = paused_time - org.brain.lastTrained
+
+        org.lastUpdated = time.time() - last_updated_diff
+        org.last_updated_dopamine = time.time() - last_updated_dopamine_diff
+        org.brain.lastUpdated = time.time() - brain_last_updated_diff
+        org.brain.lastTrained = time.time() - brain_last_trained_diff
     environment.info["paused"] = False
 
 def setup_window_buttons(window, myWindow, environment):
@@ -310,6 +323,7 @@ def setup_window_buttons(window, myWindow, environment):
     myWindow.hurt_btn.mouseReleaseEvent = lambda event: hurt_btn_clicked(myWindow, environment)
     myWindow.reproduce_btn.mouseReleaseEvent = lambda event: reproduce_clicked(myWindow, environment)
     myWindow.save_organism_btn.mouseReleaseEvent = lambda event: save_organism_clicked(window, environment)
+    myWindow.train_btn.mouseReleaseEvent = lambda event: train_btn_clicked(window, environment)
 
     myWindow.add_random_creature_event = lambda: add_creature_clicked(myWindow, environment)
     myWindow.heal_event = lambda: heal_btn_clicked(myWindow, environment)

@@ -1554,7 +1554,7 @@ def update_organisms(environment):
 
             train_uDiff = time.time() - org.brain.lastTrained
             if train_uDiff >= learning_update_delay:
-                if positive(org.dopamine) >= training_dopamine_threshold or org.pain:
+                if org.dopamine >= training_dopamine_threshold or org.pain:
                     neural.train_network(org, epochs=training_epochs)
         else:
             environment.info["organism_list"].remove(org)

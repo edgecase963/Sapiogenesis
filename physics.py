@@ -295,7 +295,8 @@ class Environment():
             "population_limit": 50,
             "weight_persistence": True,
             "learning_rate": 0.01,
-            "paused": False
+            "paused": False,
+            "paused_time": time.time()
         }
 
         self.width = width
