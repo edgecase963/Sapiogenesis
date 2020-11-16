@@ -173,6 +173,13 @@ def activate(network, environment, organism, uDiff):
                 input_val = _get_eye_input(correspondent, environment, organism)
             elif cell_type == "carniv":
                 input_val = _get_carn_input(correspondent, environment, organism)
+        elif isinstance(correspondent, list):
+            if correspondent[0] == "touch":
+                sprite = organism.cells[correspondent[1]]
+                if sprite.info["colliding"]:
+                    input_val = 1.0
+                else:
+                    input_val = 0.0
         elif isinstance(correspondent, str):
             if correspondent == "health":
                 input_val = _get_health_input(organism)
@@ -212,13 +219,22 @@ def activate(network, environment, organism, uDiff):
             if correspondent == "rotation":
                 organism.movement["rotation"] = output_val.tolist()
             elif correspondent == "speed":
-                organism.movement["speed"] = output_val.tolist()
+                speed = output_val.tolist()
+                if speed > 1.0:
+                    speed = 1.0
+                organism.movement["speed"] = speed
             elif correspondent == "x_direction":
                 organism.movement["direction"][0] = output_val.tolist()
             elif correspondent == "y_direction":
                 organism.movement["direction"][1] = output_val.tolist()
 
+    curiosity = organism.dna.base_info["curiosity"]
     network.stimulation = calculateStimulation(network)
+
+    if network.stimulation and curiosity:
+        network.boredom = curiosity / network.stimulation
+    else:
+        network.boredom = 0.0
 
 
 def train_network(organism, epochs=1):
@@ -233,21 +249,23 @@ def train_network(organism, epochs=1):
     if network.lastOutput == None or network.lastInput == None:
         return
 
-    inputData = network.lastInput.clone().detach()
-    targetData = network.lastOutput.clone().detach()
+    inputData = network.lastInput.clone()
+    targetData = network.lastOutput.clone()
     if organism.pain:
-        targetData = torch.tensor( [reverse_val(x) for x in targetData] ).float()
-    #targetData = torch.tensor( [x * (organism.dopamine) for x in targetData] ).float()
+        targetData = torch.tensor( [x * -organism.pain for x in targetData] ).float()
+        #targetData = torch.tensor( [reverse_val(x) for x in targetData] ).float()
+    elif organism.dopamine > 0:
+        targetData = torch.tensor( [x * organism.dopamine for x in targetData] ).float()
 
-    network.trainingInput.append( inputData.tolist() )
-    network.trainingOutput.append( targetData.tolist() )
+    organism.dna.trainingInput.append( inputData.tolist() )
+    organism.dna.trainingOutput.append( targetData.tolist() )
 
-    while len(network.trainingInput) > memory_limit:
-        network.trainingInput.pop(0)
-        network.trainingOutput.pop(0)
+    while len(organism.dna.trainingInput) > memory_limit:
+        organism.dna.trainingInput.pop(0)
+        organism.dna.trainingOutput.pop(0)
 
     for i in range(epochs):
-        loss = network.trainer.train_epoch(torch.tensor(network.trainingInput), torch.tensor(network.trainingOutput))
+        loss = network.trainer.train_epoch(torch.tensor(organism.dna.trainingInput), torch.tensor(organism.dna.trainingOutput))
         #loss = network.trainer.train_epoch(inputData, targetData)
         network.lastLoss = loss
     network.lastTrained = time.time()
@@ -255,7 +273,7 @@ def train_network(organism, epochs=1):
     organism._update_brain_weights()
 
 
-def setup_network(dna):
+def setup_network(dna, learning_rate=0.01):
     base_input = {
         "visual": [],
         "chemical": [],
@@ -265,8 +283,6 @@ def setup_network(dna):
 
     base_output = ["rotation", "speed", "x_direction", "y_direction"]
 
-    inputCells = []
-
     for cell_id in dna.cells:
         cell_info = dna.cells[cell_id]
 
@@ -275,6 +291,7 @@ def setup_network(dna):
         elif cell_info["type"] == "carniv":
             base_input["body"].append(cell_id)
 
+    inputCells = []
     inputSize = 0
     hiddenList = []
     outputSize = 0
@@ -294,6 +311,10 @@ def setup_network(dna):
         for correspondent in base_input["body"]:
             inputCells.append(correspondent)
 
+    for cell_id in dna.cells:
+        inputSize += 1
+        inputCells.append(["touch", cell_id])
+
     hiddenList = dna.brain_structure["hidden_layers"]
 
     outputSize = len(base_output)
@@ -301,7 +322,7 @@ def setup_network(dna):
     if inputSize and hiddenList and outputSize:
         outputSize = len(base_output)
 
-        network = networks.Network(inputSize, hiddenList, outputSize)
+        network = networks.Network(inputSize, hiddenList, outputSize, optimizer=dna.brain_structure["optimizer"], learning_rate=learning_rate)
 
         network.inputCells = inputCells
         network.outputCells = base_output[:]
@@ -310,10 +331,9 @@ def setup_network(dna):
         network.lastTrained = time.time()
         network.lastOutput = None
         network.lastInput = None
-        network.trainingInput = []
-        network.trainingOutput = []
-        network.lastLoss = 0
+        network.lastLoss = 0.0
         network.previousInputs = []
-        network.stimulation = 0
+        network.stimulation = 0.0
+        network.boredom = 0.0
 
         return network

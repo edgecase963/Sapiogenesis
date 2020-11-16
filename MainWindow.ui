@@ -10,6 +10,12 @@
     <height>856</height>
    </rect>
   </property>
+  <property name="minimumSize">
+   <size>
+    <width>1100</width>
+    <height>856</height>
+   </size>
+  </property>
   <property name="windowTitle">
    <string>Sapiogenesis</string>
   </property>
@@ -386,7 +392,7 @@
         <string extracomment="The amount of CO2 in this world"/>
        </property>
        <property name="statusTip">
-        <string>The speed of this world's physics</string>
+        <string>The speed of this world's physics (does not change any neural controls)</string>
        </property>
        <property name="whatsThis">
         <string/>
@@ -420,7 +426,7 @@
         <double>0.005000000000000</double>
        </property>
        <property name="value">
-        <double>0.050000000000000</double>
+        <double>0.060000000000000</double>
        </property>
       </widget>
      </widget>
@@ -807,7 +813,7 @@
        </rect>
       </property>
       <property name="statusTip">
-       <string>The chance a new organism will be mirrored on the x axis</string>
+       <string>The chance a new organism will be mirrored on the X axis</string>
       </property>
       <property name="orientation">
        <enum>Qt::Horizontal</enum>
@@ -845,7 +851,7 @@
        </rect>
       </property>
       <property name="statusTip">
-       <string>The chance a new organism will be mirrored on the y axis</string>
+       <string>The chance a new organism will be mirrored on the Y axis</string>
       </property>
       <property name="orientation">
        <enum>Qt::Horizontal</enum>
@@ -1011,7 +1017,7 @@
        <number>999</number>
       </property>
       <property name="value">
-       <number>8</number>
+       <number>6</number>
       </property>
      </widget>
     </widget>
@@ -1098,7 +1104,7 @@
        <string extracomment="Amount of CO2 to add"/>
       </property>
       <property name="statusTip">
-       <string/>
+       <string>Higher = Faster</string>
       </property>
       <property name="maximum">
        <number>999999999</number>
@@ -1176,7 +1182,7 @@
        <string extracomment="Amount of CO2 to add"/>
       </property>
       <property name="statusTip">
-       <string/>
+       <string>Warning: Too many organisms will cause lag</string>
       </property>
       <property name="maximum">
        <number>999999999</number>
@@ -1185,7 +1191,7 @@
        <number>5</number>
       </property>
       <property name="value">
-       <number>60</number>
+       <number>50</number>
       </property>
      </widget>
      <widget class="QSlider" name="neural_severity_slider">
@@ -1309,6 +1315,9 @@
       <property name="text">
        <string>Match</string>
       </property>
+      <property name="checked">
+       <bool>true</bool>
+      </property>
      </widget>
      <widget class="QLabel" name="offspring_label">
       <property name="geometry">
@@ -1351,10 +1360,10 @@
        <string extracomment="Amount of CO2 to add"/>
       </property>
       <property name="statusTip">
-       <string/>
+       <string>Lower = faster</string>
       </property>
       <property name="minimum">
-       <number>1</number>
+       <number>0</number>
       </property>
       <property name="maximum">
        <number>30</number>
@@ -1379,10 +1388,36 @@
        <enum>Qt::Vertical</enum>
       </property>
      </widget>
+     <widget class="QCheckBox" name="weight_pers_checkbox">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>112</y>
+        <width>171</width>
+        <height>31</height>
+       </rect>
+      </property>
+      <property name="font">
+       <font>
+        <pointsize>11</pointsize>
+        <weight>75</weight>
+        <bold>true</bold>
+       </font>
+      </property>
+      <property name="statusTip">
+       <string>Weight persistence is when a parent organism passes on its neural &quot;weight&quot; - or knowledge - to its offspring</string>
+      </property>
+      <property name="text">
+       <string>Weight Persistence</string>
+      </property>
+      <property name="checked">
+       <bool>true</bool>
+      </property>
+     </widget>
     </widget>
     <widget class="QWidget" name="tab">
      <attribute name="title">
-      <string>Brains</string>
+      <string>Neural Controls</string>
      </attribute>
      <widget class="QLabel" name="neural_interval_label">
       <property name="geometry">
@@ -1403,7 +1438,7 @@
        <string extracomment="The amount of CO2 in this world"/>
       </property>
       <property name="statusTip">
-       <string>How long to wait in between an organism's &quot;thoughts&quot; - e.g. update the neural network (higher = faster, lower = faster thinking)</string>
+       <string>How long to wait in between an organism's &quot;thoughts&quot; - e.g. update the neural network</string>
       </property>
       <property name="whatsThis">
        <string/>
@@ -1420,6 +1455,9 @@
         <width>80</width>
         <height>30</height>
        </rect>
+      </property>
+      <property name="statusTip">
+       <string>Higher = faster | Lower = faster thinking</string>
       </property>
       <property name="minimum">
        <double>0.020000000000000</double>
@@ -1442,6 +1480,9 @@
         <width>80</width>
         <height>30</height>
        </rect>
+      </property>
+      <property name="statusTip">
+       <string>Higher = faster | Lower = faster training</string>
       </property>
       <property name="minimum">
        <double>0.020000000000000</double>
@@ -1475,7 +1516,7 @@
        <string extracomment="The amount of CO2 in this world"/>
       </property>
       <property name="statusTip">
-       <string>How long to wait before training neural networks (higher = faster, lower = faster training)</string>
+       <string>How long to wait before training neural networks</string>
       </property>
       <property name="whatsThis">
        <string/>
@@ -1503,7 +1544,7 @@
        <string extracomment="The amount of CO2 in this world"/>
       </property>
       <property name="statusTip">
-       <string>How many epochs to train per training interval (lower = faster)</string>
+       <string>How many epochs to train per training interval</string>
       </property>
       <property name="whatsThis">
        <string/>
@@ -1521,6 +1562,9 @@
         <height>30</height>
        </rect>
       </property>
+      <property name="statusTip">
+       <string>Lower = faster | Higher = better training</string>
+      </property>
       <property name="minimum">
        <number>1</number>
       </property>
@@ -1536,6 +1580,9 @@
         <width>80</width>
         <height>30</height>
        </rect>
+      </property>
+      <property name="statusTip">
+       <string>Higher = faster | Lower = more detailed memory</string>
       </property>
       <property name="minimum">
        <double>0.010000000000000</double>
@@ -1569,7 +1616,7 @@
        <string extracomment="The amount of CO2 in this world"/>
       </property>
       <property name="statusTip">
-       <string>The amount of dopamine difference required to memorize a situation and learn from it (higher = faster, lower = more detailed memory)</string>
+       <string>The amount of dopamine difference required to memorize a situation and learn from it</string>
       </property>
       <property name="whatsThis">
        <string/>
@@ -1597,7 +1644,7 @@
        <string extracomment="The amount of CO2 in this world"/>
       </property>
       <property name="statusTip">
-       <string>How many epochs back to remember for training (lower = faster, higher = better training)</string>
+       <string>How many epochs back to remember for training</string>
       </property>
       <property name="whatsThis">
        <string/>
@@ -1614,6 +1661,9 @@
         <width>80</width>
         <height>30</height>
        </rect>
+      </property>
+      <property name="statusTip">
+       <string>Lower = faster | Higher = better training</string>
       </property>
       <property name="minimum">
        <number>10</number>
@@ -1637,8 +1687,11 @@
         <height>30</height>
        </rect>
       </property>
+      <property name="statusTip">
+       <string>Used for calculating the stimulation and boredom values</string>
+      </property>
       <property name="minimum">
-       <number>2</number>
+       <number>10</number>
       </property>
       <property name="maximum">
        <number>999</number>
@@ -1669,7 +1722,7 @@
        <string extracomment="The amount of CO2 in this world"/>
       </property>
       <property name="statusTip">
-       <string>How many inputs back to remember (used for calculating the stimulation value)</string>
+       <string>How many inputs back to remember</string>
       </property>
       <property name="whatsThis">
        <string/>
@@ -1678,15 +1731,71 @@
        <string>Input Memory:</string>
       </property>
      </widget>
+     <widget class="QLabel" name="learning_rate_label">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>115</y>
+        <width>131</width>
+        <height>25</height>
+       </rect>
+      </property>
+      <property name="font">
+       <font>
+        <weight>75</weight>
+        <bold>true</bold>
+       </font>
+      </property>
+      <property name="toolTip">
+       <string extracomment="The amount of CO2 in this world"/>
+      </property>
+      <property name="statusTip">
+       <string>The learning rate used for neural networks. Will only be applied to organisms created after this is set</string>
+      </property>
+      <property name="whatsThis">
+       <string/>
+      </property>
+      <property name="text">
+       <string>Learning Rate:</string>
+      </property>
+     </widget>
+     <widget class="QDoubleSpinBox" name="learning_rate_val">
+      <property name="geometry">
+       <rect>
+        <x>140</x>
+        <y>115</y>
+        <width>80</width>
+        <height>30</height>
+       </rect>
+      </property>
+      <property name="statusTip">
+       <string>Pro Tip: Higher does not always mean smarter</string>
+      </property>
+      <property name="decimals">
+       <number>4</number>
+      </property>
+      <property name="minimum">
+       <double>0.001000000000000</double>
+      </property>
+      <property name="maximum">
+       <double>5.000000000000000</double>
+      </property>
+      <property name="singleStep">
+       <double>0.005000000000000</double>
+      </property>
+      <property name="value">
+       <double>0.010000000000000</double>
+      </property>
+     </widget>
     </widget>
    </widget>
    <widget class="QFrame" name="Organism_Frame">
     <property name="geometry">
      <rect>
       <x>550</x>
-      <y>640</y>
+      <y>630</y>
       <width>530</width>
-      <height>140</height>
+      <height>181</height>
      </rect>
     </property>
     <property name="frameShape">
@@ -1701,7 +1810,7 @@
        <x>180</x>
        <y>10</y>
        <width>161</width>
-       <height>120</height>
+       <height>163</height>
       </rect>
      </property>
      <property name="frameShape">
@@ -1798,7 +1907,7 @@
        <string/>
       </property>
       <property name="text">
-       <string>0</string>
+       <string>0.0</string>
       </property>
      </widget>
      <widget class="QLabel" name="generation_val">
@@ -1830,7 +1939,7 @@
        <string/>
       </property>
       <property name="text">
-       <string>0</string>
+       <string>0.0</string>
       </property>
      </widget>
      <widget class="QLabel" name="health_val">
@@ -1872,6 +1981,88 @@
       </property>
       <property name="text">
        <string>Health:</string>
+      </property>
+     </widget>
+     <widget class="QLabel" name="age_val">
+      <property name="geometry">
+       <rect>
+        <x>60</x>
+        <y>110</y>
+        <width>91</width>
+        <height>25</height>
+       </rect>
+      </property>
+      <property name="toolTip">
+       <string/>
+      </property>
+      <property name="text">
+       <string>0</string>
+      </property>
+     </widget>
+     <widget class="QLabel" name="age_label">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>110</y>
+        <width>41</width>
+        <height>25</height>
+       </rect>
+      </property>
+      <property name="font">
+       <font>
+        <weight>75</weight>
+        <bold>true</bold>
+       </font>
+      </property>
+      <property name="toolTip">
+       <string extracomment="How many neurons are in this organism's brain"/>
+      </property>
+      <property name="statusTip">
+       <string>How old (in seconds) this organism is</string>
+      </property>
+      <property name="text">
+       <string>Age:</string>
+      </property>
+     </widget>
+     <widget class="QLabel" name="curiosity_val">
+      <property name="geometry">
+       <rect>
+        <x>90</x>
+        <y>135</y>
+        <width>61</width>
+        <height>25</height>
+       </rect>
+      </property>
+      <property name="toolTip">
+       <string/>
+      </property>
+      <property name="text">
+       <string>0.0</string>
+      </property>
+     </widget>
+     <widget class="QLabel" name="curiosity_label">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>135</y>
+        <width>70</width>
+        <height>25</height>
+       </rect>
+      </property>
+      <property name="font">
+       <font>
+        <weight>75</weight>
+        <bold>true</bold>
+       </font>
+      </property>
+      <property name="toolTip">
+       <string extracomment="How many neurons are in this organism's brain"/>
+      </property>
+      <property name="statusTip">
+       <string>The curiosity of this organism. This is a finite value that's used to calculate boredom</string>
+      </property>
+      <property name="text">
+       <string>Curiosity:</string>
       </property>
      </widget>
     </widget>
@@ -1922,7 +2113,7 @@
        <string>Feed</string>
       </property>
      </widget>
-     <widget class="QPushButton" name="view_brain_btn">
+     <widget class="QPushButton" name="reproduce_btn">
       <property name="geometry">
        <rect>
         <x>40</x>
@@ -1934,8 +2125,11 @@
       <property name="toolTip">
        <string extracomment="View this organism's brain"/>
       </property>
+      <property name="statusTip">
+       <string>Force the organism to reproduce</string>
+      </property>
       <property name="text">
-       <string>View Brain</string>
+       <string>Reproduce</string>
       </property>
      </widget>
      <widget class="QPushButton" name="save_organism_btn">
@@ -1949,6 +2143,9 @@
       </property>
       <property name="toolTip">
        <string extracomment="Save this organism to a file"/>
+      </property>
+      <property name="statusTip">
+       <string>Save this organism to a file</string>
       </property>
       <property name="text">
        <string>Save</string>
@@ -1977,7 +2174,7 @@
        <x>10</x>
        <y>10</y>
        <width>161</width>
-       <height>120</height>
+       <height>163</height>
       </rect>
      </property>
      <property name="frameShape">
@@ -2074,7 +2271,7 @@
        <string/>
       </property>
       <property name="text">
-       <string>0</string>
+       <string>0.0</string>
       </property>
      </widget>
      <widget class="QLabel" name="stim_val">
@@ -2090,7 +2287,7 @@
        <string/>
       </property>
       <property name="text">
-       <string>0</string>
+       <string>0.0</string>
       </property>
      </widget>
      <widget class="QLabel" name="iterations_val">
@@ -2150,6 +2347,144 @@
        <string>Neurons:</string>
       </property>
      </widget>
+     <widget class="QLabel" name="boredom_val">
+      <property name="geometry">
+       <rect>
+        <x>90</x>
+        <y>110</y>
+        <width>61</width>
+        <height>25</height>
+       </rect>
+      </property>
+      <property name="toolTip">
+       <string/>
+      </property>
+      <property name="text">
+       <string>0.0</string>
+      </property>
+     </widget>
+     <widget class="QLabel" name="boredom_label">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>110</y>
+        <width>70</width>
+        <height>25</height>
+       </rect>
+      </property>
+      <property name="font">
+       <font>
+        <weight>75</weight>
+        <bold>true</bold>
+       </font>
+      </property>
+      <property name="toolTip">
+       <string extracomment="How many neurons are in this organism's brain"/>
+      </property>
+      <property name="statusTip">
+       <string>How bored this organism is (curiosity / stimulation)</string>
+      </property>
+      <property name="text">
+       <string>Boredom:</string>
+      </property>
+     </widget>
+     <widget class="QLabel" name="pain_label">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>135</y>
+        <width>51</width>
+        <height>25</height>
+       </rect>
+      </property>
+      <property name="font">
+       <font>
+        <weight>75</weight>
+        <bold>true</bold>
+       </font>
+      </property>
+      <property name="toolTip">
+       <string extracomment="How many neurons are in this organism's brain"/>
+      </property>
+      <property name="statusTip">
+       <string>How bored this organism is (curiosity / stimulation)</string>
+      </property>
+      <property name="text">
+       <string>Pain:</string>
+      </property>
+     </widget>
+     <widget class="QLabel" name="pain_val">
+      <property name="geometry">
+       <rect>
+        <x>60</x>
+        <y>135</y>
+        <width>91</width>
+        <height>25</height>
+       </rect>
+      </property>
+      <property name="toolTip">
+       <string/>
+      </property>
+      <property name="text">
+       <string>0.0</string>
+      </property>
+     </widget>
+    </widget>
+    <widget class="QLabel" name="age_limit_label">
+     <property name="geometry">
+      <rect>
+       <x>350</x>
+       <y>140</y>
+       <width>81</width>
+       <height>25</height>
+      </rect>
+     </property>
+     <property name="font">
+      <font>
+       <weight>75</weight>
+       <bold>true</bold>
+      </font>
+     </property>
+     <property name="toolTip">
+      <string extracomment="The amount of CO2 in this world"/>
+     </property>
+     <property name="statusTip">
+      <string>The maximum lifespan of organisms. This ensures the environment is constantly changing</string>
+     </property>
+     <property name="whatsThis">
+      <string/>
+     </property>
+     <property name="text">
+      <string>Lifespan:</string>
+     </property>
+    </widget>
+    <widget class="QSpinBox" name="age_limit_spinbox">
+     <property name="geometry">
+      <rect>
+       <x>430</x>
+       <y>140</y>
+       <width>81</width>
+       <height>29</height>
+      </rect>
+     </property>
+     <property name="toolTip">
+      <string extracomment="New CO2 value"/>
+     </property>
+     <property name="statusTip">
+      <string>Lifespan (in seconds)</string>
+     </property>
+     <property name="minimum">
+      <number>10</number>
+     </property>
+     <property name="maximum">
+      <number>999999999</number>
+     </property>
+     <property name="singleStep">
+      <number>10</number>
+     </property>
+     <property name="value">
+      <number>200</number>
+     </property>
     </widget>
    </widget>
   </widget>
@@ -2174,7 +2509,21 @@
     <addaction name="separator"/>
     <addaction name="actionQuit"/>
    </widget>
+   <widget class="QMenu" name="menuWorld">
+    <property name="title">
+     <string>World</string>
+    </property>
+    <addaction name="actionFeed_All_Organisms"/>
+    <addaction name="actionKill_All"/>
+    <addaction name="actionReset"/>
+    <addaction name="separator"/>
+    <addaction name="actionImport_Organism"/>
+    <addaction name="separator"/>
+    <addaction name="actionPause"/>
+    <addaction name="actionResume"/>
+   </widget>
    <addaction name="menuFile"/>
+   <addaction name="menuWorld"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
   <action name="actionNew">
@@ -2200,6 +2549,36 @@
   <action name="actionQuit">
    <property name="text">
     <string>Quit</string>
+   </property>
+  </action>
+  <action name="actionFeed_All_Organisms">
+   <property name="text">
+    <string>Feed All</string>
+   </property>
+  </action>
+  <action name="actionKill_All">
+   <property name="text">
+    <string>Kill All</string>
+   </property>
+  </action>
+  <action name="actionReset">
+   <property name="text">
+    <string>Reset</string>
+   </property>
+  </action>
+  <action name="actionImport_Organism">
+   <property name="text">
+    <string>Import Organism</string>
+   </property>
+  </action>
+  <action name="actionPause">
+   <property name="text">
+    <string>Pause</string>
+   </property>
+  </action>
+  <action name="actionResume">
+   <property name="text">
+    <string>Resume</string>
    </property>
   </action>
  </widget>

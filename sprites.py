@@ -48,7 +48,11 @@ learning_update_delay = .5 # How long to wait before training an organism
 
 training_epochs = 1 # How many epochs to train a network for per training interval
 
+max_push_speed = 300
+
 training_dopamine_threshold = 1.
+
+age_limit = 200
 
 eyesight_multiplier = 8 # This multiplied by an eye cell's size is how far away that eye can see
 
@@ -175,8 +179,8 @@ def viable_organism_position(pos, dna, environment):
 
         # Rect = [min_x, min_y, max_x, max_y]
 
-        if (dna_rect[0] > rect[0] and dna_rect[0] < rect[2]) or (dna_rect[2] > rect[0] and dna_rect[2] < rect[2]): # Within X boundaries
-            if (dna_rect[1] > rect[1] and dna_rect[1] < rect[3]) or (dna_rect[3] > rect[1] and dna_rect[3] < rect[3]): # Within Y boundaries
+        if (dna_rect[0] > rect[0] and dna_rect[0] < rect[2]) or (dna_rect[2] > rect[0] and dna_rect[2] < rect[2]) or (rect[0] > dna_rect[0] and rect[2] < dna_rect[2]): # Within X boundaries
+            if (dna_rect[1] > rect[1] and dna_rect[1] < rect[3]) or (dna_rect[3] > rect[1] and dna_rect[3] < rect[3]) or (rect[1] > dna_rect[1] and rect[3] < dna_rect[3]): # Within Y boundaries
                 return False, []
 
         for sprite in dead_cells:
@@ -269,10 +273,14 @@ class DNA():
             "hidden_layers": [], # [<integer>, <integer>, <integer>]
             "hidden_weights": [], # [ [<float>, <float>], [<float>, <float>, <float>], [<float>, <float>] ]
             "output_size": 4,
-            "outputs": ["rotation", "speed", "x_direction", "y_direction"]
+            "outputs": ["rotation", "speed", "x_direction", "y_direction"],
+            "optimizer": "adam"
         }
 
         self.brain_structure = self._base_brain_structure.copy()
+
+        self.trainingInput = []
+        self.trainingOutput = []
 
         self.base_info = {
             "distanceThreshold": 2.2,
@@ -631,7 +639,7 @@ class DNA():
         for layer in tempNet.hiddenLayers:
             self.brain_structure["hidden_weights"].append( layer.weight.tolist() )
 
-    def randomize(self, cellRange=[3,30], sizeRange=[6,42], massRange=[5,20], mirror_x=[0.6, 0.4], mirror_y=[0.6, 0.4], hiddenRange=[2, 8]):
+    def randomize(self, cellRange=[3,30], sizeRange=[6,42], massRange=[5,20], mirror_x=[0.6, 0.4], mirror_y=[0.6, 0.4], hiddenRange=[2, 6]):
         self.cellRange = cellRange
         self.sizeRange = sizeRange
         self.massRange = massRange
@@ -649,6 +657,7 @@ class DNA():
 
         self.base_info["mirror_x"] = mirror_x
         self.base_info["mirror_y"] = mirror_y
+        self.base_info["curiosity"] = random.random()
 
         first_cell = True
         for i in range(random.randrange(cellRange[0], cellRange[1])):
@@ -726,7 +735,7 @@ class DNA():
 
         return new_dna
 
-    def mutate_brain_layers(self, severity):
+    def mutate_brain_layers(self, severity, weight_persistence):
         oldHidden = self.brain_structure["hidden_layers"][:]
         newHidden = []
         lengthChange = round(severity * 10.)
@@ -770,8 +779,8 @@ class DNA():
 
         tempNet = neural.setup_network(self)
 
-        if not tempNet.hiddenLayers:
-            return # No hidden layers = no hidden weights to transfer over
+        if not tempNet.hiddenLayers or not weight_persistence:
+            return # No hidden layers = no hidden weights to transfer over (or weight persistence is not active)
 
         #~ Weight preservation
         #  This allows for the weights of the parent network to be passed on to the offspring network - regardless of shape
@@ -793,7 +802,6 @@ class DNA():
                 self.brain_structure["hidden_weights"].append(newLayer)
         #~
 
-
     def mutate_curiosity(self, severity):
         new_dna = self.copy()
         add_curiosity = random.random() - random.random()
@@ -809,15 +817,19 @@ class DNA():
 
         return new_dna
 
-    def mutate_brain_structure(self, severity):
+    def mutate_brain_structure(self, severity, weight_persistence):
         new_dna = self.copy()
-        new_dna.mutate_brain_layers(severity)
+        new_dna.mutate_brain_layers(severity, weight_persistence)
 
         return new_dna
 
-    def mutate(self, severity, neural_severity):
+    def mutate(self, severity, neural_severity, weight_persistence=True):
         # `severity` : 0.0 - 1.0
         new_dna = self.copy()
+
+        new_dna.trainingInput = []
+        new_dna.trainingOutput = []
+
         new_dna = new_dna.mutate_cell_count(severity)
 
         if random.random() <= severity:
@@ -825,7 +837,7 @@ class DNA():
 
         new_dna = new_dna.mutate_cell_masses(severity)
 
-        new_dna = new_dna.mutate_brain_structure(neural_severity)
+        new_dna = new_dna.mutate_brain_structure(neural_severity, weight_persistence)
 
         new_dna = new_dna.mutate_curiosity(neural_severity)
 
@@ -840,6 +852,9 @@ class Organism():
         self.dna = dna
         self.pos = pos   # [<x>, <y>]
         self.environment = environment
+
+        self.energy_consumed = 0.0
+        # The amount of energy this organism has consumed from other cells
 
         self.cells = {}
         # Structure: {<Cell_ID>: <Sprite_Class>}
@@ -857,11 +872,14 @@ class Organism():
         self.dopamine_usage = 0.0
         self.dopamine = 0.0 # The current dopamine output
         self.pain = 0.0
+        self.dopamine_update_interval = .1
 
         self.brain = None
 
         self.lastUpdated = time.time()
+        self.last_updated_dopamine = time.time()
         self.lastBirth = time.time()
+        self.birthTime = time.time()
         self.generation = 0
 
     def _growth_position(self, newCellID, rel_pos=None):
@@ -1140,6 +1158,11 @@ class Organism():
             return True
         return False
 
+    def kill(self):
+        fCell = self.dna.first_cell()
+        if self.cells[fCell].alive:
+            self.kill_cell(self.cells[fCell])
+
     def collision(self, cell, sprite):
         own_id = cell.cell_id
         other_id = sprite.cell_id
@@ -1151,17 +1174,6 @@ class Organism():
             cell.info["colliding"].append(sprite)
         if not cell in sprite.info["colliding"]:
             sprite.info["colliding"].append(cell)
-
-        #if own_info["type"] == "carniv":
-        #    damage_dealt = base_cell_info["damage"]["carniv"]
-        #    if sprite.alive:
-        #        sprite.info["health"] -= damage_dealt
-        #    else:
-        #        mass = sprite.body.mass
-        #        newMass = mass - (damage_dealt / own_info["mass"]) * 2
-        #        if newMass > 0:
-        #            sprite.body._set_mass(newMass)
-        #            cell.organism.add_energy(damage_dealt)
 
     def _cell_collision(self, cell, sprite):
         # cell is the sprite for THIS organism's cell
@@ -1224,20 +1236,24 @@ class Organism():
 
     def _reproduce_organism(self, severity, neural_severity):
         self.lastBirth = time.time()
-        new_dna = self.dna.mutate(severity=severity, neural_severity=neural_severity)
+        weight_persistence = self.environment.info["weight_persistence"]
+        new_dna = self.dna.mutate(severity=severity, neural_severity=neural_severity, weight_persistence=weight_persistence)
 
         new_pos = get_new_organism_position(self, new_dna, self.environment)
         if not new_pos:
-            return
+            return False
 
         organism = Organism(new_pos, self.environment, dna=new_dna)
         organism.generation = self.generation + 1
         self.environment.info["organism_list"].append(organism)
         organism.build_body()
+        return True
 
     def reproduce(self, severity=0.5, neural_severity=0.5):
         for i in range(offspring_amount):
-            self._reproduce_organism(severity, neural_severity)
+            success = self._reproduce_organism(severity, neural_severity)
+            if not success:
+                break
 
     def _update_brain_weights(self):
         new_weights = []
@@ -1292,11 +1308,12 @@ class Organism():
                     else:
                         cell.body._set_mass(0)
 
-                sprite.organism.add_energy(added_energy)
+                #sprite.organism.add_energy(added_energy)
+                sprite.organism.energy_consumed += added_energy
 
 
         if cell_info["type"] == "push" and sprite.alive:
-            if self.movement["speed"] >= .1:
+            if positive(self.movement["speed"]) >= .1:
                 push_x = self.movement["direction"][0]
                 push_y = self.movement["direction"][1]
 
@@ -1305,11 +1322,8 @@ class Organism():
                 push_x += math.cos(math.radians(rotation))
                 push_y += math.sin(math.radians(rotation))
 
-                if self.movement["speed"] > 1.0:
-                    self.movement["speed"] = 1.0
-
-                speed = self.movement["speed"] * cell_info["size"] * cell_info["mass"]
-                speed *= (uDiff * 3)
+                speed = self.movement["speed"] * max_push_speed
+                speed *= (uDiff)
 
                 new_velocity = [push_x*speed, push_y*speed]
                 new_velocity = Vec2d(new_velocity)
@@ -1364,26 +1378,40 @@ class Organism():
         uDiff = time.time() - self.lastUpdated
         self.lastUpdated = time.time()
 
+        if self.energy_consumed >= self.max_energy()/2:
+            self.energy_consumed = self.max_energy()/2
+        if self.energy_consumed < 0.001:
+            self.energy_consumed = 0
+
+        if self.energy_consumed:
+            digested_energy = perc2num(90, self.energy_consumed) * uDiff
+
+            self.energy_consumed -= digested_energy
+            self.energy_consumed += self.add_energy(digested_energy)
+
         #~ Process dopamine and pain levels
-        health_diff = self.health_percent() - self.lastHealth
-        energy_diff = self.energy_percent() - self.lastEnergy
+        if time.time() - self.last_updated_dopamine >= self.dopamine_update_interval:
+            dopamine_uDiff = time.time() - self.last_updated_dopamine
+            health_diff = self.health_percent() - self.lastHealth
+            energy_diff = self.energy_percent() - self.lastEnergy
 
-        self.pain = health_diff / uDiff
-        self.dopamine_usage = energy_diff / uDiff
+            self.pain = health_diff / dopamine_uDiff
+            self.dopamine_usage = energy_diff / dopamine_uDiff
 
-        if self.pain > 0:
-            self.pain = 0.0
+            if self.pain > 0:
+                self.pain = 0.0
 
-        self.pain = positive(self.pain)
-        self.dopamine_usage -= self.pain
+            self.pain = positive(self.pain)
+            self.dopamine_usage -= self.pain
 
-        self.dopamine_memory.append(self.dopamine)
-        self.dopamine_memory.pop(0)
+            self.dopamine_memory.append(self.dopamine)
+            self.dopamine_memory.pop(0)
 
-        self.dopamine_average = sum(self.dopamine_memory) / len(self.dopamine_memory)
+            self.dopamine_average = sum(self.dopamine_memory) / len(self.dopamine_memory)
 
-        self.dopamine = self.dopamine_usage - self.dopamine_average
-        #self.dopamine = self.dopamine_usage
+            self.dopamine = self.dopamine_usage - self.dopamine_average
+            #self.dopamine = self.dopamine_usage
+            self.last_updated_dopamine = time.time()
         #~
 
         self.lastHealth = self.health_percent()
@@ -1418,7 +1446,8 @@ class Organism():
             self._update_cell(cell_id, uDiff)
 
     def build_brain(self):
-        self.brain = neural.setup_network(self.dna)
+        learning_rate = self.environment.info["learning_rate"]
+        self.brain = neural.setup_network(self.dna, learning_rate=learning_rate)
 
         for i, layer in enumerate(self.brain.hiddenLayers):
             new_weights = self.dna.brain_structure["hidden_weights"][i]
@@ -1508,8 +1537,13 @@ def update_organisms(environment):
     # The environment must also have the ".info" variable which holds a dictionary containing "oganism_list" as a value
     uDiff = time.time() - environment.lastUpdated
     environment.lastUpdated = time.time()
+    if environment.info["paused"]:
+        return
 
     for org in environment.info["organism_list"][:]:
+        if time.time() - org.birthTime >= age_limit:
+            org.kill()
+
         if org.alive():
             org.update()
 
@@ -1519,8 +1553,9 @@ def update_organisms(environment):
                 neural_thread.run()
 
             train_uDiff = time.time() - org.brain.lastTrained
-            if train_uDiff >= learning_update_delay and positive(org.dopamine) >= training_dopamine_threshold:
-                neural.train_network(org, epochs=training_epochs)
+            if train_uDiff >= learning_update_delay:
+                if positive(org.dopamine) >= training_dopamine_threshold or org.pain:
+                    neural.train_network(org, epochs=training_epochs)
         else:
             environment.info["organism_list"].remove(org)
 

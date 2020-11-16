@@ -124,7 +124,7 @@ class Network(pl.LightningModule):
         self.outputSize = outputSize
 
         self.optimizer = "adam"
-        self.learning_rate = "default"
+        self.learning_rate = learning_rate
 
         self.setupLayers(inputSize, hiddenLayers, outputSize)
 
@@ -253,7 +253,7 @@ if __name__ == "__main__":
     inputData = torch.tensor( [[0,0], [0,1], [1,0], [1,1]] ).float()
     targetData = torch.tensor( [[0,1,1,1]] ).float().resize_(4,1)
 
-    net = Network(2, [3, 3], 1)
+    net = Network(2, [3, 3], 1, learning_rate=1.5)
 
     print("Input Data: {}".format(inputData))
 
