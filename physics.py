@@ -294,7 +294,7 @@ class Environment():
             "population": 0,
             "population_limit": 50,
             "weight_persistence": True,
-            "learning_rate": 0.01,
+            "learning_rate": 0.02,
             "paused": False,
             "paused_time": time.time()
         }

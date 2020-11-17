@@ -238,11 +238,6 @@ def activate(network, environment, organism, uDiff):
 
 
 def train_network(organism, epochs=1):
-    def reverse_val(x):
-        if x == 0.0:
-            return 1.0
-        return -x
-
     network = organism.brain
     if not network:
         return
@@ -253,7 +248,6 @@ def train_network(organism, epochs=1):
     targetData = network.lastOutput.clone()
     if organism.pain:
         targetData = torch.tensor( [x * -organism.pain for x in targetData] ).float()
-        #targetData = torch.tensor( [reverse_val(x) for x in targetData] ).float()
     else:
         targetData = torch.tensor( [x * organism.dopamine for x in targetData] ).float()
 
@@ -273,7 +267,7 @@ def train_network(organism, epochs=1):
     organism._update_brain_weights()
 
 
-def setup_network(dna, learning_rate=0.01):
+def setup_network(dna, learning_rate=0.02):
     base_input = {
         "visual": [],
         "chemical": [],

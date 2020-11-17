@@ -571,7 +571,7 @@ class Ui_MainWindow(object):
         self.learning_rate_val.setMinimum(0.001)
         self.learning_rate_val.setMaximum(5.0)
         self.learning_rate_val.setSingleStep(0.005)
-        self.learning_rate_val.setProperty("value", 0.01)
+        self.learning_rate_val.setProperty("value", 0.02)
         self.learning_rate_val.setObjectName("learning_rate_val")
         self.Controls_Widget.addTab(self.tab, "")
         self.Organism_Frame = QtWidgets.QFrame(self.centralwidget)
