@@ -295,6 +295,7 @@ class Environment():
             "population_limit": 50,
             "weight_persistence": True,
             "learning_rate": 0.02,
+            "use_rnn": True,
             "paused": False,
             "paused_time": time.time()
         }
@@ -391,6 +392,7 @@ class Environment():
     def update(self, event):
         if self.info["paused"]:
             self.space.step(0.0)
+            self.postUpdateEvent()
             return
         self.preUpdateEvent()
         self.space.step(self.worldSpeed)

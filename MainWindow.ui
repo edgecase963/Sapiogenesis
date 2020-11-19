@@ -272,7 +272,7 @@
          <x>120</x>
          <y>10</y>
          <width>131</width>
-         <height>29</height>
+         <height>27</height>
         </rect>
        </property>
        <property name="toolTip">
@@ -313,7 +313,7 @@
          <x>120</x>
          <y>40</y>
          <width>131</width>
-         <height>29</height>
+         <height>27</height>
         </rect>
        </property>
        <property name="toolTip">
@@ -354,7 +354,7 @@
          <x>120</x>
          <y>70</y>
          <width>131</width>
-         <height>29</height>
+         <height>27</height>
         </rect>
        </property>
        <property name="toolTip">
@@ -405,9 +405,9 @@
        <property name="geometry">
         <rect>
          <x>120</x>
-         <y>100</y>
+         <y>103</y>
          <width>131</width>
-         <height>29</height>
+         <height>25</height>
         </rect>
        </property>
        <property name="statusTip">
@@ -469,7 +469,7 @@
         <x>120</x>
         <y>10</y>
         <width>81</width>
-        <height>29</height>
+        <height>25</height>
        </rect>
       </property>
       <property name="toolTip">
@@ -494,7 +494,7 @@
         <x>220</x>
         <y>10</y>
         <width>81</width>
-        <height>29</height>
+        <height>25</height>
        </rect>
       </property>
       <property name="toolTip">
@@ -550,7 +550,7 @@
         <x>120</x>
         <y>45</y>
         <width>81</width>
-        <height>29</height>
+        <height>25</height>
        </rect>
       </property>
       <property name="toolTip">
@@ -603,7 +603,7 @@
         <x>220</x>
         <y>45</y>
         <width>81</width>
-        <height>29</height>
+        <height>25</height>
        </rect>
       </property>
       <property name="toolTip">
@@ -659,7 +659,7 @@
         <x>120</x>
         <y>80</y>
         <width>81</width>
-        <height>29</height>
+        <height>25</height>
        </rect>
       </property>
       <property name="toolTip">
@@ -712,7 +712,7 @@
         <x>220</x>
         <y>80</y>
         <width>81</width>
-        <height>29</height>
+        <height>25</height>
        </rect>
       </property>
       <property name="toolTip">
@@ -948,7 +948,7 @@
         <x>120</x>
         <y>115</y>
         <width>81</width>
-        <height>29</height>
+        <height>25</height>
        </rect>
       </property>
       <property name="toolTip">
@@ -1001,7 +1001,7 @@
         <x>220</x>
         <y>115</y>
         <width>81</width>
-        <height>29</height>
+        <height>25</height>
        </rect>
       </property>
       <property name="toolTip">
@@ -1097,7 +1097,7 @@
         <x>135</x>
         <y>10</y>
         <width>80</width>
-        <height>30</height>
+        <height>25</height>
        </rect>
       </property>
       <property name="toolTip">
@@ -1175,7 +1175,7 @@
         <x>135</x>
         <y>45</y>
         <width>80</width>
-        <height>30</height>
+        <height>25</height>
        </rect>
       </property>
       <property name="toolTip">
@@ -1353,7 +1353,7 @@
         <x>135</x>
         <y>80</y>
         <width>80</width>
-        <height>30</height>
+        <height>25</height>
        </rect>
       </property>
       <property name="toolTip">
@@ -1453,7 +1453,7 @@
         <x>140</x>
         <y>10</y>
         <width>80</width>
-        <height>30</height>
+        <height>25</height>
        </rect>
       </property>
       <property name="statusTip">
@@ -1478,7 +1478,7 @@
         <x>140</x>
         <y>45</y>
         <width>80</width>
-        <height>30</height>
+        <height>25</height>
        </rect>
       </property>
       <property name="statusTip">
@@ -1559,7 +1559,7 @@
         <x>140</x>
         <y>80</y>
         <width>80</width>
-        <height>30</height>
+        <height>25</height>
        </rect>
       </property>
       <property name="statusTip">
@@ -1578,7 +1578,7 @@
         <x>390</x>
         <y>10</y>
         <width>80</width>
-        <height>30</height>
+        <height>25</height>
        </rect>
       </property>
       <property name="statusTip">
@@ -1659,7 +1659,7 @@
         <x>390</x>
         <y>45</y>
         <width>80</width>
-        <height>30</height>
+        <height>25</height>
        </rect>
       </property>
       <property name="statusTip">
@@ -1684,7 +1684,7 @@
         <x>390</x>
         <y>80</y>
         <width>80</width>
-        <height>30</height>
+        <height>25</height>
        </rect>
       </property>
       <property name="statusTip">
@@ -1765,7 +1765,7 @@
         <x>140</x>
         <y>115</y>
         <width>80</width>
-        <height>30</height>
+        <height>25</height>
        </rect>
       </property>
       <property name="statusTip">
@@ -1785,6 +1785,31 @@
       </property>
       <property name="value">
        <double>0.020000000000000</double>
+      </property>
+     </widget>
+     <widget class="QCheckBox" name="use_rnn_checkbox">
+      <property name="geometry">
+       <rect>
+        <x>240</x>
+        <y>115</y>
+        <width>92</width>
+        <height>25</height>
+       </rect>
+      </property>
+      <property name="font">
+       <font>
+        <weight>75</weight>
+        <bold>true</bold>
+       </font>
+      </property>
+      <property name="statusTip">
+       <string>While checked, the neural network for new organisms will be Recurrent Neural Networks</string>
+      </property>
+      <property name="text">
+       <string>Use RNN</string>
+      </property>
+      <property name="checked">
+       <bool>true</bool>
       </property>
      </widget>
     </widget>

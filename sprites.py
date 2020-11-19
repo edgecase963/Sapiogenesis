@@ -40,7 +40,7 @@ mass_cutoff = 1 # If a dead cell's mass becomes less than this, it will be remov
 
 break_damage = 5 # The amount of damage a cell does to its parent when it dies (break off from body) - multiplied by its size
 
-starvation_rate = 300 # The amount of damage to do to a cell each second if its energy equals 0
+starvation_rate = 200 # The amount of damage to do to a cell each second if its energy equals 0
 
 neural_update_delay = .3 # How long to wait before activating an organism's brain - helps reduce lag
 
@@ -48,7 +48,8 @@ learning_update_delay = .5 # How long to wait before training an organism
 
 training_epochs = 1 # How many epochs to train a network for per training interval
 
-max_push_speed = 300
+max_push_speed = 250
+max_rotation_speed = 8 # Radians per second
 
 training_dopamine_threshold = 1.
 
@@ -301,6 +302,7 @@ class DNA():
         self.massRange = [5,20]
         self.mirror_x = [0.6, 0.4]
         self.mirror_y = [0.6, 0.4]
+        self.generation = 0
 
     def copy(self):
         return copy.deepcopy(self)
@@ -880,7 +882,6 @@ class Organism():
         self.last_updated_dopamine = time.time()
         self.lastBirth = time.time()
         self.birthTime = time.time()
-        self.generation = 0
 
     def _growth_position(self, newCellID, rel_pos=None):
         if not rel_pos:
@@ -1244,7 +1245,7 @@ class Organism():
             return False
 
         organism = Organism(new_pos, self.environment, dna=new_dna)
-        organism.generation = self.generation + 1
+        organism.dna.generation = self.dna.generation + 1
         self.environment.info["organism_list"].append(organism)
         organism.build_body()
         return True
@@ -1334,7 +1335,7 @@ class Organism():
                 sprite.info["in_use"] = False
 
         if cell_info["type"] == "rotate" and sprite.alive:
-            sprite.body.angular_velocity += self.movement["rotation"]
+            sprite.body.angular_velocity += self.movement["rotation"] * max_rotation_speed
 
         if sprite.info["in_use"]:
             energy_usage = cell_info["energy_usage"][1]
@@ -1447,7 +1448,7 @@ class Organism():
 
     def build_brain(self):
         learning_rate = self.environment.info["learning_rate"]
-        self.brain = neural.setup_network(self.dna, learning_rate=learning_rate)
+        self.brain = neural.setup_network(self.dna, learning_rate=learning_rate, rnn=self.environment.info["use_rnn"], hiddenSize=6)
 
         for i, layer in enumerate(self.brain.hiddenLayers):
             new_weights = self.dna.brain_structure["hidden_weights"][i]
@@ -1554,7 +1555,7 @@ def update_organisms(environment):
 
             train_uDiff = time.time() - org.brain.lastTrained
             if train_uDiff >= learning_update_delay:
-                if org.dopamine >= training_dopamine_threshold or org.pain:
+                if org.dopamine >= training_dopamine_threshold or org.pain >= 0.1:
                     neural.train_network(org, epochs=training_epochs)
         else:
             environment.info["organism_list"].remove(org)

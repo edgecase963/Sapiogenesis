@@ -119,8 +119,10 @@ def activate(network, environment, organism, uDiff):
         for cell in sprite.info["view"]:
             cell_pos = cell.getPos()
             cell_info = cell.cell_info
+            rotationAngle = math.radians(organism.rotation())
 
             angle = getAngle(sprite_pos[0], sprite_pos[1], cell_pos[0], cell_pos[1])
+            angle += rotationAngle
             direction = [math.cos(angle+sprite_angle), math.sin(angle+sprite_angle)]
 
             if direction[0] < 0:
@@ -208,8 +210,10 @@ def activate(network, environment, organism, uDiff):
         flat_inputs = torch.tensor(flat_inputs).float()
         network.previousInputs.append(flat_inputs)
 
-        network_output = network.forward(flat_inputs)
-        #network_output = self.network.forward(all_inputs)
+        if network.isRNN:
+            network_output = network.forward(flat_inputs, network.lastHidden)
+        else:
+            network_output = network.forward(flat_inputs)
 
         network.lastInput = flat_inputs.clone().detach().requires_grad_(True)
         network.lastOutput = network_output.clone().detach().requires_grad_(True)
@@ -217,7 +221,11 @@ def activate(network, environment, organism, uDiff):
         for i, output_val in enumerate(network_output):
             correspondent = network.outputCells[i]
             if correspondent == "rotation":
-                organism.movement["rotation"] = output_val.tolist()
+                rotation_val = output_val.tolist()
+                if rotation_val >= 1.0:
+                    rotation_val = 1.0
+
+                organism.movement["rotation"] = rotation_val
             elif correspondent == "speed":
                 speed = output_val.tolist()
                 if speed > 1.0:
@@ -246,7 +254,7 @@ def train_network(organism, epochs=1):
 
     inputData = network.lastInput.clone()
     targetData = network.lastOutput.clone()
-    if organism.pain:
+    if organism.pain >= 0.1:
         targetData = torch.tensor( [x * -organism.pain for x in targetData] ).float()
     else:
         targetData = torch.tensor( [x * organism.dopamine for x in targetData] ).float()
@@ -258,16 +266,21 @@ def train_network(organism, epochs=1):
         organism.dna.trainingInput.pop(0)
         organism.dna.trainingOutput.pop(0)
 
-    for i in range(epochs):
-        loss = network.trainer.train_epoch(torch.tensor(organism.dna.trainingInput), torch.tensor(organism.dna.trainingOutput))
-        #loss = network.trainer.train_epoch(inputData, targetData)
-        network.lastLoss = loss
+    if network.isRNN:
+        for i in range(epochs):
+            loss = network.trainer.train_rnn(torch.tensor(organism.dna.trainingInput), torch.tensor(organism.dna.trainingOutput))
+            network.lastLoss = loss
+            #loss = network.trainer.train_epoch(inputData, targetData)
+    else:
+        for i in range(epochs):
+            loss = network.trainer.train_epoch(torch.tensor(organism.dna.trainingInput), torch.tensor(organism.dna.trainingOutput))
+            network.lastLoss = loss
     network.lastTrained = time.time()
 
     organism._update_brain_weights()
 
 
-def setup_network(dna, learning_rate=0.02):
+def setup_network(dna, learning_rate=0.02, rnn=False, hiddenSize=6):
     base_input = {
         "visual": [],
         "chemical": [],
@@ -316,7 +329,10 @@ def setup_network(dna, learning_rate=0.02):
     if inputSize and hiddenList and outputSize:
         outputSize = len(base_output)
 
-        network = networks.Network(inputSize, hiddenList, outputSize, optimizer=dna.brain_structure["optimizer"], learning_rate=learning_rate)
+        if rnn:
+            network = networks.RNNetwork(inputSize, hiddenList, outputSize, 6, optimizer=dna.brain_structure["optimizer"], learning_rate=learning_rate)
+        else:
+            network = networks.Network(inputSize, hiddenList, outputSize, optimizer=dna.brain_structure["optimizer"], learning_rate=learning_rate)
 
         network.inputCells = inputCells
         network.outputCells = base_output[:]

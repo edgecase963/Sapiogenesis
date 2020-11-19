@@ -59,7 +59,7 @@ def updateUI(window, environment):
     neural_mutation_severity = window.neural_severity_slider.value()
 
     if selected:
-        window.generation_val.setText( str(selected.generation) )
+        window.generation_val.setText( str(selected.dna.generation) )
         if selected.brain:
             neurons = sum( [len(layer.bias) for layer in selected.brain.layers()] )
             window.neurons_val.setText( str(neurons) )
@@ -266,6 +266,8 @@ def age_limit_changed(val):
     sprites.age_limit = val
 def learning_rate_changed(val, environment):
     environment.info["learning_rate"] = val
+def use_rnn_changed(val, environment):
+    environment.info["use_rnn"] = val
 
 def feed_all_clicked(window, environment):
     for org in environment.info["organism_list"]:
@@ -356,6 +358,7 @@ def setup_window_buttons(window, myWindow, environment):
     myWindow.epoch_memory_spinbox.valueChanged.connect(epoch_memory_changed)
     myWindow.input_memory_spinbox.valueChanged.connect(stim_memory_changed)
     myWindow.learning_rate_val.valueChanged.connect(lambda val: learning_rate_changed(val, environment))
+    myWindow.use_rnn_checkbox.toggled.connect(lambda val: use_rnn_changed(val, environment))
     #~
 
     myWindow.age_limit_spinbox.valueChanged.connect(age_limit_changed)
