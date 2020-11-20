@@ -3,6 +3,7 @@ from PyQt5 import QtWidgets
 from MainWindow import Ui_MainWindow
 import MainWindow
 import sys
+import json
 
 
 
@@ -33,13 +34,17 @@ class Ui_MainWindow(Ui_MainWindow):
         self.worldView.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
         self.worldView.customContextMenuRequested[QtCore.QPoint].connect(self.rightMenuShow)
 
+        with open("environment_settings.json", "r") as f:
+            env_settings = json.load(f)
+
         self.scene = QtWidgets.QGraphicsScene(self.worldView)
-        self.scene.setSceneRect(0, 0, 3180, 1800)
+        self.scene.setSceneRect(0, 0, env_settings["width"], env_settings["height"])
         self.worldView.setScene(self.scene)
 
         self.worldView.fitInView()
 
-        self.worldView.setBackgroundBrush( QtGui.QBrush( QtGui.QColor(180,180,255) ) )
+        bgColor = env_settings["background_color"]
+        self.worldView.setBackgroundBrush( QtGui.QBrush( QtGui.QColor(bgColor[0], bgColor[1], bgColor[2]) ) )
 
         logo = QtGui.QIcon("logo.png")
 

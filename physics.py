@@ -7,6 +7,7 @@ import math
 import random
 import numpy as np
 import pymunk
+import json
 from pymunk import Vec2d
 
 
@@ -292,17 +293,25 @@ class Environment():
             "brain_mutation_severity": 0.5,
             "reproduction_limit": 6,
             "population": 0,
-            "population_limit": 50,
+            "population_limit": 30,
             "weight_persistence": True,
-            "learning_rate": 0.01,
-            "paused": False
+            "learning_rate": 0.02,
+            "use_rnn": True,
+            "paused": False,
+            "paused_time": time.time(),
+            "sim_drought": False,
+            "sim_algal": False,
+            "sim_poison": False
         }
 
         self.width = width
         self.height = height
 
+        with open("environment_settings.json", "r") as f:
+            env_settings = json.load(f)
+
         self.worldSpeed = .06
-        self.updateSpeed = 30
+        self.updateSpeed = env_settings["update_speed"]
 
         ch = self.space.add_collision_handler(0, 0)
         ch.post_solve = self.collision
@@ -390,6 +399,7 @@ class Environment():
     def update(self, event):
         if self.info["paused"]:
             self.space.step(0.0)
+            self.postUpdateEvent()
             return
         self.preUpdateEvent()
         self.space.step(self.worldSpeed)

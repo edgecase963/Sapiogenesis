@@ -234,150 +234,39 @@
         <string>0</string>
        </property>
       </widget>
-     </widget>
-     <widget class="QFrame" name="world_controls_frame">
-      <property name="geometry">
-       <rect>
-        <x>238</x>
-        <y>5</y>
-        <width>271</width>
-        <height>138</height>
-       </rect>
-      </property>
-      <property name="frameShape">
-       <enum>QFrame::StyledPanel</enum>
-      </property>
-      <property name="frameShadow">
-       <enum>QFrame::Raised</enum>
-      </property>
-      <widget class="QPushButton" name="add_co2_btn">
-       <property name="geometry">
-        <rect>
-         <x>10</x>
-         <y>10</y>
-         <width>100</width>
-         <height>27</height>
-        </rect>
-       </property>
-       <property name="toolTip">
-        <string extracomment="Adds CO2 into the world"/>
-       </property>
-       <property name="text">
-        <string>Add CO2</string>
-       </property>
-      </widget>
-      <widget class="QSpinBox" name="co2_spinBox">
+      <widget class="QDoubleSpinBox" name="world_speed_spinbox">
        <property name="geometry">
         <rect>
          <x>120</x>
-         <y>10</y>
-         <width>131</width>
-         <height>29</height>
+         <y>104</y>
+         <width>91</width>
+         <height>25</height>
         </rect>
-       </property>
-       <property name="toolTip">
-        <string extracomment="Amount of CO2 to add"/>
        </property>
        <property name="statusTip">
-        <string>How much CO2 to add</string>
+        <string>Be careful with this value. Too high and things get weird</string>
+       </property>
+       <property name="decimals">
+        <number>5</number>
+       </property>
+       <property name="minimum">
+        <double>0.000000000000000</double>
        </property>
        <property name="maximum">
-        <number>999999999</number>
+        <double>10.000000000000000</double>
        </property>
        <property name="singleStep">
-        <number>100</number>
+        <double>0.005000000000000</double>
        </property>
        <property name="value">
-        <number>1000</number>
-       </property>
-      </widget>
-      <widget class="QPushButton" name="rem_co2_btn">
-       <property name="geometry">
-        <rect>
-         <x>10</x>
-         <y>40</y>
-         <width>100</width>
-         <height>27</height>
-        </rect>
-       </property>
-       <property name="toolTip">
-        <string extracomment="Removes CO2 from the world"/>
-       </property>
-       <property name="text">
-        <string>Remove CO2</string>
-       </property>
-      </widget>
-      <widget class="QSpinBox" name="rem_co2_spinbox">
-       <property name="geometry">
-        <rect>
-         <x>120</x>
-         <y>40</y>
-         <width>131</width>
-         <height>29</height>
-        </rect>
-       </property>
-       <property name="toolTip">
-        <string extracomment="Amount of CO2 to remove"/>
-       </property>
-       <property name="statusTip">
-        <string>How much CO2 to subtract</string>
-       </property>
-       <property name="maximum">
-        <number>999999999</number>
-       </property>
-       <property name="singleStep">
-        <number>100</number>
-       </property>
-       <property name="value">
-        <number>1000</number>
-       </property>
-      </widget>
-      <widget class="QPushButton" name="set_co2_btn">
-       <property name="geometry">
-        <rect>
-         <x>10</x>
-         <y>70</y>
-         <width>100</width>
-         <height>27</height>
-        </rect>
-       </property>
-       <property name="toolTip">
-        <string extracomment="Sets the world's CO2 to a specific value"/>
-       </property>
-       <property name="text">
-        <string>Set CO2</string>
-       </property>
-      </widget>
-      <widget class="QSpinBox" name="set_co2_spinbox">
-       <property name="geometry">
-        <rect>
-         <x>120</x>
-         <y>70</y>
-         <width>131</width>
-         <height>29</height>
-        </rect>
-       </property>
-       <property name="toolTip">
-        <string extracomment="New CO2 value"/>
-       </property>
-       <property name="statusTip">
-        <string>The new CO2 value</string>
-       </property>
-       <property name="maximum">
-        <number>999999999</number>
-       </property>
-       <property name="singleStep">
-        <number>5000</number>
-       </property>
-       <property name="value">
-        <number>30000</number>
+        <double>0.060000000000000</double>
        </property>
       </widget>
       <widget class="QLabel" name="world_speed_label">
        <property name="geometry">
         <rect>
          <x>10</x>
-         <y>103</y>
+         <y>104</y>
          <width>111</width>
          <height>25</height>
         </rect>
@@ -401,33 +290,425 @@
         <string>Physics Speed:</string>
        </property>
       </widget>
-      <widget class="QDoubleSpinBox" name="world_speed_spinbox">
-       <property name="geometry">
-        <rect>
-         <x>120</x>
-         <y>100</y>
-         <width>131</width>
-         <height>29</height>
-        </rect>
-       </property>
-       <property name="statusTip">
-        <string>Be careful with this value. Too high and things get weird</string>
-       </property>
-       <property name="decimals">
-        <number>5</number>
-       </property>
-       <property name="minimum">
-        <double>0.000000000000000</double>
-       </property>
-       <property name="maximum">
-        <double>10.000000000000000</double>
-       </property>
-       <property name="singleStep">
-        <double>0.005000000000000</double>
-       </property>
-       <property name="value">
-        <double>0.060000000000000</double>
-       </property>
+     </widget>
+     <widget class="QTabWidget" name="tabWidget">
+      <property name="geometry">
+       <rect>
+        <x>235</x>
+        <y>5</y>
+        <width>285</width>
+        <height>140</height>
+       </rect>
+      </property>
+      <property name="currentIndex">
+       <number>0</number>
+      </property>
+      <widget class="QWidget" name="tab_4">
+       <attribute name="title">
+        <string>CO2</string>
+       </attribute>
+       <widget class="QSpinBox" name="set_co2_spinbox">
+        <property name="geometry">
+         <rect>
+          <x>120</x>
+          <y>70</y>
+          <width>131</width>
+          <height>27</height>
+         </rect>
+        </property>
+        <property name="toolTip">
+         <string extracomment="New CO2 value"/>
+        </property>
+        <property name="statusTip">
+         <string>The new CO2 value</string>
+        </property>
+        <property name="maximum">
+         <number>999999999</number>
+        </property>
+        <property name="singleStep">
+         <number>5000</number>
+        </property>
+        <property name="value">
+         <number>30000</number>
+        </property>
+       </widget>
+       <widget class="QSpinBox" name="rem_co2_spinbox">
+        <property name="geometry">
+         <rect>
+          <x>120</x>
+          <y>40</y>
+          <width>131</width>
+          <height>27</height>
+         </rect>
+        </property>
+        <property name="toolTip">
+         <string extracomment="Amount of CO2 to remove"/>
+        </property>
+        <property name="statusTip">
+         <string>How much CO2 to subtract</string>
+        </property>
+        <property name="maximum">
+         <number>999999999</number>
+        </property>
+        <property name="singleStep">
+         <number>100</number>
+        </property>
+        <property name="value">
+         <number>1000</number>
+        </property>
+       </widget>
+       <widget class="QSpinBox" name="co2_spinBox">
+        <property name="geometry">
+         <rect>
+          <x>120</x>
+          <y>10</y>
+          <width>131</width>
+          <height>27</height>
+         </rect>
+        </property>
+        <property name="toolTip">
+         <string extracomment="Amount of CO2 to add"/>
+        </property>
+        <property name="statusTip">
+         <string>How much CO2 to add</string>
+        </property>
+        <property name="maximum">
+         <number>999999999</number>
+        </property>
+        <property name="singleStep">
+         <number>100</number>
+        </property>
+        <property name="value">
+         <number>1000</number>
+        </property>
+       </widget>
+       <widget class="QPushButton" name="set_co2_btn">
+        <property name="geometry">
+         <rect>
+          <x>10</x>
+          <y>70</y>
+          <width>100</width>
+          <height>27</height>
+         </rect>
+        </property>
+        <property name="toolTip">
+         <string extracomment="Sets the world's CO2 to a specific value"/>
+        </property>
+        <property name="text">
+         <string>Set CO2</string>
+        </property>
+       </widget>
+       <widget class="QPushButton" name="add_co2_btn">
+        <property name="geometry">
+         <rect>
+          <x>10</x>
+          <y>10</y>
+          <width>100</width>
+          <height>27</height>
+         </rect>
+        </property>
+        <property name="toolTip">
+         <string extracomment="Adds CO2 into the world"/>
+        </property>
+        <property name="text">
+         <string>Add CO2</string>
+        </property>
+       </widget>
+       <widget class="QPushButton" name="rem_co2_btn">
+        <property name="geometry">
+         <rect>
+          <x>10</x>
+          <y>40</y>
+          <width>100</width>
+          <height>27</height>
+         </rect>
+        </property>
+        <property name="toolTip">
+         <string extracomment="Removes CO2 from the world"/>
+        </property>
+        <property name="text">
+         <string>Remove CO2</string>
+        </property>
+       </widget>
+      </widget>
+      <widget class="QWidget" name="tab_5">
+       <attribute name="title">
+        <string>Oxygen</string>
+       </attribute>
+       <widget class="QSpinBox" name="rem_o2_spinbox">
+        <property name="geometry">
+         <rect>
+          <x>120</x>
+          <y>40</y>
+          <width>131</width>
+          <height>27</height>
+         </rect>
+        </property>
+        <property name="toolTip">
+         <string extracomment="Amount of CO2 to remove"/>
+        </property>
+        <property name="statusTip">
+         <string>How much oxygen to subtract</string>
+        </property>
+        <property name="maximum">
+         <number>999999999</number>
+        </property>
+        <property name="singleStep">
+         <number>100</number>
+        </property>
+        <property name="value">
+         <number>1000</number>
+        </property>
+       </widget>
+       <widget class="QSpinBox" name="o2_spinbox">
+        <property name="geometry">
+         <rect>
+          <x>120</x>
+          <y>10</y>
+          <width>131</width>
+          <height>27</height>
+         </rect>
+        </property>
+        <property name="toolTip">
+         <string extracomment="Amount of CO2 to add"/>
+        </property>
+        <property name="statusTip">
+         <string>How much oxygen to add</string>
+        </property>
+        <property name="maximum">
+         <number>999999999</number>
+        </property>
+        <property name="singleStep">
+         <number>100</number>
+        </property>
+        <property name="value">
+         <number>1000</number>
+        </property>
+       </widget>
+       <widget class="QPushButton" name="set_o2_btn">
+        <property name="geometry">
+         <rect>
+          <x>10</x>
+          <y>70</y>
+          <width>100</width>
+          <height>27</height>
+         </rect>
+        </property>
+        <property name="toolTip">
+         <string extracomment="Sets the world's CO2 to a specific value"/>
+        </property>
+        <property name="text">
+         <string>Set O2</string>
+        </property>
+       </widget>
+       <widget class="QPushButton" name="add_o2_btn">
+        <property name="geometry">
+         <rect>
+          <x>10</x>
+          <y>10</y>
+          <width>100</width>
+          <height>27</height>
+         </rect>
+        </property>
+        <property name="toolTip">
+         <string extracomment="Adds CO2 into the world"/>
+        </property>
+        <property name="text">
+         <string>Add O2</string>
+        </property>
+       </widget>
+       <widget class="QPushButton" name="rem_o2_btn">
+        <property name="geometry">
+         <rect>
+          <x>10</x>
+          <y>40</y>
+          <width>100</width>
+          <height>27</height>
+         </rect>
+        </property>
+        <property name="toolTip">
+         <string extracomment="Removes CO2 from the world"/>
+        </property>
+        <property name="text">
+         <string>Remove O2</string>
+        </property>
+       </widget>
+       <widget class="QSpinBox" name="set_o2_spinbox">
+        <property name="geometry">
+         <rect>
+          <x>120</x>
+          <y>70</y>
+          <width>131</width>
+          <height>27</height>
+         </rect>
+        </property>
+        <property name="toolTip">
+         <string extracomment="New CO2 value"/>
+        </property>
+        <property name="statusTip">
+         <string>The new oxygen value</string>
+        </property>
+        <property name="maximum">
+         <number>999999999</number>
+        </property>
+        <property name="singleStep">
+         <number>5000</number>
+        </property>
+        <property name="value">
+         <number>0</number>
+        </property>
+       </widget>
+      </widget>
+      <widget class="QWidget" name="tab_6">
+       <attribute name="title">
+        <string>Simulate</string>
+       </attribute>
+       <widget class="QPushButton" name="drought_btn">
+        <property name="geometry">
+         <rect>
+          <x>10</x>
+          <y>10</y>
+          <width>90</width>
+          <height>27</height>
+         </rect>
+        </property>
+        <property name="toolTip">
+         <string extracomment="View this organism's brain"/>
+        </property>
+        <property name="statusTip">
+         <string>All resources in the environment will slowly deplete</string>
+        </property>
+        <property name="text">
+         <string>Drought</string>
+        </property>
+       </widget>
+       <widget class="QPushButton" name="algal_bloom_btn">
+        <property name="geometry">
+         <rect>
+          <x>10</x>
+          <y>45</y>
+          <width>90</width>
+          <height>27</height>
+         </rect>
+        </property>
+        <property name="toolTip">
+         <string extracomment="View this organism's brain"/>
+        </property>
+        <property name="statusTip">
+         <string>Oxygen in the environment will slowly deplete</string>
+        </property>
+        <property name="text">
+         <string>Algal Bloom</string>
+        </property>
+       </widget>
+       <widget class="QPushButton" name="poison_btn">
+        <property name="geometry">
+         <rect>
+          <x>10</x>
+          <y>80</y>
+          <width>90</width>
+          <height>27</height>
+         </rect>
+        </property>
+        <property name="toolTip">
+         <string extracomment="View this organism's brain"/>
+        </property>
+        <property name="statusTip">
+         <string>Organisms will slowly lose health</string>
+        </property>
+        <property name="text">
+         <string>Poison</string>
+        </property>
+       </widget>
+       <widget class="QPushButton" name="clear_sim_btn">
+        <property name="geometry">
+         <rect>
+          <x>180</x>
+          <y>80</y>
+          <width>90</width>
+          <height>27</height>
+         </rect>
+        </property>
+        <property name="toolTip">
+         <string extracomment="View this organism's brain"/>
+        </property>
+        <property name="statusTip">
+         <string>Clear any simulated events currently in effect</string>
+        </property>
+        <property name="text">
+         <string>Clear All</string>
+        </property>
+       </widget>
+       <widget class="QLCDNumber" name="sim_severity_lcd">
+        <property name="geometry">
+         <rect>
+          <x>230</x>
+          <y>30</y>
+          <width>50</width>
+          <height>21</height>
+         </rect>
+        </property>
+        <property name="smallDecimalPoint">
+         <bool>false</bool>
+        </property>
+        <property name="mode">
+         <enum>QLCDNumber::Dec</enum>
+        </property>
+        <property name="segmentStyle">
+         <enum>QLCDNumber::Flat</enum>
+        </property>
+       </widget>
+       <widget class="QLabel" name="sim_severity_label">
+        <property name="geometry">
+         <rect>
+          <x>115</x>
+          <y>10</y>
+          <width>111</width>
+          <height>25</height>
+         </rect>
+        </property>
+        <property name="font">
+         <font>
+          <pointsize>11</pointsize>
+          <weight>50</weight>
+          <bold>false</bold>
+         </font>
+        </property>
+        <property name="toolTip">
+         <string extracomment="The amount of CO2 in this world"/>
+        </property>
+        <property name="statusTip">
+         <string/>
+        </property>
+        <property name="whatsThis">
+         <string/>
+        </property>
+        <property name="text">
+         <string>Severity</string>
+        </property>
+       </widget>
+       <widget class="QSlider" name="sim_severity_slider">
+        <property name="geometry">
+         <rect>
+          <x>115</x>
+          <y>30</y>
+          <width>111</width>
+          <height>21</height>
+         </rect>
+        </property>
+        <property name="statusTip">
+         <string>How severe simulated events are</string>
+        </property>
+        <property name="singleStep">
+         <number>1</number>
+        </property>
+        <property name="orientation">
+         <enum>Qt::Horizontal</enum>
+        </property>
+        <property name="tickInterval">
+         <number>0</number>
+        </property>
+       </widget>
       </widget>
      </widget>
     </widget>
@@ -469,7 +750,7 @@
         <x>120</x>
         <y>10</y>
         <width>81</width>
-        <height>29</height>
+        <height>25</height>
        </rect>
       </property>
       <property name="toolTip">
@@ -494,7 +775,7 @@
         <x>220</x>
         <y>10</y>
         <width>81</width>
-        <height>29</height>
+        <height>25</height>
        </rect>
       </property>
       <property name="toolTip">
@@ -550,7 +831,7 @@
         <x>120</x>
         <y>45</y>
         <width>81</width>
-        <height>29</height>
+        <height>25</height>
        </rect>
       </property>
       <property name="toolTip">
@@ -603,7 +884,7 @@
         <x>220</x>
         <y>45</y>
         <width>81</width>
-        <height>29</height>
+        <height>25</height>
        </rect>
       </property>
       <property name="toolTip">
@@ -659,7 +940,7 @@
         <x>120</x>
         <y>80</y>
         <width>81</width>
-        <height>29</height>
+        <height>25</height>
        </rect>
       </property>
       <property name="toolTip">
@@ -712,7 +993,7 @@
         <x>220</x>
         <y>80</y>
         <width>81</width>
-        <height>29</height>
+        <height>25</height>
        </rect>
       </property>
       <property name="toolTip">
@@ -948,7 +1229,7 @@
         <x>120</x>
         <y>115</y>
         <width>81</width>
-        <height>29</height>
+        <height>25</height>
        </rect>
       </property>
       <property name="toolTip">
@@ -1001,7 +1282,7 @@
         <x>220</x>
         <y>115</y>
         <width>81</width>
-        <height>29</height>
+        <height>25</height>
        </rect>
       </property>
       <property name="toolTip">
@@ -1097,7 +1378,7 @@
         <x>135</x>
         <y>10</y>
         <width>80</width>
-        <height>30</height>
+        <height>25</height>
        </rect>
       </property>
       <property name="toolTip">
@@ -1175,7 +1456,7 @@
         <x>135</x>
         <y>45</y>
         <width>80</width>
-        <height>30</height>
+        <height>25</height>
        </rect>
       </property>
       <property name="toolTip">
@@ -1191,7 +1472,7 @@
        <number>5</number>
       </property>
       <property name="value">
-       <number>50</number>
+       <number>30</number>
       </property>
      </widget>
      <widget class="QSlider" name="neural_severity_slider">
@@ -1353,7 +1634,7 @@
         <x>135</x>
         <y>80</y>
         <width>80</width>
-        <height>30</height>
+        <height>25</height>
        </rect>
       </property>
       <property name="toolTip">
@@ -1453,7 +1734,7 @@
         <x>140</x>
         <y>10</y>
         <width>80</width>
-        <height>30</height>
+        <height>25</height>
        </rect>
       </property>
       <property name="statusTip">
@@ -1478,7 +1759,7 @@
         <x>140</x>
         <y>45</y>
         <width>80</width>
-        <height>30</height>
+        <height>25</height>
        </rect>
       </property>
       <property name="statusTip">
@@ -1559,7 +1840,7 @@
         <x>140</x>
         <y>80</y>
         <width>80</width>
-        <height>30</height>
+        <height>25</height>
        </rect>
       </property>
       <property name="statusTip">
@@ -1578,7 +1859,7 @@
         <x>390</x>
         <y>10</y>
         <width>80</width>
-        <height>30</height>
+        <height>25</height>
        </rect>
       </property>
       <property name="statusTip">
@@ -1659,7 +1940,7 @@
         <x>390</x>
         <y>45</y>
         <width>80</width>
-        <height>30</height>
+        <height>25</height>
        </rect>
       </property>
       <property name="statusTip">
@@ -1684,7 +1965,7 @@
         <x>390</x>
         <y>80</y>
         <width>80</width>
-        <height>30</height>
+        <height>25</height>
        </rect>
       </property>
       <property name="statusTip">
@@ -1765,7 +2046,7 @@
         <x>140</x>
         <y>115</y>
         <width>80</width>
-        <height>30</height>
+        <height>25</height>
        </rect>
       </property>
       <property name="statusTip">
@@ -1784,7 +2065,32 @@
        <double>0.005000000000000</double>
       </property>
       <property name="value">
-       <double>0.010000000000000</double>
+       <double>0.020000000000000</double>
+      </property>
+     </widget>
+     <widget class="QCheckBox" name="use_rnn_checkbox">
+      <property name="geometry">
+       <rect>
+        <x>240</x>
+        <y>115</y>
+        <width>92</width>
+        <height>25</height>
+       </rect>
+      </property>
+      <property name="font">
+       <font>
+        <weight>75</weight>
+        <bold>true</bold>
+       </font>
+      </property>
+      <property name="statusTip">
+       <string>While checked, the neural network for new organisms will be Recurrent Neural Networks</string>
+      </property>
+      <property name="text">
+       <string>Use RNN</string>
+      </property>
+      <property name="checked">
+       <bool>true</bool>
       </property>
      </widget>
     </widget>
@@ -2116,7 +2422,7 @@
      <widget class="QPushButton" name="reproduce_btn">
       <property name="geometry">
        <rect>
-        <x>40</x>
+        <x>10</x>
         <y>75</y>
         <width>85</width>
         <height>27</height>
@@ -2165,6 +2471,25 @@
       </property>
       <property name="text">
        <string>Hurt</string>
+      </property>
+     </widget>
+     <widget class="QPushButton" name="train_btn">
+      <property name="geometry">
+       <rect>
+        <x>100</x>
+        <y>75</y>
+        <width>50</width>
+        <height>27</height>
+       </rect>
+      </property>
+      <property name="toolTip">
+       <string extracomment="Take energy from this organism"/>
+      </property>
+      <property name="statusTip">
+       <string>Traing this organism</string>
+      </property>
+      <property name="text">
+       <string>Train</string>
       </property>
      </widget>
     </widget>
@@ -2268,6 +2593,9 @@
        </rect>
       </property>
       <property name="toolTip">
+       <string/>
+      </property>
+      <property name="statusTip">
        <string/>
       </property>
       <property name="text">
@@ -2407,7 +2735,7 @@
        <string extracomment="How many neurons are in this organism's brain"/>
       </property>
       <property name="statusTip">
-       <string>How bored this organism is (curiosity / stimulation)</string>
+       <string>How much pain this organism is experiencing (How much health it's losing)</string>
       </property>
       <property name="text">
        <string>Pain:</string>
@@ -2488,6 +2816,7 @@
     </widget>
    </widget>
   </widget>
+  <widget class="QStatusBar" name="statusbar"/>
   <widget class="QMenuBar" name="menubar">
    <property name="geometry">
     <rect>
@@ -2497,18 +2826,6 @@
      <height>22</height>
     </rect>
    </property>
-   <widget class="QMenu" name="menuFile">
-    <property name="title">
-     <string>File</string>
-    </property>
-    <addaction name="actionNew"/>
-    <addaction name="actionOpen"/>
-    <addaction name="separator"/>
-    <addaction name="actionSave"/>
-    <addaction name="actionSave_As"/>
-    <addaction name="separator"/>
-    <addaction name="actionQuit"/>
-   </widget>
    <widget class="QMenu" name="menuWorld">
     <property name="title">
      <string>World</string>
@@ -2522,35 +2839,8 @@
     <addaction name="actionPause"/>
     <addaction name="actionResume"/>
    </widget>
-   <addaction name="menuFile"/>
    <addaction name="menuWorld"/>
   </widget>
-  <widget class="QStatusBar" name="statusbar"/>
-  <action name="actionNew">
-   <property name="text">
-    <string>New...</string>
-   </property>
-  </action>
-  <action name="actionOpen">
-   <property name="text">
-    <string>Open...</string>
-   </property>
-  </action>
-  <action name="actionSave">
-   <property name="text">
-    <string>Save</string>
-   </property>
-  </action>
-  <action name="actionSave_As">
-   <property name="text">
-    <string>Save As...</string>
-   </property>
-  </action>
-  <action name="actionQuit">
-   <property name="text">
-    <string>Quit</string>
-   </property>
-  </action>
   <action name="actionFeed_All_Organisms">
    <property name="text">
     <string>Feed All</string>
