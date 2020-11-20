@@ -33,7 +33,7 @@ def updateUI(window, environment):
         for org in environment.info["organism_list"]:
             for cell_id in org.cells:
                 sprite = org.cells[cell_id]
-                sprite.info["health"] -= depleted_val/5.
+                sprite.info["health"] -= depleted_val/10.
 
     if environment.info["co2"] < 0:
         environment.info["co2"] = 0
@@ -49,10 +49,6 @@ def updateUI(window, environment):
     window.oxygen_val.setText( str(int(oxygen)) )
     window.time_val.setText( str(int(time_passed)) )
     window.pop_val.setText( str(int(population)) )
-
-    if selected and selected.alive():
-        window.age_val.setText( str(int(time.time() - selected.birthTime)) )
-        window.curiosity_val.setText( str(round(selected.dna.base_info["curiosity"], 2)) )
 
     if window.min_cell_range_spinbox.value() >= window.max_cell_range_spinbox.value():
         window.max_cell_range_spinbox.setProperty("value", window.min_cell_range_spinbox.value()+1)
@@ -70,36 +66,23 @@ def updateUI(window, environment):
     environment.info["weight_persistence"] = window.weight_pers_checkbox.isChecked()
     #~
 
-    mirror_x_chance = window.mirror_x_slider.value()
-    mirror_y_chance = window.mirror_y_slider.value()
-
-    mutation_severity = window.physical_severity_slider.value()
-    neural_mutation_severity = window.neural_severity_slider.value()
-
-    if selected:
+    #~ Sprite section
+    if selected and selected.alive():
         window.generation_val.setText( str(selected.dna.generation) )
         if selected.brain:
             neurons = sum( [len(layer.bias) for layer in selected.brain.layers()] )
             window.neurons_val.setText( str(neurons) )
 
-    window.mirror_x_lcd.setProperty("value", mirror_x_chance)
-    window.mirror_y_lcd.setProperty("value", mirror_y_chance)
-    window.physical_severity_lcd.setProperty("value", mutation_severity)
-    window.neural_severity_lcd.setProperty("value", neural_mutation_severity)
-    environment.info["mutation_severity"] = mutation_severity / 100.
-    environment.info["brain_mutation_severity"] = neural_mutation_severity / 100.
+        window.age_val.setText( str(int(time.time() - selected.birthTime)) )
+        window.curiosity_val.setText( str(round(selected.dna.base_info["curiosity"], 2)) )
 
-    window.sim_severity_lcd.setProperty("value", sim_severity)
-
-    #~ Sprite section
-    if selected:
         window.energy_val.setText( str(int(selected.total_energy())) )
         window.health_val.setText( str(int(selected.health_percent())) + "%" )
 
         dopamineText = str(round(selected.dopamine, 2))
         dopamineText = dopamineText.split(".")[0] + "." + dopamineText.split(".")[1].zfill(2)
 
-        window.neural_loss_val.setText( str( round(selected.brain.lastLoss, 3) ) )
+        window.neural_loss_val.setText( str( round(selected.brain.lastLoss, 5) ) )
         window.stim_val.setText( str(float( round(selected.brain.stimulation, 2) )) )
         window.boredom_val.setText( str(float( round(selected.brain.boredom, 2) )) )
         window.pain_val.setText( str(float( round(selected.pain, 2) )) )
@@ -196,6 +179,23 @@ def train_btn_clicked(window, environment):
     selected = environment.info["selected"]
     if selected:
         sprites.neural.train_network(selected, epochs=sprites.training_epochs)
+
+def sim_severity_changed(window, environment):
+    window.sim_severity_lcd.setProperty("value", window.sim_severity_slider.value())
+def mirror_x_val_changed(window, environment):
+    window.mirror_x_lcd.setProperty("value", window.mirror_x_slider.value())
+def mirror_y_val_changed(window, environment):
+    window.mirror_y_lcd.setProperty("value", window.mirror_y_slider.value())
+def physical_sev_val_changed(window, environment):
+    mutation_severity = window.physical_severity_slider.value()
+
+    window.physical_severity_lcd.setProperty("value", mutation_severity)
+    environment.info["mutation_severity"] = mutation_severity / 100.
+def neural_sev_val_changed(window, environment):
+    neural_mutation_severity = window.neural_severity_slider.value()
+
+    window.neural_severity_lcd.setProperty("value", neural_mutation_severity)
+    environment.info["brain_mutation_severity"] = neural_mutation_severity / 100.
 
 def drought_btn_clicked(window, environment):
     if environment.info["sim_drought"]:
@@ -367,6 +367,15 @@ def resume_world(window, environment):
     environment.info["paused"] = False
 
 def setup_window_buttons(window, myWindow, environment):
+    myWindow.mirror_x_lcd.setProperty("value", myWindow.mirror_x_slider.value())
+    myWindow.mirror_y_lcd.setProperty("value", myWindow.mirror_y_slider.value())
+
+    myWindow.physical_severity_lcd.setProperty("value", myWindow.physical_severity_slider.value())
+    myWindow.neural_severity_lcd.setProperty("value", myWindow.neural_severity_slider.value())
+
+    environment.info["mutation_severity"] = myWindow.physical_severity_slider.value() / 100.
+    environment.info["brain_mutation_severity"] = myWindow.neural_severity_slider.value() / 100.
+
     myWindow.add_co2_btn.mouseReleaseEvent = lambda event: add_co2_clicked(myWindow, environment)
     myWindow.rem_co2_btn.mouseReleaseEvent = lambda event: rem_co2_clicked(myWindow, environment)
     myWindow.set_co2_btn.mouseReleaseEvent = lambda event: set_co2_clicked(myWindow, environment)
@@ -381,6 +390,13 @@ def setup_window_buttons(window, myWindow, environment):
     myWindow.reproduce_btn.mouseReleaseEvent = lambda event: reproduce_clicked(myWindow, environment)
     myWindow.save_organism_btn.mouseReleaseEvent = lambda event: save_organism_clicked(window, environment)
     myWindow.train_btn.mouseReleaseEvent = lambda event: train_btn_clicked(window, environment)
+
+    myWindow.sim_severity_slider.valueChanged.connect(lambda: sim_severity_changed(myWindow, environment))
+    myWindow.mirror_x_slider.valueChanged.connect(lambda: mirror_x_val_changed(myWindow, environment))
+    myWindow.mirror_y_slider.valueChanged.connect(lambda: mirror_y_val_changed(myWindow, environment))
+
+    myWindow.physical_severity_slider.valueChanged.connect(lambda: physical_sev_val_changed(myWindow, environment))
+    myWindow.neural_severity_slider.valueChanged.connect(lambda: neural_sev_val_changed(myWindow, environment))
 
     myWindow.drought_btn.mouseReleaseEvent = lambda event: drought_btn_clicked(window, environment)
     myWindow.algal_bloom_btn.mouseReleaseEvent = lambda event: algal_btn_clicked(window, environment)

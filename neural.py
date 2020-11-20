@@ -224,17 +224,30 @@ def activate(network, environment, organism, uDiff):
                 rotation_val = output_val.tolist()
                 if rotation_val >= 1.0:
                     rotation_val = 1.0
-
+                if rotation_val >= -1.0:
+                    rotation_val = -1.0
                 organism.movement["rotation"] = rotation_val
             elif correspondent == "speed":
                 speed = output_val.tolist()
                 if speed > 1.0:
                     speed = 1.0
+                elif speed < -1.0:
+                    speed = -1.0
                 organism.movement["speed"] = speed
             elif correspondent == "x_direction":
-                organism.movement["direction"][0] = output_val.tolist()
+                dir_val = output_val.tolist()
+                if dir_val > 1.0:
+                    dir_val = 1.0
+                elif dir_val < -1.0:
+                    dir_val = -1.0
+                organism.movement["direction"][0] = dir_val
             elif correspondent == "y_direction":
-                organism.movement["direction"][1] = output_val.tolist()
+                dir_val = output_val.tolist()
+                if dir_val > 1.0:
+                    dir_val = 1.0
+                elif dir_val < -1.0:
+                    dir_val = -1.0
+                organism.movement["direction"][1] = dir_val
 
     curiosity = organism.dna.base_info["curiosity"]
     network.stimulation = calculateStimulation(network)
