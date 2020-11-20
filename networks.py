@@ -3,7 +3,6 @@ import torch
 import random
 import copy
 import time
-import pytorch_lightning as pl
 
 
 
@@ -176,7 +175,7 @@ class RNNetwork(torch.nn.Module):
 
 
 
-class Network(pl.LightningModule):
+class Network(torch.nn.Module):
     def __init__(self, inputSize, hiddenLayers, outputSize, optimizer="adam", learning_rate="default"):
         # inputSize    : <int>
         # hiddenLayers : [<int>, <int>, <int>]
@@ -345,5 +344,3 @@ if __name__ == "__main__":
         print("Loss: {}".format(loss))
 
     print("\n\nAfter Training:\n{}".format(net(inputData)) )
-
-    graph_loss(net)
