@@ -1,4 +1,4 @@
 numpy>=1.19.0
 pymunk>=5.6.0
 PyQt5>=5.15.0
-torch>=0.6.1
+torch>=1.7.0
