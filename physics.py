@@ -293,12 +293,15 @@ class Environment():
             "brain_mutation_severity": 0.5,
             "reproduction_limit": 6,
             "population": 0,
-            "population_limit": 50,
+            "population_limit": 30,
             "weight_persistence": True,
             "learning_rate": 0.02,
             "use_rnn": True,
             "paused": False,
-            "paused_time": time.time()
+            "paused_time": time.time(),
+            "sim_drought": False,
+            "sim_algal": False,
+            "sim_poison": False
         }
 
         self.width = width

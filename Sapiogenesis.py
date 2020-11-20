@@ -19,8 +19,26 @@ from userInterface import Ui_MainWindow
 def updateUI(window, environment):
     time_passed = time.time() - environment.info["startTime"]
 
+    sim_severity = window.sim_severity_slider.value() / 10.
+
+    if environment.info["sim_drought"]:
+        depleted_val = sim_severity * time_passed
+        environment.info["oxygen"] -= depleted_val
+        environment.info["co2"] -= depleted_val
+    if environment.info["sim_algal"]:
+        depleted_val = sim_severity * time_passed
+        environment.info["oxygen"] -= depleted_val
+    if environment.info["sim_poison"]:
+        depleted_val = sim_severity * time_passed
+        for org in environment.info["organism_list"]:
+            for cell_id in org.cells:
+                sprite = org.cells[cell_id]
+                sprite.info["health"] -= depleted_val/5.
+
     if environment.info["co2"] < 0:
         environment.info["co2"] = 0
+    if environment.info["oxygen"] < 0:
+        environment.info["oxygen"] = 0
 
     co2 = environment.info["co2"]
     oxygen = environment.info["oxygen"]
@@ -70,6 +88,8 @@ def updateUI(window, environment):
     window.neural_severity_lcd.setProperty("value", neural_mutation_severity)
     environment.info["mutation_severity"] = mutation_severity / 100.
     environment.info["brain_mutation_severity"] = neural_mutation_severity / 100.
+
+    window.sim_severity_lcd.setProperty("value", sim_severity)
 
     #~ Sprite section
     if selected:
@@ -177,6 +197,26 @@ def train_btn_clicked(window, environment):
     if selected:
         sprites.neural.train_network(selected, epochs=sprites.training_epochs)
 
+def drought_btn_clicked(window, environment):
+    if environment.info["sim_drought"]:
+        environment.info["sim_drought"] = False
+    else:
+        environment.info["sim_drought"] = True
+def algal_btn_clicked(window, environment):
+    if environment.info["sim_algal"]:
+        environment.info["sim_algal"] = False
+    else:
+        environment.info["sim_algal"] = True
+def poison_btn_clicked(window, environment):
+    if environment.info["sim_poison"]:
+        environment.info["sim_poison"] = False
+    else:
+        environment.info["sim_poison"] = True
+def clear_events_clicked(window, environment):
+    environment.info["sim_drought"] = False
+    environment.info["sim_algal"] = False
+    environment.info["sim_poison"] = False
+
 def reproduce_clicked(window, environment):
     selected = environment.info["selected"]
     if selected:
@@ -243,6 +283,16 @@ def set_co2_clicked(window, environment):
     value = window.set_co2_spinbox.value()
     environment.info["co2"] = value
 
+def add_o2_clicked(window, environment):
+    value = window.o2_spinbox.value()
+    environment.info["oxygen"] += value
+def rem_o2_clicked(window, environment):
+    value = window.rem_o2_spinbox.value()
+    environment.info["oxygen"] -= value
+def set_o2_clicked(window, environment):
+    value = window.set_o2_spinbox.value()
+    environment.info["oxygen"] = value
+
 def slider_changed(val, window):
     if window.mutations_checkbox.isChecked():
         window.physical_severity_slider.setProperty("value", val)
@@ -285,6 +335,7 @@ def reset_clicked(window, environment):
     environment.info["co2"] = 30000
     environment.info["oxygen"] = 0
     environment.info["startTime"] = time.time()
+    clear_events_clicked(window, environment)
 def import_organism_clicked(window, environment):
     pause_world(window, environment)
 
@@ -320,12 +371,21 @@ def setup_window_buttons(window, myWindow, environment):
     myWindow.rem_co2_btn.mouseReleaseEvent = lambda event: rem_co2_clicked(myWindow, environment)
     myWindow.set_co2_btn.mouseReleaseEvent = lambda event: set_co2_clicked(myWindow, environment)
 
+    myWindow.add_o2_btn.mouseReleaseEvent = lambda event: add_o2_clicked(myWindow, environment)
+    myWindow.rem_o2_btn.mouseReleaseEvent = lambda event: rem_o2_clicked(myWindow, environment)
+    myWindow.set_o2_btn.mouseReleaseEvent = lambda event: set_o2_clicked(myWindow, environment)
+
     myWindow.kill_btn.mouseReleaseEvent = lambda event: kill_btn_clicked(myWindow, environment)
     myWindow.feed_btn.mouseReleaseEvent = lambda event: feed_btn_clicked(myWindow, environment)
     myWindow.hurt_btn.mouseReleaseEvent = lambda event: hurt_btn_clicked(myWindow, environment)
     myWindow.reproduce_btn.mouseReleaseEvent = lambda event: reproduce_clicked(myWindow, environment)
     myWindow.save_organism_btn.mouseReleaseEvent = lambda event: save_organism_clicked(window, environment)
     myWindow.train_btn.mouseReleaseEvent = lambda event: train_btn_clicked(window, environment)
+
+    myWindow.drought_btn.mouseReleaseEvent = lambda event: drought_btn_clicked(window, environment)
+    myWindow.algal_bloom_btn.mouseReleaseEvent = lambda event: algal_btn_clicked(window, environment)
+    myWindow.poison_btn.mouseReleaseEvent = lambda event: poison_btn_clicked(window, environment)
+    myWindow.clear_sim_btn.mouseReleaseEvent = lambda event: clear_events_clicked(window, environment)
 
     myWindow.add_random_creature_event = lambda: add_creature_clicked(myWindow, environment)
     myWindow.heal_event = lambda: heal_btn_clicked(myWindow, environment)
