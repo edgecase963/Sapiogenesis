@@ -3,7 +3,6 @@ import torch
 import random
 import copy
 import time
-import matplotlib.pyplot as plt
 import pytorch_lightning as pl
 
 
@@ -15,24 +14,6 @@ def expand_list(lst):
         if i and i != len(lst)-1:
             result.append(lst[i])
     return result
-
-
-
-def graph_loss(model, interval=50):
-    net_trainer = model.trainer
-
-    if not net_trainer.history:
-        return
-
-    epochList = [i for i in net_trainer.history]
-    lossList = [net_trainer.history[i] for i in net_trainer.history]
-    netLen = len( [i for i in net_trainer.model.children()] )
-
-    plt.plot(epochList, lossList)
-    plt.xlabel("Epoch")
-    plt.ylabel("Loss")
-    plt.title("Optimizer: {} | Layers: {}".format(net_trainer.optimizer_name, netLen))
-    plt.show()
 
 
 

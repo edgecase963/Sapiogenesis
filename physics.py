@@ -7,6 +7,7 @@ import math
 import random
 import numpy as np
 import pymunk
+import json
 from pymunk import Vec2d
 
 
@@ -303,8 +304,11 @@ class Environment():
         self.width = width
         self.height = height
 
+        with open("environment_settings.json", "r") as f:
+            env_settings = json.load(f)
+
         self.worldSpeed = .06
-        self.updateSpeed = 30
+        self.updateSpeed = env_settings["update_speed"]
 
         ch = self.space.add_collision_handler(0, 0)
         ch.post_solve = self.collision
