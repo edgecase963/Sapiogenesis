@@ -1,5 +1,5 @@
 ﻿# Sapiogenesis
-[![CodeFactor](https://www.codefactor.io/repository/github/edgecase963/sapiogenesis/badge?s=15c7abcfd2296a927216e6ab8461a81ceafcf994)](https://www.codefactor.io/repository/github/edgecase963/sapiogenesis)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) [![CodeFactor](https://www.codefactor.io/repository/github/edgecase963/sapiogenesis/badge?s=15c7abcfd2296a927216e6ab8461a81ceafcf994)](https://www.codefactor.io/repository/github/edgecase963/sapiogenesis)
 
 ![Logo](readme_media/splash-logo.jpg)
 
