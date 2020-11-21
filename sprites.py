@@ -20,6 +20,10 @@ import physics
 
 cell_types = ["barrier", "carniv", "eye", "olfactory", "co2C", "push", "pheremone", "body", "rotate"]
 dead_image = "dead.png"
+dirType = "/"
+
+if sys.platform.startswith("win"):
+    dirType = "\\"
 
 #co2_dispersion_ratio = 20
 # The dispersion ratio for dead cells.
@@ -896,9 +900,9 @@ class Organism():
 
     def _build_sprite(self, pos, cell_id, cell_info, alive=True):
         if alive:
-            image = "Images/{}.png".format(cell_info["type"])
+            image = "Images{}{}.png".format(dirType, cell_info["type"])
         else:
-            image = "Images/{}".format(dead_image)
+            image = "Images{}{}".format(dirType, dead_image)
         body, shape = physics.makeCircle(
             cell_info["size"]/2,
             friction = cell_info["friction"],
