@@ -27,3 +27,7 @@ pip3 install -r requirements.txt
 python3.8 Sapiogenesis.py
 
 ```
+
+To learn more, [check out the wiki](https://github.com/edgecase963/Sapiogenesis/wiki)
+
+
