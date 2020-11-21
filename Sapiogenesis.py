@@ -14,7 +14,7 @@ from PyQt5 import QtCore, QtGui
 from PyQt5 import QtWidgets
 from userInterface import Ui_MainWindow
 
-__version__ = "0.5.2"
+__version__ = "0.5.3 (Beta)"
 
 
 
@@ -78,7 +78,7 @@ def updateUI(window, environment):
         window.age_val.setText( str(int(time.time() - selected.birthTime)) )
         window.curiosity_val.setText( str(round(selected.dna.base_info["curiosity"], 2)) )
 
-        window.energy_val.setText( str(int(selected.total_energy())) )
+        window.energy_val.setText( str(int( selected.energy_percent() )) + "%" )
         window.health_val.setText( str(int(selected.health_percent())) + "%" )
 
         dopamineText = str(round(selected.dopamine, 2))
@@ -456,6 +456,7 @@ if __name__ == "__main__":
         env.space.add_collision_handler(1,0).begin = sprites.eye_segment_handler
         env.lastUpdated = time.time()
 
+        myapp.version_val.setText(__version__)
         setup_window_buttons(window, myapp, env)
 
         env.preUpdateEvent = lambda: sprites.update_organisms(env)
