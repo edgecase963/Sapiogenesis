@@ -13,3 +13,18 @@ Using an organism's dopamine values, Sapiogenesis teaches organisms which situat
 ### A quick demo..
 ![Sapiogenesis Demo](readme_media/demo.gif)
 
+
+To start Sapiogenesis:
+```bash
+
+# clone Sapiogenesis
+git clone https://github.com/edgecase963/Sapiogenesis
+
+cd Sapiogenesis
+
+# Install requirements
+pip3 install -r requirements.txt
+
+python3.8 Sapiogenesis.py
+
+```
