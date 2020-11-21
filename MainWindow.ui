@@ -2093,6 +2093,59 @@
        <bool>true</bool>
       </property>
      </widget>
+     <widget class="QLabel" name="hidden_size_label">
+      <property name="geometry">
+       <rect>
+        <x>340</x>
+        <y>115</y>
+        <width>91</width>
+        <height>25</height>
+       </rect>
+      </property>
+      <property name="font">
+       <font>
+        <weight>75</weight>
+        <bold>true</bold>
+       </font>
+      </property>
+      <property name="toolTip">
+       <string extracomment="The amount of CO2 in this world"/>
+      </property>
+      <property name="statusTip">
+       <string>The size of the hidden neurons used for Recurrent Neural Networks</string>
+      </property>
+      <property name="whatsThis">
+       <string/>
+      </property>
+      <property name="text">
+       <string>Hidden Size:</string>
+      </property>
+     </widget>
+     <widget class="QSpinBox" name="hidden_size_val">
+      <property name="geometry">
+       <rect>
+        <x>440</x>
+        <y>115</y>
+        <width>80</width>
+        <height>25</height>
+       </rect>
+      </property>
+      <property name="statusTip">
+       <string>Lower = Faster | Higher = Larger brains</string>
+      </property>
+      <property name="minimum">
+       <number>1</number>
+      </property>
+      <property name="maximum">
+       <number>999</number>
+      </property>
+      <property name="singleStep">
+       <number>1</number>
+      </property>
+      <property name="value">
+       <number>8</number>
+      </property>
+     </widget>
     </widget>
    </widget>
    <widget class="QFrame" name="Organism_Frame">

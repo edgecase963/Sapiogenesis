@@ -318,6 +318,8 @@ def learning_rate_changed(val, environment):
     environment.info["learning_rate"] = val
 def use_rnn_changed(val, environment):
     environment.info["use_rnn"] = val
+def hidden_rnn_changed(val, environment):
+    environment.info["hidden_rnn_size"] = val
 
 def feed_all_clicked(window, environment):
     for org in environment.info["organism_list"]:
@@ -435,6 +437,7 @@ def setup_window_buttons(window, myWindow, environment):
     myWindow.input_memory_spinbox.valueChanged.connect(stim_memory_changed)
     myWindow.learning_rate_val.valueChanged.connect(lambda val: learning_rate_changed(val, environment))
     myWindow.use_rnn_checkbox.toggled.connect(lambda val: use_rnn_changed(val, environment))
+    myWindow.hidden_size_val.valueChanged.connect(lambda val: hidden_rnn_changed(val, environment))
     #~
 
     myWindow.age_limit_spinbox.valueChanged.connect(age_limit_changed)

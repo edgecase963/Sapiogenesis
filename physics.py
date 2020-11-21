@@ -301,7 +301,8 @@ class Environment():
             "paused_time": time.time(),
             "sim_drought": False,
             "sim_algal": False,
-            "sim_poison": False
+            "sim_poison": False,
+            "hidden_rnn_size": 8
         }
 
         self.width = width

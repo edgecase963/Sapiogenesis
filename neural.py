@@ -293,7 +293,7 @@ def train_network(organism, epochs=1):
     organism._update_brain_weights()
 
 
-def setup_network(dna, learning_rate=0.02, rnn=False, hiddenSize=6):
+def setup_network(dna, learning_rate=0.02, rnn=False, hiddenSize=8):
     base_input = {
         "visual": [],
         "chemical": [],

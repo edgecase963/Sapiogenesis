@@ -1448,7 +1448,12 @@ class Organism():
 
     def build_brain(self):
         learning_rate = self.environment.info["learning_rate"]
-        self.brain = neural.setup_network(self.dna, learning_rate=learning_rate, rnn=self.environment.info["use_rnn"], hiddenSize=6)
+        self.brain = neural.setup_network(
+            self.dna,
+            learning_rate = learning_rate,
+            rnn = self.environment.info["use_rnn"],
+            hiddenSize = self.environment.info["hidden_rnn_size"]
+        )
 
         for i, layer in enumerate(self.brain.hiddenLayers):
             new_weights = self.dna.brain_structure["hidden_weights"][i]
