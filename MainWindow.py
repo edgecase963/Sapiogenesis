@@ -968,7 +968,7 @@ class Ui_MainWindow(object):
         self.clear_sim_btn.setText(_translate("MainWindow", "Clear All"))
         self.sim_severity_label.setText(_translate("MainWindow", "Severity"))
         self.sim_severity_slider.setStatusTip(_translate("MainWindow", "How severe simulated events are"))
-        self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_6), _translate("MainWindow", "Simulate"))
+        self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_6), _translate("MainWindow", "Events"))
         self.Controls_Widget.setTabText(self.Controls_Widget.indexOf(self.tab_1), _translate("MainWindow", "World Controls"))
         self.cell_range_label.setText(_translate("MainWindow", "Cell Range:"))
         self.min_cell_range_spinbox.setStatusTip(_translate("MainWindow", "Minimum number of cells per organism"))

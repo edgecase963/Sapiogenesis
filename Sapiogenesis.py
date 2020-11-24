@@ -82,7 +82,7 @@ def updateUI(window, environment):
         window.health_val.setText( str(int(selected.health_percent())) + "%" )
 
         dopamineText = str(round(selected.dopamine, 2))
-        dopamineText = dopamineText.split(".")[0] + "." + dopamineText.split(".")[1].zfill(2)
+        dopamineText = dopamineText.split(".")[0] + "." + dopamineText.split(".")[1]
 
         window.neural_loss_val.setText( str( round(selected.brain.lastLoss, 5) ) )
         window.stim_val.setText( str(float( round(selected.brain.stimulation, 2) )) )
