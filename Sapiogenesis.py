@@ -14,7 +14,7 @@ from PyQt5 import QtCore, QtGui
 from PyQt5 import QtWidgets
 from userInterface import Ui_MainWindow
 
-__version__ = "0.5.3 (Beta)"
+__version__ = "0.5.4 (Beta)"
 
 
 
@@ -320,6 +320,8 @@ def learning_rate_changed(val, environment):
     environment.info["learning_rate"] = val
 def use_rnn_changed(val, environment):
     environment.info["use_rnn"] = val
+def amb_training_changed(val, environment):
+    environment.info["ambient_training"] = val
 def hidden_rnn_changed(val, environment):
     environment.info["hidden_rnn_size"] = val
 
@@ -439,6 +441,7 @@ def setup_window_buttons(window, myWindow, environment):
     myWindow.input_memory_spinbox.valueChanged.connect(stim_memory_changed)
     myWindow.learning_rate_val.valueChanged.connect(lambda val: learning_rate_changed(val, environment))
     myWindow.use_rnn_checkbox.toggled.connect(lambda val: use_rnn_changed(val, environment))
+    myWindow.amb_training_checkbox.toggled.connect(lambda val: amb_training_changed(val, environment))
     myWindow.hidden_size_val.valueChanged.connect(lambda val: hidden_rnn_changed(val, environment))
     #~
 

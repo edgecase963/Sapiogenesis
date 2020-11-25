@@ -258,26 +258,30 @@ def activate(network, environment, organism, uDiff):
         network.boredom = 0.0
 
 
-def train_network(organism, epochs=1):
+def train_network(organism, epochs=1, save_memory=False):
     network = organism.brain
     if not network:
         return
     if network.lastOutput == None or network.lastInput == None:
         return
+    if (not organism.dna.trainingInput or not organism.dna.trainingOutput) and not save_memory:
+        return
 
     inputData = network.lastInput.clone()
     targetData = network.lastOutput.clone()
+
     if organism.pain >= 0.1:
         targetData = torch.tensor( [x * -organism.pain for x in targetData] ).float()
     else:
         targetData = torch.tensor( [x * organism.dopamine for x in targetData] ).float()
 
-    organism.dna.trainingInput.append( inputData.tolist() )
-    organism.dna.trainingOutput.append( targetData.tolist() )
+    if save_memory:
+        organism.dna.trainingInput.append( inputData.tolist() )
+        organism.dna.trainingOutput.append( targetData.tolist() )
 
-    while len(organism.dna.trainingInput) > memory_limit:
-        organism.dna.trainingInput.pop(0)
-        organism.dna.trainingOutput.pop(0)
+        while len(organism.dna.trainingInput) > memory_limit:
+            organism.dna.trainingInput.pop(0)
+            organism.dna.trainingOutput.pop(0)
 
     if network.isRNN:
         for i in range(epochs):

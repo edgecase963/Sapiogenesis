@@ -53,7 +53,7 @@ learning_update_delay = .5 # How long to wait before training an organism
 training_epochs = 1 # How many epochs to train a network for per training interval
 
 max_push_speed = 250
-max_rotation_speed = 8 # Radians per second
+max_rotation_speed = 6 # Radians per second
 
 training_dopamine_threshold = 1.
 
@@ -1389,7 +1389,7 @@ class Organism():
             self.energy_consumed = 0
 
         if self.energy_consumed:
-            digested_energy = perc2num(90, self.energy_consumed) * uDiff
+            digested_energy = perc2num(80, self.energy_consumed) * uDiff
 
             self.energy_consumed -= digested_energy
             self.energy_consumed += self.add_energy(digested_energy)
@@ -1546,6 +1546,7 @@ def update_organisms(environment):
     # For this to work properly the environment must have the variable `lastUpdated` which holds a time.time() value
     # The environment must also have the ".info" variable which holds a dictionary containing "oganism_list" as a value
     uDiff = time.time() - environment.lastUpdated
+
     environment.lastUpdated = time.time()
     if environment.info["paused"]:
         return
@@ -1565,7 +1566,12 @@ def update_organisms(environment):
             train_uDiff = time.time() - org.brain.lastTrained
             if train_uDiff >= learning_update_delay:
                 if org.dopamine >= training_dopamine_threshold or org.pain >= 0.1:
-                    neural.train_network(org, epochs=training_epochs)
+                    save_memory = True
+                else:
+                    save_memory = False
+
+                if save_memory or environment.info["ambient_training"]:
+                    neural.train_network(org, epochs=training_epochs, save_memory=save_memory)
         else:
             environment.info["organism_list"].remove(org)
 
