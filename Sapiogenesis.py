@@ -365,11 +365,19 @@ def resume_world(window, environment):
         last_updated_dopamine_diff = paused_time - org.last_updated_dopamine
         brain_last_updated_diff = paused_time - org.brain.lastUpdated
         brain_last_trained_diff = paused_time - org.brain.lastTrained
+        birth_time_diff = paused_time - org.birthTime
 
         org.lastUpdated = time.time() - last_updated_diff
         org.last_updated_dopamine = time.time() - last_updated_dopamine_diff
         org.brain.lastUpdated = time.time() - brain_last_updated_diff
         org.brain.lastTrained = time.time() - brain_last_trained_diff
+        org.birthTime = time.time() - birth_time_diff
+
+        for cell_id in org.cells:
+            sprite = org.cells[cell_id]
+            if sprite.alive:
+                sprite_update_diff = paused_time - sprite.lastUpdated
+                sprite.lastUpdated = time.time() - sprite_update_diff
     environment.info["paused"] = False
 
 def setup_window_buttons(window, myWindow, environment):
