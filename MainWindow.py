@@ -1045,7 +1045,7 @@ class Ui_MainWindow(object):
         self.hidden_size_label.setText(_translate("MainWindow", "Hidden Size:"))
         self.hidden_size_val.setStatusTip(_translate("MainWindow", "Lower = Faster | Higher = Larger brains"))
         self.amb_training_checkbox.setStatusTip(_translate("MainWindow", "While checked, neural networks will constantly be trained as opposed to only being trained when dopamine or pain thresholds are met"))
-        self.amb_training_checkbox.setText(_translate("MainWindow", "Ambient Training"))
+        self.amb_training_checkbox.setText(_translate("MainWindow", "Perpetual Training"))
         self.Controls_Widget.setTabText(self.Controls_Widget.indexOf(self.tab), _translate("MainWindow", "Neural Controls"))
         self.energy_label.setStatusTip(_translate("MainWindow", "This organism\'s total energy"))
         self.energy_label.setText(_translate("MainWindow", "Energy:"))
