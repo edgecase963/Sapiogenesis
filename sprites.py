@@ -82,15 +82,15 @@ base_cell_info = {
         # This is multiplied by the size and mass of each given cell
         # <max_energy_usage> = <base_energy_usage> * (<cell_size> / 2) * (<cell_mass> / 2)
         "barrier": [2, 2],
-        "carniv": [6, 10],
+        "carniv": [6, 8],
         "co2C": [6, 6],
         "eye": [5, 5],
         "olfactory": [6, 8],
-        "push": [6, 10],
+        "push": [6, 9],
         "pheremone": [6, 8],
         "body": [2, 2],
         "heart": [5, 5],
-        "rotate": [6, 10]
+        "rotate": [6, 8]
     },
     "energy_storage": {
         # This is multiplied by the size and mass of each given cell
@@ -1360,8 +1360,7 @@ class Organism():
             sprite.info["energy"] = cell_info["energy_storage"]
 
         if sprite.info["energy"] >= cell_info["energy_storage"]/2 and sprite.info["health"] < cell_info["max_health"]:
-            perc_health = perc2num( heal_rate, cell_info["max_health"] )
-            added_health = perc_health * uDiff
+            added_health = perc2num( heal_rate, cell_info["max_health"] ) * uDiff
 
             sprite.info["health"] += added_health
             if sprite.info["health"] > cell_info["max_health"]:
@@ -1432,10 +1431,7 @@ class Organism():
 
         max_energy = self.max_energy()
         if self.total_energy() >= max_energy/1.01 and (time.time() - self.lastBirth) >= reproduction_limit:
-            total_health = sum([ self.dna.cells[id]["max_health"] for id in self.cells ])
-            current_health = sum([ self.cells[id].info["health"] for id in self.living_cells() ])
-            health_perc = num2perc(current_health, total_health)
-            if random.random()*100. <= health_perc:
+            if random.random()*100. <= self.health_percent():
                 if not self.environment.info["population"] >= self.environment.info["population_limit"]:
                     self.reproduce(
                         severity=self.environment.info["mutation_severity"],
