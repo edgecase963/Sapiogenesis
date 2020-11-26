@@ -86,7 +86,7 @@ base_cell_info = {
         "co2C": [6, 6],
         "eye": [5, 5],
         "olfactory": [6, 8],
-        "push": [6, 9],
+        "push": [5, 8],
         "pheremone": [6, 8],
         "body": [2, 2],
         "heart": [5, 5],

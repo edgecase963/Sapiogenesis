@@ -2166,7 +2166,7 @@
        <string>While checked, neural networks will constantly be trained as opposed to only being trained when dopamine or pain thresholds are met</string>
       </property>
       <property name="text">
-       <string>Ambient Training</string>
+       <string>Perpetual Training</string>
       </property>
       <property name="checked">
        <bool>true</bool>

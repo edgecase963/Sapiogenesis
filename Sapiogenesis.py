@@ -14,7 +14,7 @@ from PyQt5 import QtCore, QtGui
 from PyQt5 import QtWidgets
 from userInterface import Ui_MainWindow
 
-__version__ = "0.5.4 (Beta)"
+__version__ = "0.5.5 (Beta)"
 
 
 
@@ -84,7 +84,7 @@ def updateUI(window, environment):
         dopamineText = str(round(selected.dopamine, 2))
         dopamineText = dopamineText.split(".")[0] + "." + dopamineText.split(".")[1]
 
-        window.neural_loss_val.setText( str( round(selected.brain.lastLoss, 5) ) )
+        window.neural_loss_val.setText( str( round(selected.brain.lastLoss, 8) ) )
         window.stim_val.setText( str(float( round(selected.brain.stimulation, 2) )) )
         window.boredom_val.setText( str(float( round(selected.brain.boredom, 2) )) )
         window.pain_val.setText( str(float( round(selected.pain, 2) )) )
@@ -131,14 +131,14 @@ def mouseReleaseEvent(event, pos, environment):
 
     environment.info["lastPosition"] = pos
 
-def kill_btn_clicked(window, environment):
+def kill_btn_clicked(myWindow, environment):
     selected = environment.info["selected"]
     if selected:
         fCell = selected.dna.first_cell()
         sprite = selected.cells[fCell]
         if sprite.alive:
             selected.kill_cell(sprite)
-def heal_btn_clicked(window, environment):
+def heal_btn_clicked(myWindow, environment):
     selected = environment.info["selected"]
     if selected:
         for cell_id in selected.living_cells():
@@ -146,7 +146,7 @@ def heal_btn_clicked(window, environment):
             cell_info = sprite.cell_info
 
             sprite.info["health"] = cell_info["max_health"]
-def feed_btn_clicked(window, environment):
+def feed_btn_clicked(myWindow, environment):
     selected = environment.info["selected"]
     if selected:
         for cell_id in selected.cells:
@@ -154,7 +154,7 @@ def feed_btn_clicked(window, environment):
             if sprite.alive:
                 cell_info = selected.dna.cells[cell_id]
                 sprite.info["energy"] = cell_info["energy_storage"]
-def hurt_btn_clicked(window, environment):
+def hurt_btn_clicked(myWindow, environment):
     selected = environment.info["selected"]
     if selected:
         for cell_id in selected.living_cells():
@@ -177,26 +177,26 @@ def save_organism_clicked(window, environment):
             with open(filePath, "wb") as f:
                 pickle.dump(new_dna, f)
     resume_world(window, environment)
-def train_btn_clicked(window, environment):
+def train_btn_clicked(environment):
     selected = environment.info["selected"]
     if selected:
         sprites.neural.train_network(selected, epochs=sprites.training_epochs)
 
-def sim_severity_changed(window, environment):
-    window.sim_severity_lcd.setProperty("value", window.sim_severity_slider.value())
-def mirror_x_val_changed(window, environment):
-    window.mirror_x_lcd.setProperty("value", window.mirror_x_slider.value())
-def mirror_y_val_changed(window, environment):
-    window.mirror_y_lcd.setProperty("value", window.mirror_y_slider.value())
-def physical_sev_val_changed(window, environment):
-    mutation_severity = window.physical_severity_slider.value()
+def sim_severity_changed(myWindow, environment):
+    myWindow.sim_severity_lcd.setProperty("value", myWindow.sim_severity_slider.value())
+def mirror_x_val_changed(myWindow, environment):
+    myWindow.mirror_x_lcd.setProperty("value", myWindow.mirror_x_slider.value())
+def mirror_y_val_changed(myWindow, environment):
+    myWindow.mirror_y_lcd.setProperty("value", myWindow.mirror_y_slider.value())
+def physical_sev_val_changed(myWindow, environment):
+    mutation_severity = myWindow.physical_severity_slider.value()
 
-    window.physical_severity_lcd.setProperty("value", mutation_severity)
+    myWindow.physical_severity_lcd.setProperty("value", mutation_severity)
     environment.info["mutation_severity"] = mutation_severity / 100.
-def neural_sev_val_changed(window, environment):
-    neural_mutation_severity = window.neural_severity_slider.value()
+def neural_sev_val_changed(myWindow, environment):
+    neural_mutation_severity = myWindow.neural_severity_slider.value()
 
-    window.neural_severity_lcd.setProperty("value", neural_mutation_severity)
+    myWindow.neural_severity_lcd.setProperty("value", neural_mutation_severity)
     environment.info["brain_mutation_severity"] = neural_mutation_severity / 100.
 
 def drought_btn_clicked(window, environment):
@@ -219,34 +219,34 @@ def clear_events_clicked(window, environment):
     environment.info["sim_algal"] = False
     environment.info["sim_poison"] = False
 
-def reproduce_clicked(window, environment):
+def reproduce_clicked(environment):
     selected = environment.info["selected"]
     if selected:
         selected.reproduce(
             severity=environment.info["mutation_severity"],
             neural_severity=environment.info["brain_mutation_severity"]
         )
-def erase_mem_clicked(window, environment):
+def erase_mem_clicked(environment):
     selected = environment.info["selected"]
     if selected:
         selected.dna.trainingInput = []
         selected.dna.trainingOutput = []
 
-def add_creature_clicked(window, environment):
-    minCellRange = window.min_cell_range_spinbox.value()
-    maxCellRange = window.max_cell_range_spinbox.value()
+def add_creature_clicked(myWindow, environment):
+    minCellRange = myWindow.min_cell_range_spinbox.value()
+    maxCellRange = myWindow.max_cell_range_spinbox.value()
 
-    minSizeRange = window.min_size_range_spinbox.value()
-    maxSizeRange = window.max_size_range_spinbox.value()
+    minSizeRange = myWindow.min_size_range_spinbox.value()
+    maxSizeRange = myWindow.max_size_range_spinbox.value()
 
-    minMassRange = window.min_mass_range_spinbox.value()
-    maxMassRange = window.max_mass_range_spinbox.value()
+    minMassRange = myWindow.min_mass_range_spinbox.value()
+    maxMassRange = myWindow.max_mass_range_spinbox.value()
 
-    mirror_x = window.mirror_x_slider.value() / 100.
-    mirror_y = window.mirror_y_slider.value() / 100.
+    mirror_x = myWindow.mirror_x_slider.value() / 100.
+    mirror_y = myWindow.mirror_y_slider.value() / 100.
 
-    min_hiddden_layers = window.min_hid_val.value()
-    max_hiddden_layers = window.max_hid_val.value()
+    min_hiddden_layers = myWindow.min_hid_val.value()
+    max_hiddden_layers = myWindow.max_hid_val.value()
 
     dna = sprites.DNA().randomize(
         cellRange=[minCellRange, maxCellRange],
@@ -260,45 +260,45 @@ def add_creature_clicked(window, environment):
     organism = sprites.Organism(environment.info["lastPosition"], env, dna=dna)
     add_organism(organism, environment)
 
-def copy_clicked(window, environment):
+def copy_clicked(environment):
     selected = environment.info["selected"]
     if selected:
         environment.info["copied"] = selected.dna.copy()
 
-def paste_clicked(window, environment):
+def paste_clicked(environment):
     copied_dna = environment.info["copied"]
     if copied_dna:
         newPos = environment.info["lastPosition"]
         newOrganism = sprites.Organism(newPos, environment, dna=copied_dna.copy())
         add_organism(newOrganism, environment)
 
-def disperse_cells_clicked(window, environment):
+def disperse_cells_clicked(environment):
     sprites.disperse_all_dead(environment)
 
-def add_co2_clicked(window, environment):
-    value = window.co2_spinBox.value()
+def add_co2_clicked(myWindow, environment):
+    value = myWindow.co2_spinBox.value()
     environment.info["co2"] += value
-def rem_co2_clicked(window, environment):
-    value = window.rem_co2_spinbox.value()
+def rem_co2_clicked(myWindow, environment):
+    value = myWindow.rem_co2_spinbox.value()
     environment.info["co2"] -= value
-def set_co2_clicked(window, environment):
-    value = window.set_co2_spinbox.value()
+def set_co2_clicked(myWindow, environment):
+    value = myWindow.set_co2_spinbox.value()
     environment.info["co2"] = value
 
-def add_o2_clicked(window, environment):
-    value = window.o2_spinbox.value()
+def add_o2_clicked(myWindow, environment):
+    value = myWindow.o2_spinbox.value()
     environment.info["oxygen"] += value
-def rem_o2_clicked(window, environment):
-    value = window.rem_o2_spinbox.value()
+def rem_o2_clicked(myWindow, environment):
+    value = myWindow.rem_o2_spinbox.value()
     environment.info["oxygen"] -= value
-def set_o2_clicked(window, environment):
-    value = window.set_o2_spinbox.value()
+def set_o2_clicked(myWindow, environment):
+    value = myWindow.set_o2_spinbox.value()
     environment.info["oxygen"] = value
 
-def slider_changed(val, window):
-    if window.mutations_checkbox.isChecked():
-        window.physical_severity_slider.setProperty("value", val)
-        window.neural_severity_slider.setProperty("value", val)
+def slider_changed(val, myWindow):
+    if myWindow.mutations_checkbox.isChecked():
+        myWindow.physical_severity_slider.setProperty("value", val)
+        myWindow.neural_severity_slider.setProperty("value", val)
 
 def world_speed_changed(val, environment):
     environment.worldSpeed = val
@@ -325,19 +325,19 @@ def amb_training_changed(val, environment):
 def hidden_rnn_changed(val, environment):
     environment.info["hidden_rnn_size"] = val
 
-def feed_all_clicked(window, environment):
+def feed_all_clicked(environment):
     for org in environment.info["organism_list"]:
         for cell_id in org.cells:
             sprite = org.cells[cell_id]
             if sprite.alive:
                 cell_info = org.dna.cells[cell_id]
                 sprite.info["energy"] = cell_info["energy_storage"]
-def kill_all_clicked(window, environment):
+def kill_all_clicked(environment):
     for org in environment.info["organism_list"]:
         org.kill()
-def reset_clicked(window, environment):
-    kill_all_clicked(window, environment)
-    disperse_cells_clicked(window, environment)
+def reset_clicked(environment):
+    kill_all_clicked(environment)
+    disperse_cells_clicked(environment)
     environment.info["co2"] = 30000
     environment.info["oxygen"] = 0
     environment.info["startTime"] = time.time()
@@ -380,9 +380,27 @@ def resume_world(window, environment):
                 sprite.lastUpdated = time.time() - sprite_update_diff
     environment.info["paused"] = False
 
+def keyPressed(event, window, myWindow, environment):
+    if event.key() == QtCore.Qt.Key_Space:
+        if environment.info["paused"]:
+            resume_world(window, environment)
+        else:
+            pause_world(window, environment)
+    if event.key() == QtCore.Qt.Key_C:
+        copy_clicked(environment)
+    if event.key() == QtCore.Qt.Key_R:
+        reproduce_clicked(environment)
+    if event.key() == QtCore.Qt.Key_T:
+        train_btn_clicked(environment)
+def keyReleased(event, window, myWindow, environment):
+    pass
+
 def setup_window_buttons(window, myWindow, environment):
     myWindow.mirror_x_lcd.setProperty("value", myWindow.mirror_x_slider.value())
     myWindow.mirror_y_lcd.setProperty("value", myWindow.mirror_y_slider.value())
+
+    myWindow.worldView.keyPressEvent = lambda event: keyPressed(event, window, myWindow, environment)
+    myWindow.worldView.keyReleaseEvent = lambda event: keyReleased(event, window, myWindow, environment)
 
     myWindow.physical_severity_lcd.setProperty("value", myWindow.physical_severity_slider.value())
     myWindow.neural_severity_lcd.setProperty("value", myWindow.neural_severity_slider.value())
@@ -401,9 +419,9 @@ def setup_window_buttons(window, myWindow, environment):
     myWindow.kill_btn.mouseReleaseEvent = lambda event: kill_btn_clicked(myWindow, environment)
     myWindow.feed_btn.mouseReleaseEvent = lambda event: feed_btn_clicked(myWindow, environment)
     myWindow.hurt_btn.mouseReleaseEvent = lambda event: hurt_btn_clicked(myWindow, environment)
-    myWindow.reproduce_btn.mouseReleaseEvent = lambda event: reproduce_clicked(myWindow, environment)
+    myWindow.reproduce_btn.mouseReleaseEvent = lambda event: reproduce_clicked(environment)
     myWindow.save_organism_btn.mouseReleaseEvent = lambda event: save_organism_clicked(window, environment)
-    myWindow.train_btn.mouseReleaseEvent = lambda event: train_btn_clicked(window, environment)
+    myWindow.train_btn.mouseReleaseEvent = lambda event: train_btn_clicked(environment)
 
     myWindow.sim_severity_slider.valueChanged.connect(lambda: sim_severity_changed(myWindow, environment))
     myWindow.mirror_x_slider.valueChanged.connect(lambda: mirror_x_val_changed(myWindow, environment))
@@ -420,15 +438,15 @@ def setup_window_buttons(window, myWindow, environment):
     myWindow.add_random_creature_event = lambda: add_creature_clicked(myWindow, environment)
     myWindow.heal_event = lambda: heal_btn_clicked(myWindow, environment)
     myWindow.kill_event = lambda: kill_btn_clicked(myWindow, environment)
-    myWindow.reproduce_event = lambda: reproduce_clicked(myWindow, environment)
-    myWindow.erase_mem_event = lambda: erase_mem_clicked(myWindow, environment)
-    myWindow.copy_event = lambda: copy_clicked(myWindow, environment)
-    myWindow.paste_event = lambda: paste_clicked(myWindow, environment)
-    myWindow.disperse_cells_event = lambda: disperse_cells_clicked(myWindow, environment)
+    myWindow.reproduce_event = lambda: reproduce_clicked(environment)
+    myWindow.erase_mem_event = lambda: erase_mem_clicked(environment)
+    myWindow.copy_event = lambda: copy_clicked(environment)
+    myWindow.paste_event = lambda: paste_clicked(environment)
+    myWindow.disperse_cells_event = lambda: disperse_cells_clicked(environment)
 
-    myWindow.actionFeed_All_Organisms.triggered.connect(lambda: feed_all_clicked(myWindow, environment))
-    myWindow.actionKill_All.triggered.connect(lambda: kill_all_clicked(myWindow, environment))
-    myWindow.actionReset.triggered.connect(lambda: reset_clicked(myWindow, environment))
+    myWindow.actionFeed_All_Organisms.triggered.connect(lambda: feed_all_clicked(environment))
+    myWindow.actionKill_All.triggered.connect(lambda: kill_all_clicked(environment))
+    myWindow.actionReset.triggered.connect(lambda: reset_clicked(environment))
     myWindow.actionImport_Organism.triggered.connect(lambda: import_organism_clicked(window, environment))
     myWindow.actionPause.triggered.connect(lambda: pause_world(window, environment))
     myWindow.actionResume.triggered.connect(lambda: resume_world(window, environment))
