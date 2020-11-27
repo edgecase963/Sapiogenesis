@@ -82,7 +82,7 @@ base_cell_info = {
         # This is multiplied by the size and mass of each given cell
         # <max_energy_usage> = <base_energy_usage> * (<cell_size> / 2) * (<cell_mass> / 2)
         "barrier": [2, 2],
-        "carniv": [6, 8],
+        "carniv": [5, 8],
         "co2C": [6, 6],
         "eye": [5, 5],
         "olfactory": [6, 8],
@@ -90,7 +90,7 @@ base_cell_info = {
         "pheremone": [6, 8],
         "body": [2, 2],
         "heart": [5, 5],
-        "rotate": [6, 8]
+        "rotate": [5, 8]
     },
     "energy_storage": {
         # This is multiplied by the size and mass of each given cell
@@ -100,7 +100,7 @@ base_cell_info = {
         "co2C": 20,
         "eye": 18,
         "olfactory": 18,
-        "push": 18,
+        "push": 20,
         "pheremone": 18,
         "body": 18,
         "heart": 20,
@@ -873,6 +873,7 @@ class Organism():
         }
         self.lastEnergy = 0.0 # Used to calculate the organism's dopamine
         self.lastHealth = 0.0 # Used to calculate the organism's pain
+        self.energy_diff = 0.0
         self.dopamine_average = 0
         self.dopamine_memory = [0]*200
         self.dopamine_usage = 0.0
@@ -1341,8 +1342,30 @@ class Organism():
         if cell_info["type"] == "rotate" and sprite.alive:
             sprite.body.angular_velocity += self.movement["rotation"] * max_rotation_speed
 
+            if positive(self.movement["rotation"]) >= .1:
+                sprite.info["in_use"] = True
+            else:
+                sprite.info["in_use"] = False
+
         if sprite.info["in_use"]:
-            energy_usage = cell_info["energy_usage"][1]
+            if cell_info["type"] == "push":
+                usage_diff = cell_info["energy_usage"][1] - cell_info["energy_usage"][0]
+                push_energy = usage_diff * self.movement["speed"]
+
+                if push_energy < 0:
+                    energy_usage = positive(-cell_info["energy_usage"][0] + push_energy)
+                else:
+                    energy_usage = cell_info["energy_usage"][0] + push_energy
+            elif cell_info["type"] == "rotate":
+                usage_diff = cell_info["energy_usage"][1] - cell_info["energy_usage"][0]
+                rotate_energy = usage_diff * self.movement["rotation"]
+
+                if rotate_energy < 0:
+                    energy_usage = positive(-cell_info["energy_usage"][0] + rotate_energy)
+                else:
+                    energy_usage = cell_info["energy_usage"][0] + rotate_energy
+            else:
+                energy_usage = cell_info["energy_usage"][1]
         else:
             energy_usage = cell_info["energy_usage"][0]
 
@@ -1398,6 +1421,7 @@ class Organism():
             dopamine_uDiff = time.time() - self.last_updated_dopamine
             health_diff = self.health_percent() - self.lastHealth
             energy_diff = self.energy_percent() - self.lastEnergy
+            self.energy_diff = energy_diff / dopamine_uDiff
 
             self.pain = health_diff / dopamine_uDiff
             self.dopamine_usage = energy_diff / dopamine_uDiff
@@ -1406,7 +1430,7 @@ class Organism():
                 self.pain = 0.0
 
             self.pain = positive(self.pain)
-            self.dopamine_usage -= self.pain
+            self.dopamine_usage -= self.pain * 2.
 
             self.dopamine_memory.append(self.dopamine)
             self.dopamine_memory.pop(0)

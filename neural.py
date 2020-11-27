@@ -222,9 +222,9 @@ def activate(network, environment, organism, uDiff):
             correspondent = network.outputCells[i]
             if correspondent == "rotation":
                 rotation_val = output_val.tolist()
-                if rotation_val >= 1.0:
+                if rotation_val > 1.0:
                     rotation_val = 1.0
-                if rotation_val >= -1.0:
+                if rotation_val < -1.0:
                     rotation_val = -1.0
                 organism.movement["rotation"] = rotation_val
             elif correspondent == "speed":

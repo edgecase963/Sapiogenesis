@@ -76,7 +76,7 @@ def updateUI(window, environment):
             window.neurons_val.setText( str(neurons) )
 
         window.age_val.setText( str(int(time.time() - selected.birthTime)) )
-        window.curiosity_val.setText( str(round(selected.dna.base_info["curiosity"], 2)) )
+        window.energy_usage_val.setText( str(round(selected.energy_diff, 2)) )
 
         window.energy_val.setText( str(int( selected.energy_percent() )) + "%" )
         window.health_val.setText( str(int(selected.health_percent())) + "%" )
@@ -392,6 +392,10 @@ def keyPressed(event, window, myWindow, environment):
         reproduce_clicked(environment)
     if event.key() == QtCore.Qt.Key_T:
         train_btn_clicked(environment)
+    if event.key() == QtCore.Qt.Key_H:
+        heal_btn_clicked(myWindow, environment)
+    if event.key() == QtCore.Qt.Key_K:
+        kill_btn_clicked(myWindow, environment)
 def keyReleased(event, window, myWindow, environment):
     pass
 
