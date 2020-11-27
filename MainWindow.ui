@@ -250,13 +250,13 @@
         <number>5</number>
        </property>
        <property name="minimum">
-        <double>0.000000000000000</double>
+        <double>0.002000000000000</double>
        </property>
        <property name="maximum">
         <double>10.000000000000000</double>
        </property>
        <property name="singleStep">
-        <double>0.005000000000000</double>
+        <double>0.002000000000000</double>
        </property>
        <property name="value">
         <double>0.060000000000000</double>
@@ -2169,7 +2169,7 @@
        <string>Perpetual Training</string>
       </property>
       <property name="checked">
-       <bool>true</bool>
+       <bool>false</bool>
       </property>
      </widget>
     </widget>
@@ -2177,9 +2177,9 @@
    <widget class="QFrame" name="Organism_Frame">
     <property name="geometry">
      <rect>
-      <x>550</x>
+      <x>545</x>
       <y>630</y>
-      <width>530</width>
+      <width>535</width>
       <height>181</height>
      </rect>
     </property>
@@ -2194,7 +2194,7 @@
       <rect>
        <x>180</x>
        <y>10</y>
-       <width>161</width>
+       <width>166</width>
        <height>163</height>
       </rect>
      </property>
@@ -2207,7 +2207,7 @@
      <widget class="QLabel" name="energy_label">
       <property name="geometry">
        <rect>
-        <x>10</x>
+        <x>8</x>
         <y>10</y>
         <width>60</width>
         <height>25</height>
@@ -2232,7 +2232,7 @@
      <widget class="QLabel" name="generation_label">
       <property name="geometry">
        <rect>
-        <x>10</x>
+        <x>8</x>
         <y>35</y>
         <width>90</width>
         <height>25</height>
@@ -2257,7 +2257,7 @@
      <widget class="QLabel" name="dopamine_label">
       <property name="geometry">
        <rect>
-        <x>10</x>
+        <x>8</x>
         <y>60</y>
         <width>81</width>
         <height>25</height>
@@ -2284,7 +2284,7 @@
        <rect>
         <x>70</x>
         <y>10</y>
-        <width>81</width>
+        <width>86</width>
         <height>25</height>
        </rect>
       </property>
@@ -2316,7 +2316,7 @@
        <rect>
         <x>90</x>
         <y>60</y>
-        <width>61</width>
+        <width>66</width>
         <height>25</height>
        </rect>
       </property>
@@ -2332,7 +2332,7 @@
        <rect>
         <x>80</x>
         <y>85</y>
-        <width>71</width>
+        <width>76</width>
         <height>25</height>
        </rect>
       </property>
@@ -2346,7 +2346,7 @@
      <widget class="QLabel" name="health_label">
       <property name="geometry">
        <rect>
-        <x>10</x>
+        <x>8</x>
         <y>85</y>
         <width>70</width>
         <height>25</height>
@@ -2373,7 +2373,7 @@
        <rect>
         <x>60</x>
         <y>110</y>
-        <width>91</width>
+        <width>96</width>
         <height>25</height>
        </rect>
       </property>
@@ -2387,7 +2387,7 @@
      <widget class="QLabel" name="age_label">
       <property name="geometry">
        <rect>
-        <x>10</x>
+        <x>8</x>
         <y>110</y>
         <width>41</width>
         <height>25</height>
@@ -2409,12 +2409,12 @@
        <string>Age:</string>
       </property>
      </widget>
-     <widget class="QLabel" name="curiosity_val">
+     <widget class="QLabel" name="energy_usage_val">
       <property name="geometry">
        <rect>
-        <x>90</x>
+        <x>100</x>
         <y>135</y>
-        <width>61</width>
+        <width>60</width>
         <height>25</height>
        </rect>
       </property>
@@ -2425,12 +2425,12 @@
        <string>0.0</string>
       </property>
      </widget>
-     <widget class="QLabel" name="curiosity_label">
+     <widget class="QLabel" name="energy_usage_label">
       <property name="geometry">
        <rect>
-        <x>10</x>
+        <x>8</x>
         <y>135</y>
-        <width>70</width>
+        <width>90</width>
         <height>25</height>
        </rect>
       </property>
@@ -2444,17 +2444,17 @@
        <string extracomment="How many neurons are in this organism's brain"/>
       </property>
       <property name="statusTip">
-       <string>The curiosity of this organism. This is a finite value that's used to calculate boredom</string>
+       <string>How much energy this organism is using or creating per second</string>
       </property>
       <property name="text">
-       <string>Curiosity:</string>
+       <string>Energy Diff:</string>
       </property>
      </widget>
     </widget>
     <widget class="QFrame" name="organism_controls_frame">
      <property name="geometry">
       <rect>
-       <x>350</x>
+       <x>355</x>
        <y>10</y>
        <width>165</width>
        <height>120</height>
@@ -2840,7 +2840,7 @@
     <widget class="QLabel" name="age_limit_label">
      <property name="geometry">
       <rect>
-       <x>350</x>
+       <x>355</x>
        <y>140</y>
        <width>81</width>
        <height>25</height>
@@ -2868,7 +2868,7 @@
     <widget class="QSpinBox" name="age_limit_spinbox">
      <property name="geometry">
       <rect>
-       <x>430</x>
+       <x>435</x>
        <y>140</y>
        <width>81</width>
        <height>29</height>
