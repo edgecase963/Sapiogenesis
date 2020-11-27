@@ -250,13 +250,13 @@
         <number>5</number>
        </property>
        <property name="minimum">
-        <double>0.000000000000000</double>
+        <double>0.002000000000000</double>
        </property>
        <property name="maximum">
         <double>10.000000000000000</double>
        </property>
        <property name="singleStep">
-        <double>0.005000000000000</double>
+        <double>0.002000000000000</double>
        </property>
        <property name="value">
         <double>0.060000000000000</double>
@@ -2169,7 +2169,7 @@
        <string>Perpetual Training</string>
       </property>
       <property name="checked">
-       <bool>true</bool>
+       <bool>false</bool>
       </property>
      </widget>
     </widget>

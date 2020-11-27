@@ -297,7 +297,7 @@ class Environment():
             "weight_persistence": True,
             "learning_rate": 0.02,
             "use_rnn": True,
-            "ambient_training": True,
+            "ambient_training": False,
             "paused": False,
             "paused_time": time.time(),
             "sim_drought": False,
