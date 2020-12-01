@@ -1426,11 +1426,13 @@ class Organism():
             self.pain = health_diff / dopamine_uDiff
             self.dopamine_usage = energy_diff / dopamine_uDiff
 
+            self.pain *= 2.
+
             if self.pain > 0:
                 self.pain = 0.0
 
             self.pain = positive(self.pain)
-            self.dopamine_usage -= self.pain * 2.
+            self.dopamine_usage -= self.pain
 
             self.dopamine_memory.append(self.dopamine)
             self.dopamine_memory.pop(0)

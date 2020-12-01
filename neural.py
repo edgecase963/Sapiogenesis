@@ -29,7 +29,7 @@ output_lengths = {
     "carniv": 1
 }
 
-memory_limit = 80
+memory_limit = 200
 stimulation_memory = 30
 
 
@@ -262,20 +262,20 @@ def train_network(organism, epochs=1, save_memory=False):
     network = organism.brain
     if not network:
         return
-    if network.lastOutput == None or network.lastInput == None:
+    if (network.lastOutput == None or network.lastInput == None) and save_memory:
         return
     if (not organism.dna.trainingInput or not organism.dna.trainingOutput) and not save_memory:
         return
 
-    inputData = network.lastInput.clone()
-    targetData = network.lastOutput.clone()
-
-    if organism.pain >= 0.1:
-        targetData = torch.tensor( [x * -organism.pain for x in targetData] ).float()
-    else:
-        targetData = torch.tensor( [x * organism.dopamine for x in targetData] ).float()
-
     if save_memory:
+        inputData = network.lastInput.clone()
+        targetData = network.lastOutput.clone()
+
+        if organism.pain >= 0.1:
+            targetData = torch.tensor( [x * -organism.pain for x in targetData] ).float()
+        else:
+            targetData = torch.tensor( [x * organism.dopamine for x in targetData] ).float()
+
         organism.dna.trainingInput.append( inputData.tolist() )
         organism.dna.trainingOutput.append( targetData.tolist() )
 
@@ -285,13 +285,11 @@ def train_network(organism, epochs=1, save_memory=False):
 
     if network.isRNN:
         for i in range(epochs):
-            loss = network.trainer.train_rnn(torch.tensor(organism.dna.trainingInput), torch.tensor(organism.dna.trainingOutput))
-            network.lastLoss = loss
-            #loss = network.trainer.train_epoch(inputData, targetData)
+            network.lastLoss = network.trainer.train_rnn(torch.tensor(organism.dna.trainingInput), torch.tensor(organism.dna.trainingOutput))
     else:
         for i in range(epochs):
-            loss = network.trainer.train_epoch(torch.tensor(organism.dna.trainingInput), torch.tensor(organism.dna.trainingOutput))
-            network.lastLoss = loss
+            network.lastLoss = network.trainer.train_epoch(torch.tensor(organism.dna.trainingInput), torch.tensor(organism.dna.trainingOutput))
+
     network.lastTrained = time.time()
 
     organism._update_brain_weights()
