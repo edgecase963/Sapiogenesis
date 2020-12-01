@@ -303,7 +303,7 @@ class Environment():
             "sim_drought": False,
             "sim_algal": False,
             "sim_poison": False,
-            "hidden_rnn_size": 8
+            "hidden_rnn_size": 12
         }
 
         self.width = width

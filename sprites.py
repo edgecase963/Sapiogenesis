@@ -18,7 +18,7 @@ import physics
 
 
 
-cell_types = ["barrier", "carniv", "eye", "olfactory", "co2C", "push", "pheremone", "body", "rotate"]
+cell_types = ["barrier", "carniv", "eye", "olfactory", "co2C", "push", "body", "rotate"]
 dead_image = "dead.png"
 dirType = "/"
 
@@ -71,7 +71,6 @@ base_cell_info = {
         "eye": 5,
         "olfactory": 12,
         "push": 12,
-        "pheremone": 12,
         "body": 12,
         "heart": 6,
         "rotate": 12
@@ -87,7 +86,6 @@ base_cell_info = {
         "eye": [5, 5],
         "olfactory": [6, 8],
         "push": [5, 8],
-        "pheremone": [6, 8],
         "body": [2, 2],
         "heart": [5, 5],
         "rotate": [5, 8]
@@ -101,7 +99,6 @@ base_cell_info = {
         "eye": 18,
         "olfactory": 18,
         "push": 20,
-        "pheremone": 18,
         "body": 18,
         "heart": 20,
         "rotate": 18
@@ -114,7 +111,6 @@ base_cell_info = {
         "eye": 0,
         "olfactory": 0,
         "push": 0,
-        "pheremone": 0,
         "body": 0,
         "heart": 0,
         "rotate": 0

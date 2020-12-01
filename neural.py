@@ -15,11 +15,10 @@ cell_types = {
     "olfactory": 12,
     "co2C": 16,
     "push": 20,
-    "pheremone": 24,
-    "body": 28,
-    "rotate": 32,
-    "dead": 36,
-    "heart": 40
+    "body": 24,
+    "rotate": 28,
+    "dead": 32,
+    "heart": 36
 }
 # This is used to create inputs for eye cells
 
@@ -275,6 +274,7 @@ def train_network(organism, epochs=1, save_memory=False):
             targetData = torch.tensor( [x * -organism.pain for x in targetData] ).float()
         else:
             targetData = torch.tensor( [x * organism.dopamine for x in targetData] ).float()
+            #targetData = torch.tensor( [x * organism.energy_diff for x in targetData] ).float()
 
         organism.dna.trainingInput.append( inputData.tolist() )
         organism.dna.trainingOutput.append( targetData.tolist() )

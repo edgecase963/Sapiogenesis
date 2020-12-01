@@ -358,6 +358,8 @@ def pause_world(window, environment):
     environment.info["paused"] = True
     environment.info["paused_time"] = time.time()
 def resume_world(window, environment):
+    if not environment.info["paused"]:
+        return
     for org in environment.info["organism_list"]:
         paused_time = environment.info["paused_time"]
 
