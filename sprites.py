@@ -168,13 +168,7 @@ def viable_organism_position(pos, dna, environment):
         dna_rect[3] + pos[1]
     ]
 
-    if dna_rect[0] < 0:
-        return False, []
-    elif dna_rect[2] > environment.width:
-        return False, []
-    elif dna_rect[1] < 0:
-        return False, []
-    elif dna_rect[3] > environment.height:
+    if dna_rect[0] < 0 or dna_rect[2] > environment.width or dna_rect[1] < 0 or dna_rect[3] > environment.height:
         return False, []
 
     for org in orgList:
@@ -323,7 +317,7 @@ class DNA():
 
     def sub_cells(self, cell_id):
         if cell_id in self.growth_pattern:
-            return [ id for id in self.growth_pattern[cell_id] ]
+            return [ cid for cid in self.growth_pattern[cell_id] ]
         return []
 
     def all_sub_cells(self, cell_id):
@@ -333,10 +327,10 @@ class DNA():
             checkList.extend( self.sub_cells(cell_id) )
 
             while checkList:
-                id = checkList[0]
-                all_cells.append(id)
-                checkList.extend( self.sub_cells(id) )
-                checkList.remove(id)
+                cid = checkList[0]
+                all_cells.append(cid)
+                checkList.extend( self.sub_cells(cid) )
+                checkList.remove(cid)
         return all_cells
 
     def remove_cell(self, cell_id, removing_mirror=False):
@@ -349,12 +343,12 @@ class DNA():
             self.cells.pop(cell_id)
             self.growth_pattern.pop(cell_id)
 
-            for id in self.growth_pattern:
-                if cell_id in self.growth_pattern[id]:
-                    self.growth_pattern[id].pop(cell_id)
+            for cid in self.growth_pattern:
+                if cell_id in self.growth_pattern[cid]:
+                    self.growth_pattern[cid].pop(cell_id)
 
-            for id in self.sub_cells(cell_id):
-                self.remove_cell(id)
+            for cid in self.sub_cells(cell_id):
+                self.remove_cell(cid)
 
     def _lower_cells(self):
         # Returns all cells that do not contain children
@@ -367,9 +361,9 @@ class DNA():
 
     def grows_from(self, cell_id):
         # Returns the cell ID that this given cell grows from
-        for id in self.growth_pattern:
-            if cell_id in self.growth_pattern[id]:
-                return id
+        for cid in self.growth_pattern:
+            if cell_id in self.growth_pattern[cid]:
+                return cid
 
     def path_to_first(self, cell_id):
         pList = []
@@ -528,10 +522,10 @@ class DNA():
         return False
 
     def _viable_cell_position(self, x, y, cell_info):
-        id, dist = self._closest_cell_to_point(x, y)
+        cid, dist = self._closest_cell_to_point(x, y)
 
         size1 = cell_info["size"]
-        size2 = self.cell_size(id)
+        size2 = self.cell_size(cid)
 
         if self.base_info["mirror_x"] or self.base_info["mirror_y"]:
             if not self._cell_mirrorable(x, y, cell_info):
@@ -974,8 +968,8 @@ class Organism():
             self.cells[cell_id] = newCell
 
             if subCells:
-                for id in self.dna.sub_cells(cell_id):
-                    self._create_cell(id, subCells=False)
+                for cid in self.dna.sub_cells(cell_id):
+                    self._create_cell(cid, subCells=False)
 
             return newCell
 
@@ -1088,18 +1082,18 @@ class Organism():
         sprite = self.cells[cell_id]
         self.environment.add_sprite(sprite)
 
-        for id in self.cells:
-            if id != cell_id:
-                sprite2 = self.cells[id]
+        for cid in self.cells:
+            if cid != cell_id:
+                sprite2 = self.cells[cid]
                 sprite.connectTo(sprite2)
 
     def dead_children(self, sprite):
         dead_list = []
         cell_id = sprite.cell_id
         if cell_id in self.cells:
-            for id in self.dna.sub_cells(cell_id):
-                if id in self.cells:
-                    sprite = self.cells[id]
+            for cid in self.dna.sub_cells(cell_id):
+                if cid in self.cells:
+                    sprite = self.cells[cid]
                     if not sprite.alive:
                         dead_list.append(sprite)
         return dead_list
@@ -1153,8 +1147,8 @@ class Organism():
         newCell.body.velocity = sprite.body.velocity
         newCell.body.angular_velocity = sprite.body.angular_velocity
 
-        for id in self.dna.sub_cells(cell_id):
-            self.kill_cell(self.cells[id])
+        for cid in self.dna.sub_cells(cell_id):
+            self.kill_cell(self.cells[cid])
 
         return newCell
 
@@ -1512,9 +1506,9 @@ class Organism():
 
         for cell_id in self.cells:
             sprite = self.cells[cell_id]
-            for id in self.cells:
-                if id != cell_id:
-                    sprite2 = self.cells[id]
+            for cid in self.cells:
+                if cid != cell_id:
+                    sprite2 = self.cells[cid]
                     sprite.connectTo(sprite2)
 
         self.lastHealth = self.health_percent()
