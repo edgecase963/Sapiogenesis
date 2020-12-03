@@ -296,14 +296,14 @@ class Environment():
             "population_limit": 30,
             "weight_persistence": True,
             "learning_rate": 0.02,
-            "use_rnn": True,
+            "use_rnn": False,
             "ambient_training": False,
             "paused": False,
             "paused_time": time.time(),
             "sim_drought": False,
             "sim_algal": False,
             "sim_poison": False,
-            "hidden_rnn_size": 8
+            "hidden_rnn_size": 12
         }
 
         self.width = width
