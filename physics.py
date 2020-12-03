@@ -296,7 +296,7 @@ class Environment():
             "population_limit": 30,
             "weight_persistence": True,
             "learning_rate": 0.02,
-            "use_rnn": True,
+            "use_rnn": False,
             "ambient_training": False,
             "paused": False,
             "paused_time": time.time(),

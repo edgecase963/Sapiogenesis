@@ -231,6 +231,8 @@ def erase_mem_clicked(environment):
     if selected:
         selected.dna.trainingInput = []
         selected.dna.trainingOutput = []
+        selected.dna.previousInputs = []
+        selected.dna.previousOutputs = []
 
 def add_creature_clicked(myWindow, environment):
     minCellRange = myWindow.min_cell_range_spinbox.value()
@@ -360,9 +362,10 @@ def pause_world(window, environment):
 def resume_world(window, environment):
     if not environment.info["paused"]:
         return
-    for org in environment.info["organism_list"]:
-        paused_time = environment.info["paused_time"]
 
+    paused_time = environment.info["paused_time"]
+
+    for org in environment.info["organism_list"]:
         last_updated_diff = paused_time - org.lastUpdated
         last_updated_dopamine_diff = paused_time - org.last_updated_dopamine
         brain_last_updated_diff = paused_time - org.brain.lastUpdated
@@ -380,6 +383,10 @@ def resume_world(window, environment):
             if sprite.alive:
                 sprite_update_diff = paused_time - sprite.lastUpdated
                 sprite.lastUpdated = time.time() - sprite_update_diff
+
+    env_update_diff = paused_time - environment.lastUpdated
+    environment.lastUpdated = time.time() - env_update_diff
+
     environment.info["paused"] = False
 
 def keyPressed(event, window, myWindow, environment):
@@ -446,6 +453,7 @@ def setup_window_buttons(window, myWindow, environment):
     myWindow.kill_event = lambda: kill_btn_clicked(myWindow, environment)
     myWindow.reproduce_event = lambda: reproduce_clicked(environment)
     myWindow.erase_mem_event = lambda: erase_mem_clicked(environment)
+    myWindow.randomize_brain_event = lambda: randomize_brain(environment)
     myWindow.copy_event = lambda: copy_clicked(environment)
     myWindow.paste_event = lambda: paste_clicked(environment)
     myWindow.disperse_cells_event = lambda: disperse_cells_clicked(environment)

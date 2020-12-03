@@ -84,11 +84,11 @@ base_cell_info = {
         "carniv": [5, 8],
         "co2C": [6, 6],
         "eye": [5, 5],
-        "olfactory": [6, 8],
-        "push": [5, 8],
+        "olfactory": [6, 9],
+        "push": [5, 9],
         "body": [2, 2],
         "heart": [5, 5],
-        "rotate": [5, 8]
+        "rotate": [5, 9]
     },
     "energy_storage": {
         # This is multiplied by the size and mass of each given cell
@@ -276,6 +276,9 @@ class DNA():
 
         self.trainingInput = []
         self.trainingOutput = []
+
+        self.previousInputs = []
+        self.previousOutputs = []
 
         self.base_info = {
             "distanceThreshold": 2.2,
@@ -823,6 +826,9 @@ class DNA():
         # `severity` : 0.0 - 1.0
         new_dna = self.copy()
 
+        new_dna.previousInputs = []
+        new_dna.previousOutputs = []
+
         new_dna.trainingInput = []
         new_dna.trainingOutput = []
 
@@ -1315,8 +1321,14 @@ class Organism():
 
                 rotation = self.rotation()
 
-                push_x += math.cos(math.radians(rotation))
-                push_y += math.sin(math.radians(rotation))
+                push_angle = math.atan2( push_y, push_x )
+
+                push_angle += math.radians(rotation)
+
+                #push_x += math.cos(math.radians(rotation))
+                #push_y += math.sin(math.radians(rotation))
+                push_x = math.cos(push_angle)
+                push_y = math.sin(push_angle)
 
                 speed = self.movement["speed"] * max_push_speed
                 speed *= (uDiff)
@@ -1391,6 +1403,32 @@ class Organism():
             damage_dealt = starvation_rate * uDiff
             sprite.info["health"] -= damage_dealt
 
+    def _update_brain(self):
+        dopamine_uDiff = time.time() - self.last_updated_dopamine
+        health_diff = self.health_percent() - self.lastHealth
+        energy_diff = self.energy_percent() - self.lastEnergy
+        self.energy_diff = energy_diff / dopamine_uDiff
+
+        self.pain = health_diff / dopamine_uDiff
+        self.dopamine_usage = energy_diff / dopamine_uDiff
+
+        self.pain *= 2.
+
+        if self.pain > 0:
+            self.pain = 0.0
+
+        self.pain = positive(self.pain)
+        self.dopamine_usage -= self.pain
+
+        self.dopamine_memory.append(self.dopamine)
+        self.dopamine_memory.pop(0)
+
+        self.dopamine_average = sum(self.dopamine_memory) / len(self.dopamine_memory)
+
+        self.dopamine = self.dopamine_usage - self.dopamine_average
+        #self.dopamine = self.dopamine_usage
+        self.last_updated_dopamine = time.time()
+
     def update(self):
         uDiff = time.time() - self.lastUpdated
         self.lastUpdated = time.time()
@@ -1406,32 +1444,15 @@ class Organism():
             self.energy_consumed -= digested_energy
             self.energy_consumed += self.add_energy(digested_energy)
 
-        #~ Process dopamine and pain levels
-        if time.time() - self.last_updated_dopamine >= self.dopamine_update_interval:
-            dopamine_uDiff = time.time() - self.last_updated_dopamine
-            health_diff = self.health_percent() - self.lastHealth
-            energy_diff = self.energy_percent() - self.lastEnergy
-            self.energy_diff = energy_diff / dopamine_uDiff
+        #~ Brain udpate section
+        brain_uDiff = time.time() - self.brain.lastUpdated
+        #if time.time() - self.last_updated_dopamine >= self.dopamine_update_interval:
 
-            self.pain = health_diff / dopamine_uDiff
-            self.dopamine_usage = energy_diff / dopamine_uDiff
+        if brain_uDiff >= neural_update_delay:
+            self._update_brain()
 
-            self.pain *= 2.
-
-            if self.pain > 0:
-                self.pain = 0.0
-
-            self.pain = positive(self.pain)
-            self.dopamine_usage -= self.pain
-
-            self.dopamine_memory.append(self.dopamine)
-            self.dopamine_memory.pop(0)
-
-            self.dopamine_average = sum(self.dopamine_memory) / len(self.dopamine_memory)
-
-            self.dopamine = self.dopamine_usage - self.dopamine_average
-            #self.dopamine = self.dopamine_usage
-            self.last_updated_dopamine = time.time()
+            neural_thread = Thread( target=self.brain.activate, args=[self.environment, self, uDiff] )
+            neural_thread.run()
         #~
 
         self.lastHealth = self.health_percent()
@@ -1559,9 +1580,9 @@ def update_organisms(environment):
     # The environment must also have the ".info" variable which holds a dictionary containing "oganism_list" as a value
     uDiff = time.time() - environment.lastUpdated
 
-    environment.lastUpdated = time.time()
     if environment.info["paused"]:
         return
+    environment.lastUpdated = time.time()
 
     for org in environment.info["organism_list"][:]:
         if time.time() - org.birthTime >= age_limit:
@@ -1570,10 +1591,10 @@ def update_organisms(environment):
         if org.alive():
             org.update()
 
-            brain_uDiff = time.time() - org.brain.lastUpdated
-            if brain_uDiff >= neural_update_delay:
-                neural_thread = Thread( target=org.brain.activate, args=[environment, org, uDiff] )
-                neural_thread.run()
+            #brain_uDiff = time.time() - org.brain.lastUpdated
+            #if brain_uDiff >= neural_update_delay:
+            #    neural_thread = Thread( target=org.brain.activate, args=[environment, org, uDiff] )
+            #    neural_thread.run()
 
             train_uDiff = time.time() - org.brain.lastTrained
             if train_uDiff >= learning_update_delay:

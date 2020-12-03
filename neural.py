@@ -24,6 +24,7 @@ cell_types = {
 
 output_lengths = {
     "adv_eye": len(cell_types) * 4,
+    "adv_eye2": 8,
     "eye": 4,
     "carniv": 1
 }
@@ -55,14 +56,16 @@ def getDirection(angle):
     direction = [math.cos(angle), math.sin(angle)]
     return direction
 
-def calculateStimulation(network):
-    if not network.previousInputs:
+def calculateStimulation(dna):
+    if not dna.previousInputs:
         return 0.0
-    while len(network.previousInputs) > stimulation_memory:
-        network.previousInputs.pop(0)
+    while len(dna.previousInputs) > stimulation_memory:
+        dna.previousInputs.pop(0)
+    while len(dna.previousOutputs) > stimulation_memory:
+        dna.previousOutputs.pop(0)
 
-    inputSum = sum(network.previousInputs)
-    inputAverages = [i/len(network.previousInputs) for i in inputSum]
+    inputSum = sum(dna.previousInputs)
+    inputAverages = [i/len(dna.previousInputs) for i in inputSum]
     #stimulation = sum(inputAverages)
     stimulation = torch.mean( torch.tensor(inputAverages) )
 
@@ -71,45 +74,13 @@ def calculateStimulation(network):
 
 
 def activate(network, environment, organism, uDiff):
-    def _adv_get_eye_input(cell_id, environment, organism):
-        eye_input = [0] * output_lengths["eye"]
-
-        sprite = organism.cells[cell_id]
-        sprite_pos = sprite.getPos()
-        if not sprite.alive:
-            return eye_input
-
-        sprite_info = sprite.cell_info
-
-        for cell in sprite.info["view"]:
-            cell_pos = cell.getPos()
-            cell_info = cell.cell_info
-
-            dist = calculateDistance(sprite_pos[0], sprite_pos[1], cell_pos[0], cell_pos[1])
-            angle = getAngle(sprite_pos[0], sprite_pos[1], cell_pos[0], cell_pos[1])
-            direction = [math.cos(angle), math.sin(angle)]
-
-            lp = cell_types[ cell_info["type"] ]
-
-            if not eye_input[lp]:
-                eye_input[lp] = 1.0
-                eye_input[lp+1] = direction[0]
-                eye_input[lp+2] = direction[1]
-                eye_input[lp+3] = dist
-            elif eye_input[lp+3] > dist:
-                eye_input[lp] = 1.0
-                eye_input[lp+1] = direction[0]
-                eye_input[lp+2] = direction[1]
-                eye_input[lp+3] = dist
-
-        return eye_input
     def _get_eye_input(cell_id, environment, organism):
         eye_input = [0] * 4
         # [<-x>, <+x>, <-y>, <+y>]
 
         sprite = organism.cells[cell_id]
         sprite_pos = sprite.getPos()
-        sprite_angle = math.radians( organism.rotation() )
+        rotationAngle = math.radians(organism.rotation())
         if not sprite.alive:
             return eye_input
 
@@ -118,11 +89,10 @@ def activate(network, environment, organism, uDiff):
         for cell in sprite.info["view"]:
             cell_pos = cell.getPos()
             cell_info = cell.cell_info
-            rotationAngle = math.radians(organism.rotation())
 
             angle = getAngle(sprite_pos[0], sprite_pos[1], cell_pos[0], cell_pos[1])
             angle += rotationAngle
-            direction = [math.cos(angle+sprite_angle), math.sin(angle+sprite_angle)]
+            direction = [math.cos(angle), math.sin(angle)]
 
             if direction[0] < 0:
                 eye_input[0] += 1
@@ -133,6 +103,60 @@ def activate(network, environment, organism, uDiff):
                 eye_input[2] += 1
             else:
                 eye_input[3] += 1
+
+        return eye_input
+    def _adv_get_eye_input(cell_id, environment, organism):
+        eye_input = [0] * 8
+        # [
+        #   <rightHalf-topQuarter-topEighth>,
+        #   <rightHalf-topQuarter-bottomEighth>,
+        #   <rightHalf-bottomQuarter-topEighth>,
+        #   <rightHalf-bottomQuarter-bottomEighth>,
+        #   <leftHalf-bottomQuarter-bottomEighth>,
+        #   <leftHalf-bottomQuarter-topEighth>,
+        #   <leftHalf-topQuarter-bottomEighth>,
+        #   <leftHalf-topQuarter-topEighth>,
+        #]
+        # Calculates how many organisms are in each quarter of the eye's vision radius (clockwise)
+
+        sprite = organism.cells[cell_id]
+        sprite_pos = sprite.getPos()
+        rotationAngle = math.radians(organism.rotation())
+        if not sprite.alive:
+            return eye_input
+
+        sprite_info = sprite.cell_info
+
+        for cell in sprite.info["view"]:
+            cell_pos = cell.getPos()
+            cell_info = cell.cell_info
+
+            angle = getAngle(sprite_pos[0], sprite_pos[1], cell_pos[0], cell_pos[1])
+            angle += rotationAngle
+            direction = [math.cos(angle), math.sin(angle)]
+
+            if direction[0] >= 0.0:  # Right Half
+                if direction[1] < 0.0:  # Top Right Quarter
+                    if direction[0] < .707:  # Top Right Quarter - Top Eighth
+                        eye_input[0] += 1
+                    else:  # Top Right Quarter - Bottom Eighth
+                        eye_input[1] += 1
+                else:  # Bottom Right Quarter
+                    if direction[0] >= .707:  # Bottom Right Quarter - Top Eighth
+                        eye_input[2] += 1
+                    else:  # Bottom Right Quarter - Bottom Eighth
+                        eye_input[3] += 1
+            else:  # Left Half
+                if direction[1] >= 0.0:  # Bottom Left Quarter
+                    if direction[1] >= .707:  # Bottom Left Quarter - Bottom Eighth
+                        eye_input[4] += 1
+                    else:  # Bottom Left Quarter - Top Eighth
+                        eye_input[5] += 1
+                else:  # Top Left Quarter
+                    if direction[0] < -.707:  #Top Left Quarter - Bottom Eighth
+                        eye_input[6] += 1
+                    else:  #Top Left Quarter - Top Eighth
+                        eye_input[7] += 1
 
         return eye_input
 
@@ -171,7 +195,7 @@ def activate(network, environment, organism, uDiff):
         if isinstance(correspondent, int):   # Cell ID
             cell_type = organism.dna.cells[correspondent]["type"]
             if cell_type == "eye":
-                input_val = _get_eye_input(correspondent, environment, organism)
+                input_val = _adv_get_eye_input(correspondent, environment, organism)
             elif cell_type == "carniv":
                 input_val = _get_carn_input(correspondent, environment, organism)
         elif isinstance(correspondent, list):
@@ -207,7 +231,6 @@ def activate(network, environment, organism, uDiff):
         for i in all_inputs:
             flat_inputs.extend(i)
         flat_inputs = torch.tensor(flat_inputs).float()
-        network.previousInputs.append(flat_inputs)
 
         if network.isRNN:
             network_output = network.forward(flat_inputs, network.lastHidden)
@@ -216,6 +239,9 @@ def activate(network, environment, organism, uDiff):
 
         network.lastInput = flat_inputs.clone().detach().requires_grad_(True)
         network.lastOutput = network_output.clone().detach().requires_grad_(True)
+
+        organism.dna.previousInputs.append( flat_inputs )
+        organism.dna.previousOutputs.append( network_output.tolist() )
 
         for i, output_val in enumerate(network_output):
             correspondent = network.outputCells[i]
@@ -249,7 +275,7 @@ def activate(network, environment, organism, uDiff):
                 organism.movement["direction"][1] = dir_val
 
     curiosity = organism.dna.base_info["curiosity"]
-    network.stimulation = calculateStimulation(network)
+    network.stimulation = calculateStimulation(organism.dna)
 
     if network.stimulation and curiosity:
         network.boredom = curiosity / network.stimulation
@@ -265,10 +291,14 @@ def train_network(organism, epochs=1, save_memory=False):
         return
     if (not organism.dna.trainingInput or not organism.dna.trainingOutput) and not save_memory:
         return
+    if len(organism.dna.previousInputs) < 2 or len(organism.dna.previousOutputs) < 2:
+        return
 
     if save_memory:
-        inputData = network.lastInput.clone()
-        targetData = network.lastOutput.clone()
+        #inputData = network.lastInput.clone()
+        #targetData = network.lastOutput.clone()
+        inputData = organism.dna.previousInputs[-2]
+        targetData = organism.dna.previousOutputs[-2]
 
         if organism.pain >= 0.1:
             targetData = torch.tensor( [x * -organism.pain for x in targetData] ).float()
@@ -319,7 +349,7 @@ def setup_network(dna, learning_rate=0.02, rnn=False, hiddenSize=8):
     outputSize = 0
 
     if base_input["visual"]:
-        inputSize += len(base_input["visual"]) * output_lengths["eye"]
+        inputSize += len(base_input["visual"]) * output_lengths["adv_eye2"]
         for cell_id in base_input["visual"]:
             inputCells.append(cell_id)
 
@@ -357,7 +387,6 @@ def setup_network(dna, learning_rate=0.02, rnn=False, hiddenSize=8):
         network.lastOutput = None
         network.lastInput = None
         network.lastLoss = 0.0
-        network.previousInputs = []
         network.stimulation = 0.0
         network.boredom = 0.0
 
