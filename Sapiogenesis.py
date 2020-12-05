@@ -14,7 +14,7 @@ from PyQt5 import QtCore, QtGui
 from PyQt5 import QtWidgets
 from userInterface import Ui_MainWindow
 
-__version__ = "0.5.5 (Beta)"
+__version__ = "0.6.0 (Beta)"
 
 
 

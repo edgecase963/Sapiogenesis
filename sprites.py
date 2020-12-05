@@ -38,7 +38,7 @@ reproduction_limit = 6 # The amount of time (in seconds) an organism has to wait
 
 offspring_amount = 1 # How many offspring to create when an organism reproduces
 
-heal_rate = 3 # The percentage of health to heal each second if the cell has enough energy
+heal_rate = 4 # The percentage of health to heal each second if the cell has enough energy
 
 mass_cutoff = 1 # If a dead cell's mass becomes less than this, it will be removed (dispersed completely)
 
@@ -84,11 +84,11 @@ base_cell_info = {
         "carniv": [5, 8],
         "co2C": [6, 6],
         "eye": [5, 5],
-        "olfactory": [6, 9],
-        "push": [5, 9],
+        "olfactory": [6, 8],
+        "push": [5, 8],
         "body": [2, 2],
         "heart": [5, 5],
-        "rotate": [5, 9]
+        "rotate": [5, 8]
     },
     "energy_storage": {
         # This is multiplied by the size and mass of each given cell
@@ -100,7 +100,7 @@ base_cell_info = {
         "olfactory": 18,
         "push": 20,
         "body": 18,
-        "heart": 20,
+        "heart": 22,
         "rotate": 18
     },
     "damage": {
@@ -871,7 +871,7 @@ class Organism():
         self.lastHealth = 0.0 # Used to calculate the organism's pain
         self.energy_diff = 0.0
         self.dopamine_average = 0
-        self.dopamine_memory = [0]*200
+        self.dopamine_memory = [0]*50
         self.dopamine_usage = 0.0
         self.dopamine = 0.0 # The current dopamine output
         self.pain = 0.0
@@ -1204,6 +1204,15 @@ class Organism():
 
         return spare_energy
 
+    def take_energy(self, amount):
+        live_cells = self.living_cells()
+        for cell_id in live_cells:
+            sprite = self.cells[cell_id]
+            sprite.info["energy"] -= amount / len(live_cells)
+
+            if sprite.info["energy"] < 0:
+                sprite.info["energy"] = 0
+
     def convert_co2(self, cell_id, uDiff):
         sprite = self.cells[cell_id]
         if sprite.alive:
@@ -1371,7 +1380,8 @@ class Organism():
         else:
             energy_usage = cell_info["energy_usage"][0]
 
-        sprite.info["energy"] -= energy_usage * uDiff
+        #sprite.info["energy"] -= energy_usage * uDiff
+        self.take_energy(energy_usage * uDiff)
 
         if sprite.info["energy"] < 0:
             sprite.info["energy"] = 0
