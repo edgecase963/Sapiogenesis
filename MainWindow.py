@@ -556,7 +556,7 @@ class Ui_MainWindow(object):
         self.neural_interval_spinbox.setMinimum(0.02)
         self.neural_interval_spinbox.setMaximum(99.8)
         self.neural_interval_spinbox.setSingleStep(0.02)
-        self.neural_interval_spinbox.setProperty("value", 0.3)
+        self.neural_interval_spinbox.setProperty("value", 0.2)
         self.neural_interval_spinbox.setObjectName("neural_interval_spinbox")
         self.training_interval_spinbox = QtWidgets.QDoubleSpinBox(self.tab)
         self.training_interval_spinbox.setGeometry(QtCore.QRect(140, 45, 80, 25))

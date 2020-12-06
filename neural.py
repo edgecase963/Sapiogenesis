@@ -242,6 +242,7 @@ def activate(network, environment, organism, uDiff):
 
         organism.dna.previousInputs.append( flat_inputs )
         organism.dna.previousOutputs.append( network_output.tolist() )
+        organism.dna.previousDopamine.append( organism.dopamine )
 
         for i, output_val in enumerate(network_output):
             correspondent = network.outputCells[i]
@@ -291,20 +292,23 @@ def train_network(organism, epochs=1, save_memory=False):
         return
     if (not organism.dna.trainingInput or not organism.dna.trainingOutput) and not save_memory:
         return
-    if len(organism.dna.previousInputs) < 2 or len(organism.dna.previousOutputs) < 2:
+    if len(organism.dna.previousInputs) < 5 or len(organism.dna.previousOutputs) < 5:
         return
 
     if save_memory:
         #inputData = network.lastInput.clone()
         #targetData = network.lastOutput.clone()
-        inputData = organism.dna.previousInputs[-2]
-        targetData = organism.dna.previousOutputs[-2]
+        inputData = organism.dna.previousInputs[-5]
+        targetData = organism.dna.previousOutputs[-5]
+
+        dopamineData = organism.dna.previousDopamine[-4:-1]
+        targetDopamine = sum(dopamineData) / len(dopamineData)
 
         if organism.pain >= 0.1:
             targetData = torch.tensor( [x * -organism.pain for x in targetData] ).float()
         else:
-            targetData = torch.tensor( [x * organism.dopamine for x in targetData] ).float()
-            #targetData = torch.tensor( [x * organism.energy_diff for x in targetData] ).float()
+            targetData = torch.tensor( [x * targetDopamine for x in targetData] ).float()
+        #    targetData = torch.tensor( [x * organism.energy_diff for x in targetData] ).float()
 
         organism.dna.trainingInput.append( inputData.tolist() )
         organism.dna.trainingOutput.append( targetData.tolist() )

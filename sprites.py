@@ -46,7 +46,7 @@ break_damage = 5 # The amount of damage a cell does to its parent when it dies (
 
 starvation_rate = 200 # The amount of damage to do to a cell each second if its energy equals 0
 
-neural_update_delay = .3 # How long to wait before activating an organism's brain - helps reduce lag
+neural_update_delay = .2 # How long to wait before activating an organism's brain - helps reduce lag
 
 learning_update_delay = .5 # How long to wait before training an organism
 
@@ -65,10 +65,10 @@ base_cell_info = {
     "health": {
         # This is multiplied by the size and mass of each given cell
         # <max_health> = <base_health> * <cell_size> * <cell_mass>
-        "barrier": 60,
+        "barrier": 75,
         "carniv": 15,
-        "co2C": 8,
-        "eye": 5,
+        "co2C": 6,
+        "eye": 4,
         "olfactory": 12,
         "push": 12,
         "body": 12,
@@ -106,7 +106,7 @@ base_cell_info = {
     "damage": {
         # The damage each cell does when in contact with a cell from another organism
         "barrier": 0,
-        "carniv": 90,
+        "carniv": 100,
         "co2C": 0,
         "eye": 0,
         "olfactory": 0,
@@ -279,6 +279,7 @@ class DNA():
 
         self.previousInputs = []
         self.previousOutputs = []
+        self.previousDopamine = []
 
         self.base_info = {
             "distanceThreshold": 2.2,
@@ -828,6 +829,7 @@ class DNA():
 
         new_dna.previousInputs = []
         new_dna.previousOutputs = []
+        new_dna.previousDopamine = []
 
         new_dna.trainingInput = []
         new_dna.trainingOutput = []
@@ -1247,8 +1249,7 @@ class Organism():
 
     def _reproduce_organism(self, severity, neural_severity):
         self.lastBirth = time.time()
-        weight_persistence = self.environment.info["weight_persistence"]
-        new_dna = self.dna.mutate(severity=severity, neural_severity=neural_severity, weight_persistence=weight_persistence)
+        new_dna = self.dna.mutate(severity=severity, neural_severity=neural_severity, weight_persistence=self.environment.info["weight_persistence"])
 
         new_pos = get_new_organism_position(self, new_dna, self.environment)
         if not new_pos:
@@ -1428,7 +1429,7 @@ class Organism():
             self.pain = 0.0
 
         self.pain = positive(self.pain)
-        self.dopamine_usage -= self.pain
+        #self.dopamine_usage -= self.pain
 
         self.dopamine_memory.append(self.dopamine)
         self.dopamine_memory.pop(0)
@@ -1436,6 +1437,7 @@ class Organism():
         self.dopamine_average = sum(self.dopamine_memory) / len(self.dopamine_memory)
 
         self.dopamine = self.dopamine_usage - self.dopamine_average
+        self.dopamine -= positive(self.pain)
         #self.dopamine = self.dopamine_usage
         self.last_updated_dopamine = time.time()
 
