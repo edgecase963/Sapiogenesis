@@ -293,7 +293,7 @@ class Environment():
             "brain_mutation_severity": 0.5,
             "reproduction_limit": 6,
             "population": 0,
-            "population_limit": 30,
+            "population_limit": 22,
             "weight_persistence": True,
             "learning_rate": 0.02,
             "use_rnn": False,

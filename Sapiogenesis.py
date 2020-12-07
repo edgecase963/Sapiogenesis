@@ -75,7 +75,20 @@ def updateUI(window, environment):
             neurons = sum( [len(layer.bias) for layer in selected.brain.layers()] )
             window.neurons_val.setText( str(neurons) )
 
-        window.age_val.setText( str(int(time.time() - selected.birthTime)) )
+        if not environment.info["paused"]:
+            window.age_val.setText( str(int(time.time() - selected.birthTime)) )
+        else:
+            paused_time = environment.info["paused_time"]
+            birth_time_diff = paused_time - selected.birthTime
+
+            birth_val = time.time() - birth_time_diff
+            birth_val = time.time() - birth_val
+
+            if birth_val < 0:
+                birth_val = 0
+
+            window.age_val.setText( str(int(birth_val)) )
+
         window.energy_usage_val.setText( str(round(selected.energy_diff, 2)) )
 
         window.energy_val.setText( str(int( selected.energy_percent() )) + "%" )

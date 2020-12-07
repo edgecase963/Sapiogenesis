@@ -29,7 +29,7 @@ output_lengths = {
     "carniv": 1
 }
 
-memory_limit = 200
+memory_limit = 280
 stimulation_memory = 30
 
 
@@ -95,14 +95,14 @@ def activate(network, environment, organism, uDiff):
             direction = [math.cos(angle), math.sin(angle)]
 
             if direction[0] < 0:
-                eye_input[0] += 1
+                eye_input[0] = 1.0
             else:
-                eye_input[1] += 1
+                eye_input[1] = 1.0
 
             if direction[1] < 0:
-                eye_input[2] += 1
+                eye_input[2] = 1.0
             else:
-                eye_input[3] += 1
+                eye_input[3] = 1.0
 
         return eye_input
     def _adv_get_eye_input(cell_id, environment, organism):
@@ -132,31 +132,50 @@ def activate(network, environment, organism, uDiff):
             cell_info = cell.cell_info
 
             angle = getAngle(sprite_pos[0], sprite_pos[1], cell_pos[0], cell_pos[1])
-            angle += rotationAngle
+            angle -= rotationAngle
             direction = [math.cos(angle), math.sin(angle)]
+
+            distance = calculateDistance(sprite_pos[0], sprite_pos[1], cell_pos[0], cell_pos[1])
+            inputVal = ( sprite.info["sight_range"] - (distance + cell.radius) ) / sprite.info["sight_range"]
+            inputVal = positive(inputVal)
 
             if direction[0] >= 0.0:  # Right Half
                 if direction[1] < 0.0:  # Top Right Quarter
                     if direction[0] < .707:  # Top Right Quarter - Top Eighth
-                        eye_input[0] += 1
+                        if eye_input[0] < inputVal:
+                            eye_input[0] = inputVal
+
                     else:  # Top Right Quarter - Bottom Eighth
-                        eye_input[1] += 1
+                        if eye_input[1] < inputVal:
+                            eye_input[1] = inputVal
+
                 else:  # Bottom Right Quarter
                     if direction[0] >= .707:  # Bottom Right Quarter - Top Eighth
-                        eye_input[2] += 1
+                        if eye_input[2] < inputVal:
+                            eye_input[2] = inputVal
+
                     else:  # Bottom Right Quarter - Bottom Eighth
-                        eye_input[3] += 1
+                        if eye_input[3] < inputVal:
+                            eye_input[3] = inputVal
+
             else:  # Left Half
                 if direction[1] >= 0.0:  # Bottom Left Quarter
                     if direction[1] >= .707:  # Bottom Left Quarter - Bottom Eighth
-                        eye_input[4] += 1
+                        if eye_input[4] < inputVal:
+                            eye_input[4] = inputVal
+
                     else:  # Bottom Left Quarter - Top Eighth
-                        eye_input[5] += 1
+                        if eye_input[5] < inputVal:
+                            eye_input[5] = inputVal
+
                 else:  # Top Left Quarter
                     if direction[0] < -.707:  #Top Left Quarter - Bottom Eighth
-                        eye_input[6] += 1
+                        if eye_input[6] < inputVal:
+                            eye_input[6] = inputVal
+
                     else:  #Top Left Quarter - Top Eighth
-                        eye_input[7] += 1
+                        if eye_input[7] < inputVal:
+                            eye_input[7] = inputVal
 
         return eye_input
 
@@ -199,7 +218,7 @@ def activate(network, environment, organism, uDiff):
             elif cell_type == "carniv":
                 input_val = _get_carn_input(correspondent, environment, organism)
         elif isinstance(correspondent, list):
-            if correspondent[0] == "touch":
+            if correspondent[0] == "touch":  # These inputs are used to indicate if a cell is in contact with something else
                 sprite = organism.cells[correspondent[1]]
                 if sprite.info["colliding"]:
                     input_val = 1.0

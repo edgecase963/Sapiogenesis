@@ -44,7 +44,7 @@ mass_cutoff = 1 # If a dead cell's mass becomes less than this, it will be remov
 
 break_damage = 5 # The amount of damage a cell does to its parent when it dies (break off from body) - multiplied by its size
 
-starvation_rate = 200 # The amount of damage to do to a cell each second if its energy equals 0
+starvation_rate = 150 # The amount of damage to do to a cell each second if its energy equals 0
 
 neural_update_delay = .2 # How long to wait before activating an organism's brain - helps reduce lag
 
@@ -59,7 +59,7 @@ training_dopamine_threshold = 1.
 
 age_limit = 200
 
-eyesight_multiplier = 8 # This multiplied by an eye cell's size is how far away that eye can see
+eyesight_multiplier = 10 # This multiplied by an eye cell's size is how far away that eye can see
 
 base_cell_info = {
     "health": {
@@ -929,7 +929,8 @@ class Organism():
             "sight": [],
             "view": [],
             "removed": False,
-            "colliding": []
+            "colliding": [],
+            "sight_range": 0.0
         }
         newCell.alive = alive
         newCell.creationTime = time.time()
@@ -938,9 +939,9 @@ class Organism():
 
         if cell_info["type"] == "eye" and newCell.alive:
             num_bodies = 6
-            sightRange = cell_info["size"] * eyesight_multiplier
+            newCell.info["sight_range"] = cell_info["size"] * eyesight_multiplier
 
-            newBody, newShape = physics.makeCircle(sightRange, friction=0.0, elasticity=0.0, mass=1)
+            newBody, newShape = physics.makeCircle( newCell.info["sight_range"], friction=0.0, elasticity=0.0, mass=1 )
             newShape.sensor = True
             newShape.collision_type = 1
             newShape.sprite = newCell
@@ -1423,7 +1424,7 @@ class Organism():
         self.pain = health_diff / dopamine_uDiff
         self.dopamine_usage = energy_diff / dopamine_uDiff
 
-        self.pain *= 2.
+        self.pain *= 3.
 
         if self.pain > 0:
             self.pain = 0.0

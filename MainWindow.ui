@@ -1473,7 +1473,7 @@
        <number>2</number>
       </property>
       <property name="value">
-       <number>30</number>
+       <number>22</number>
       </property>
      </widget>
      <widget class="QSlider" name="neural_severity_slider">
@@ -1957,7 +1957,7 @@
        <number>10</number>
       </property>
       <property name="value">
-       <number>200</number>
+       <number>280</number>
       </property>
      </widget>
      <widget class="QSpinBox" name="input_memory_spinbox">
