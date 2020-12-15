@@ -29,16 +29,16 @@ output_lengths = {
     "carniv": 1
 }
 
-memory_limit = 200
-stimulation_memory = 30
+memory_limit = 280
+stimulation_memory = 10
 
 
 
 def num2perc(num, maxNum):
-    return ((float(num) / float(maxNum)) * 100.0)
+    return (float(num) / float(maxNum)) * 100.0
 
 def perc2num(perc, maxNum):
-    return ((float(perc) / 100.0) * float(maxNum))
+    return (float(perc) / 100.0) * float(maxNum)
 
 def calculateDistance(x1,y1,x2,y2):
     return math.sqrt( (x2 - x1)**2 + (y2 - y1)**2 )
@@ -64,10 +64,12 @@ def calculateStimulation(dna):
     while len(dna.previousOutputs) > stimulation_memory:
         dna.previousOutputs.pop(0)
 
+    max_stim = len(dna.previousInputs[0])
+
     inputSum = sum(dna.previousInputs)
     inputAverages = [i/len(dna.previousInputs) for i in inputSum]
-    #stimulation = sum(inputAverages)
-    stimulation = torch.mean( torch.tensor(inputAverages) )
+    stimulation = sum(inputAverages) / max_stim
+    #stimulation = torch.mean( torch.tensor(inputAverages) ) / max_stim
 
     return float(stimulation)
 
@@ -95,14 +97,14 @@ def activate(network, environment, organism, uDiff):
             direction = [math.cos(angle), math.sin(angle)]
 
             if direction[0] < 0:
-                eye_input[0] += 1
+                eye_input[0] = 1.0
             else:
-                eye_input[1] += 1
+                eye_input[1] = 1.0
 
             if direction[1] < 0:
-                eye_input[2] += 1
+                eye_input[2] = 1.0
             else:
-                eye_input[3] += 1
+                eye_input[3] = 1.0
 
         return eye_input
     def _adv_get_eye_input(cell_id, environment, organism):
@@ -132,31 +134,51 @@ def activate(network, environment, organism, uDiff):
             cell_info = cell.cell_info
 
             angle = getAngle(sprite_pos[0], sprite_pos[1], cell_pos[0], cell_pos[1])
-            angle += rotationAngle
+            angle -= rotationAngle
             direction = [math.cos(angle), math.sin(angle)]
+
+            distance = calculateDistance(sprite_pos[0], sprite_pos[1], cell_pos[0], cell_pos[1])
+            inputVal = ( sprite.info["sight_range"] - (distance + cell.radius) ) / sprite.info["sight_range"]
+            inputVal = positive(inputVal)
+            # inputVal is ranged from 0.0 to 1.0. The closer the nearest cell is (in that eighth), the higher the value
 
             if direction[0] >= 0.0:  # Right Half
                 if direction[1] < 0.0:  # Top Right Quarter
                     if direction[0] < .707:  # Top Right Quarter - Top Eighth
-                        eye_input[0] += 1
+                        if eye_input[0] < inputVal:
+                            eye_input[0] = inputVal
+
                     else:  # Top Right Quarter - Bottom Eighth
-                        eye_input[1] += 1
+                        if eye_input[1] < inputVal:
+                            eye_input[1] = inputVal
+
                 else:  # Bottom Right Quarter
                     if direction[0] >= .707:  # Bottom Right Quarter - Top Eighth
-                        eye_input[2] += 1
+                        if eye_input[2] < inputVal:
+                            eye_input[2] = inputVal
+
                     else:  # Bottom Right Quarter - Bottom Eighth
-                        eye_input[3] += 1
+                        if eye_input[3] < inputVal:
+                            eye_input[3] = inputVal
+
             else:  # Left Half
                 if direction[1] >= 0.0:  # Bottom Left Quarter
                     if direction[1] >= .707:  # Bottom Left Quarter - Bottom Eighth
-                        eye_input[4] += 1
+                        if eye_input[4] < inputVal:
+                            eye_input[4] = inputVal
+
                     else:  # Bottom Left Quarter - Top Eighth
-                        eye_input[5] += 1
+                        if eye_input[5] < inputVal:
+                            eye_input[5] = inputVal
+
                 else:  # Top Left Quarter
                     if direction[0] < -.707:  #Top Left Quarter - Bottom Eighth
-                        eye_input[6] += 1
+                        if eye_input[6] < inputVal:
+                            eye_input[6] = inputVal
+
                     else:  #Top Left Quarter - Top Eighth
-                        eye_input[7] += 1
+                        if eye_input[7] < inputVal:
+                            eye_input[7] = inputVal
 
         return eye_input
 
@@ -198,13 +220,6 @@ def activate(network, environment, organism, uDiff):
                 input_val = _adv_get_eye_input(correspondent, environment, organism)
             elif cell_type == "carniv":
                 input_val = _get_carn_input(correspondent, environment, organism)
-        elif isinstance(correspondent, list):
-            if correspondent[0] == "touch":
-                sprite = organism.cells[correspondent[1]]
-                if sprite.info["colliding"]:
-                    input_val = 1.0
-                else:
-                    input_val = 0.0
         elif isinstance(correspondent, str):
             if correspondent == "health":
                 input_val = _get_health_input(organism)
@@ -237,11 +252,17 @@ def activate(network, environment, organism, uDiff):
         else:
             network_output = network.forward(flat_inputs)
 
+        new_modifier = random.uniform(-1, 1) * network.boredom
+        network.boredom_modifier = (network.boredom_modifier + new_modifier) / 2.
+
+        network_output = torch.tensor([ i+network.boredom_modifier for i in network_output ])
+
         network.lastInput = flat_inputs.clone().detach().requires_grad_(True)
         network.lastOutput = network_output.clone().detach().requires_grad_(True)
 
         organism.dna.previousInputs.append( flat_inputs )
         organism.dna.previousOutputs.append( network_output.tolist() )
+        organism.dna.previousDopamine.append( organism.dopamine )
 
         for i, output_val in enumerate(network_output):
             correspondent = network.outputCells[i]
@@ -278,7 +299,9 @@ def activate(network, environment, organism, uDiff):
     network.stimulation = calculateStimulation(organism.dna)
 
     if network.stimulation and curiosity:
-        network.boredom = curiosity / network.stimulation
+        inverse_val = 1.0 - network.stimulation
+        network.boredom = inverse_val * curiosity
+        #network.boredom = curiosity / network.stimulation
     else:
         network.boredom = 0.0
 
@@ -291,20 +314,31 @@ def train_network(organism, epochs=1, save_memory=False):
         return
     if (not organism.dna.trainingInput or not organism.dna.trainingOutput) and not save_memory:
         return
-    if len(organism.dna.previousInputs) < 2 or len(organism.dna.previousOutputs) < 2:
+    if len(organism.dna.previousInputs) < 4 or len(organism.dna.previousOutputs) < 4:
         return
+    if len(organism.dna.previousDopamine) < 3:
+        return
+
+    pos_dopamine = list( map(positive, organism.dna.previousDopamine) )
+    scaled_dopamine_list = [ i/max(pos_dopamine) for i in organism.dna.previousDopamine ]
 
     if save_memory:
         #inputData = network.lastInput.clone()
         #targetData = network.lastOutput.clone()
-        inputData = organism.dna.previousInputs[-2]
-        targetData = organism.dna.previousOutputs[-2]
+
+        inputData = sum( organism.dna.previousInputs[-4:-3] )
+        targetData = sum( map(torch.tensor, organism.dna.previousOutputs[-4:-3]) )
+        #inputData = organism.dna.previousInputs[-4]
+        #targetData = organism.dna.previousOutputs[-4]
+
+        dopamineData = scaled_dopamine_list[-3:-1]
+        targetDopamine = sum(dopamineData) / len(dopamineData)
 
         if organism.pain >= 0.1:
             targetData = torch.tensor( [x * -organism.pain for x in targetData] ).float()
         else:
-            targetData = torch.tensor( [x * organism.dopamine for x in targetData] ).float()
-            #targetData = torch.tensor( [x * organism.energy_diff for x in targetData] ).float()
+            targetData = torch.tensor( [x * targetDopamine for x in targetData] ).float()
+        #    targetData = torch.tensor( [x * organism.energy_diff for x in targetData] ).float()
 
         organism.dna.trainingInput.append( inputData.tolist() )
         organism.dna.trainingOutput.append( targetData.tolist() )
@@ -363,10 +397,6 @@ def setup_network(dna, learning_rate=0.02, rnn=False, hiddenSize=8):
         for correspondent in base_input["body"]:
             inputCells.append(correspondent)
 
-    for cell_id in dna.cells:
-        inputSize += 1
-        inputCells.append(["touch", cell_id])
-
     hiddenList = dna.brain_structure["hidden_layers"]
 
     outputSize = len(base_output)
@@ -389,5 +419,7 @@ def setup_network(dna, learning_rate=0.02, rnn=False, hiddenSize=8):
         network.lastLoss = 0.0
         network.stimulation = 0.0
         network.boredom = 0.0
+        network.boredom_modifier = 0.0
+        # boredom_modifier is how much to add to the network outputs and is changed randomly and scales with boredom
 
         return network

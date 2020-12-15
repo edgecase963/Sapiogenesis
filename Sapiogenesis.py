@@ -14,7 +14,7 @@ from PyQt5 import QtCore, QtGui
 from PyQt5 import QtWidgets
 from userInterface import Ui_MainWindow
 
-__version__ = "0.6.0 (Beta)"
+__version__ = "0.7.0 (Beta)"
 
 
 
@@ -68,6 +68,11 @@ def updateUI(window, environment):
     environment.info["weight_persistence"] = window.weight_pers_checkbox.isChecked()
     #~
 
+    #window.test_label = QtWidgets.QLabel(window.worldView)
+    #window.test_label.setGeometry(QtCore.QRect(10, 10, 60, 25))
+    #window.test_label.setObjectName("test_label")
+    #window.test_label.setText("CO2:")
+
     #~ Sprite section
     if selected and selected.alive():
         window.generation_val.setText( str(selected.dna.generation) )
@@ -75,7 +80,20 @@ def updateUI(window, environment):
             neurons = sum( [len(layer.bias) for layer in selected.brain.layers()] )
             window.neurons_val.setText( str(neurons) )
 
-        window.age_val.setText( str(int(time.time() - selected.birthTime)) )
+        if not environment.info["paused"]:
+            window.age_val.setText( str(int(time.time() - selected.birthTime)) )
+        else:
+            paused_time = environment.info["paused_time"]
+            birth_time_diff = paused_time - selected.birthTime
+
+            birth_val = time.time() - birth_time_diff
+            birth_val = time.time() - birth_val
+
+            if birth_val < 0:
+                birth_val = 0
+
+            window.age_val.setText( str(int(birth_val)) )
+
         window.energy_usage_val.setText( str(round(selected.energy_diff, 2)) )
 
         window.energy_val.setText( str(int( selected.energy_percent() )) + "%" )
@@ -85,7 +103,7 @@ def updateUI(window, environment):
         dopamineText = dopamineText.split(".")[0] + "." + dopamineText.split(".")[1]
 
         window.neural_loss_val.setText( str( round(selected.brain.lastLoss, 8) ) )
-        window.stim_val.setText( str(float( round(selected.brain.stimulation, 2) )) )
+        window.stim_val.setText( str(float( round(selected.brain.stimulation, 4) )) )
         window.boredom_val.setText( str(float( round(selected.brain.boredom, 2) )) )
         window.pain_val.setText( str(float( round(selected.pain, 2) )) )
         window.iterations_val.setText( str(selected.brain.trainer.iterations) )
@@ -116,8 +134,9 @@ def mousePressEvent(event, pos, environment):
     sprite_clicked = environment.sprite_under_mouse()
 
     if sprite_clicked:
-        organism = sprite_clicked.organism
-        environment.info["selected"] = organism
+        if not sprite_clicked.isBubble:
+            organism = sprite_clicked.organism
+            environment.info["selected"] = organism
 
 def mouseReleaseEvent(event, pos, environment):
     rightButton = False
