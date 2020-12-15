@@ -38,7 +38,12 @@ class Ui_MainWindow(Ui_MainWindow):
             env_settings = json.load(f)
 
         self.scene = QtWidgets.QGraphicsScene(self.worldView)
-        self.scene.setSceneRect(0, 0, env_settings["width"], env_settings["height"])
+        self.scene.setSceneRect(
+            0,
+            0,
+            env_settings["width"] * env_settings["size_multiplier"],
+            env_settings["height"] * env_settings["size_multiplier"]
+        )
         self.worldView.setScene(self.scene)
 
         self.worldView.fitInView()
@@ -50,11 +55,11 @@ class Ui_MainWindow(Ui_MainWindow):
 
         MainWindow.setWindowIcon(logo)
 
-        #tempImg = QtGui.QPixmap("Images/background.jpg")
-        #tempImg = tempImg.scaled(self.scene.width(), self.scene.height())
+        tempImg = QtGui.QPixmap("Images/background.jpg")
+        tempImg = tempImg.scaled(self.scene.width(), self.scene.height())
 
-        #graphicsPixmapItem = QtWidgets.QGraphicsPixmapItem(tempImg)
-        #self.scene.addItem(graphicsPixmapItem)
+        graphicsPixmapItem = QtWidgets.QGraphicsPixmapItem(tempImg)
+        self.scene.addItem(graphicsPixmapItem)
 
 
 

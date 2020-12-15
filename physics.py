@@ -312,6 +312,7 @@ class Environment():
         with open("environment_settings.json", "r") as f:
             env_settings = json.load(f)
 
+        self.default_world_speed = .06
         self.worldSpeed = .06
         self.updateSpeed = env_settings["update_speed"]
 
@@ -399,16 +400,21 @@ class Environment():
         pass
 
     def update(self, event):
-        if self.info["paused"]:
-            self.space.step(0.0)
+        try:
+            if self.info["paused"]:
+                self.space.step(0.0)
+                self.postUpdateEvent()
+                return
+            self.preUpdateEvent()
+            self.space.step(self.worldSpeed)
+            for sprite in self.sprites:
+                sprite.updateSprite()
+            self.scene.update( self.scene.sceneRect() )
             self.postUpdateEvent()
-            return
-        self.preUpdateEvent()
-        self.space.step(self.worldSpeed)
-        for sprite in self.sprites:
-            sprite.updateSprite()
-        self.scene.update( self.scene.sceneRect() )
-        self.postUpdateEvent()
+        except KeyboardInterrupt:
+            print("\nShutting down..")
+            self.worldView.timer.stop()
+            sys.exit()
 
     def removeSprite(self, sprite):
         if not sprite in self.sprites:

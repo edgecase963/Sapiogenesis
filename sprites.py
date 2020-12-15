@@ -30,6 +30,9 @@ if sys.platform.startswith("win"):
 # This is used to calculate how much CO2 is added back into the environment when a dead cell is dispersed
 # Dispersion equation: <dispersion_ratio> * (<cell_size> / 2) * (<cell_mass> / 2)
 
+last_bubble_creation = time.time()
+bubble_interval = 1.
+
 co2_conversion_ratio = 12 # The amount of energy generated from 1 CO2 particle
 
 cell_dispersion_rate = 6 # The percentage of a dead cell's mass to disperse per second
@@ -134,10 +137,10 @@ def positive(x):
     return -x
 
 def num2perc(num, maxNum):
-    return ((float(num) / float(maxNum)) * 100.0)
+    return (float(num) / float(maxNum)) * 100.0
 
 def perc2num(perc, maxNum):
-    return ((float(perc) / 100.0) * float(maxNum))
+    return (float(perc) / 100.0) * float(maxNum)
 
 def getAngle(x1, y1, x2, y2):
     myradians = math.atan2(y2-y1, x2-x1)
@@ -933,12 +936,12 @@ class Organism():
             "sight_range": 0.0
         }
         newCell.alive = alive
+        newCell.isBubble = False
         newCell.creationTime = time.time()
 
         newCell.mouseDoubleClickEvent = lambda event: self.cell_double_clicked(newCell)
 
         if cell_info["type"] == "eye" and newCell.alive:
-            num_bodies = 6
             newCell.info["sight_range"] = cell_info["size"] * eyesight_multiplier
 
             newBody, newShape = physics.makeCircle( newCell.info["sight_range"], friction=0.0, elasticity=0.0, mass=1 )
@@ -1563,7 +1566,7 @@ def disperse_cell(sprite):
 
 def disperse_all_dead(environment):
     for sprite in environment.sprites[:]:
-        if not sprite.alive:
+        if not sprite.alive and not sprite.isBubble:
             disperse_cell(sprite)
 
 def gradual_dispersion(environment, sprite, uDiff):
@@ -1587,6 +1590,44 @@ def gradual_dispersion(environment, sprite, uDiff):
         else:
             disperse_cell(sprite)
 
+def make_bubble(environment):
+    def bubbleGravity(body, gravity, damping, dt):
+        pymunk.Body.update_velocity(body, (0,-5*(body.radius/2)), damping, dt)
+
+    bubbleRadius = random.randrange(3, 12)
+    bubblePos = [ random.randrange(0, environment.width), environment.height-(bubbleRadius*2) ]
+
+    newBody, newShape = physics.makeCircle( bubbleRadius, friction=0.0, elasticity=0.0, mass=1 )
+    newShape.sensor = True
+    newShape.collision_type = 2
+    newBody.position = bubblePos
+    newBody.velocity_func = bubbleGravity
+    newBody.radius = bubbleRadius
+
+    bubble = physics.Sprite(
+                            bubblePos, bubbleRadius*2, bubbleRadius*2, environment, newBody, newShape,
+                            image="Images{}bubble.png".format(dirType),
+                            parent=None
+                            )
+    bubble.alive = False
+    bubble.isBubble = True
+
+    bubble.info = {
+        "health": 0,
+        "energy": 0,
+        "in_use": False,
+        "sight": [],
+        "view": [],
+        "removed": False,
+        "colliding": [],
+        "sight_range": 0.0
+    }
+
+    environment.add_sprite(bubble)
+
+    #joint = pymunk.PinJoint(newBody, newCell.body, [0,0], [0,0])
+
+    #newCell.info["sight"] = [newBody, newShape, joint]
 
 def update_organisms(environment):
     # For this to work properly the environment must have the variable `lastUpdated` which holds a time.time() value
@@ -1596,6 +1637,13 @@ def update_organisms(environment):
     if environment.info["paused"]:
         return
     environment.lastUpdated = time.time()
+
+    worldSpeedPerc = num2perc(environment.worldSpeed, environment.default_world_speed) / 100.
+
+    global last_bubble_creation
+    if time.time() - last_bubble_creation >= (bubble_interval / worldSpeedPerc):
+        make_bubble(environment)
+        last_bubble_creation = time.time()
 
     for org in environment.info["organism_list"][:]:
         if time.time() - org.birthTime >= age_limit:
@@ -1622,8 +1670,15 @@ def update_organisms(environment):
             environment.info["organism_list"].remove(org)
 
     for sprite in environment.sprites:
-        if not sprite.alive:
+        if not sprite.alive and not sprite.isBubble:
             gradual_dispersion(environment, sprite, uDiff)
+        elif sprite.isBubble:
+            if sprite.getPos()[1] <= 0:
+                environment.removeSprite(sprite)
+                sprite.info["removed"] = True
+            else:
+                newVel = pymunk.Vec2d(random.randrange(-2, 2), 0)
+                sprite.body.velocity += newVel
         sprite_pos = sprite.getPos()
         if sprite_pos[0] < 0 or sprite_pos[0] > environment.width or sprite_pos[1] < 0 or sprite_pos[1] > environment.height:
             if sprite.alive:

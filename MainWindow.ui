@@ -1973,7 +1973,7 @@
        <string>Used for calculating the stimulation and boredom values</string>
       </property>
       <property name="minimum">
-       <number>10</number>
+       <number>5</number>
       </property>
       <property name="maximum">
        <number>999</number>
@@ -1982,7 +1982,7 @@
        <number>5</number>
       </property>
       <property name="value">
-       <number>30</number>
+       <number>10</number>
       </property>
      </widget>
      <widget class="QLabel" name="input_memory_label">

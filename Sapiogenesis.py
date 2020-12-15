@@ -68,6 +68,11 @@ def updateUI(window, environment):
     environment.info["weight_persistence"] = window.weight_pers_checkbox.isChecked()
     #~
 
+    #window.test_label = QtWidgets.QLabel(window.worldView)
+    #window.test_label.setGeometry(QtCore.QRect(10, 10, 60, 25))
+    #window.test_label.setObjectName("test_label")
+    #window.test_label.setText("CO2:")
+
     #~ Sprite section
     if selected and selected.alive():
         window.generation_val.setText( str(selected.dna.generation) )
@@ -98,7 +103,7 @@ def updateUI(window, environment):
         dopamineText = dopamineText.split(".")[0] + "." + dopamineText.split(".")[1]
 
         window.neural_loss_val.setText( str( round(selected.brain.lastLoss, 8) ) )
-        window.stim_val.setText( str(float( round(selected.brain.stimulation, 2) )) )
+        window.stim_val.setText( str(float( round(selected.brain.stimulation, 4) )) )
         window.boredom_val.setText( str(float( round(selected.brain.boredom, 2) )) )
         window.pain_val.setText( str(float( round(selected.pain, 2) )) )
         window.iterations_val.setText( str(selected.brain.trainer.iterations) )
@@ -129,8 +134,9 @@ def mousePressEvent(event, pos, environment):
     sprite_clicked = environment.sprite_under_mouse()
 
     if sprite_clicked:
-        organism = sprite_clicked.organism
-        environment.info["selected"] = organism
+        if not sprite_clicked.isBubble:
+            organism = sprite_clicked.organism
+            environment.info["selected"] = organism
 
 def mouseReleaseEvent(event, pos, environment):
     rightButton = False
