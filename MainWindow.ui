@@ -791,7 +791,7 @@
        <number>999999999</number>
       </property>
       <property name="value">
-       <number>30</number>
+       <number>25</number>
       </property>
      </widget>
      <widget class="QLabel" name="dash">
@@ -1246,7 +1246,7 @@
        <number>999</number>
       </property>
       <property name="value">
-       <number>2</number>
+       <number>3</number>
       </property>
      </widget>
      <widget class="QLabel" name="hidden_layers_label">
@@ -1299,7 +1299,7 @@
        <number>999</number>
       </property>
       <property name="value">
-       <number>6</number>
+       <number>12</number>
       </property>
      </widget>
     </widget>

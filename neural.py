@@ -181,6 +181,28 @@ def activate(network, environment, organism, uDiff):
                             eye_input[7] = inputVal
 
         return eye_input
+    def _get_olfactory_input(cell_id, environment, organism):
+        smell_input = 0.0
+
+        sprite = organism.cells[cell_id]
+        sprite_pos = sprite.getPos()
+
+        if not sprite.alive:
+            return smell_input
+
+        for cell in sprite.info["view"]:
+            if cell.alive:
+                continue
+            cell_pos = cell.getPos()
+
+            distance = calculateDistance(sprite_pos[0], sprite_pos[1], cell_pos[0], cell_pos[1])
+            inputVal = ( sprite.info["smell_range"] - (distance + cell.radius) ) / sprite.info["smell_range"]
+            inputVal = positive(inputVal)
+
+            if inputVal > smell_input:
+                smell_input = inputVal
+
+        return smell_input
 
     def _get_carn_input(cell_id, environment, organism):
         sprite = organism.cells[cell_id]
@@ -218,8 +240,10 @@ def activate(network, environment, organism, uDiff):
             cell_type = organism.dna.cells[correspondent]["type"]
             if cell_type == "eye":
                 input_val = _adv_get_eye_input(correspondent, environment, organism)
-            elif cell_type == "carniv":
-                input_val = _get_carn_input(correspondent, environment, organism)
+            elif cell_type == "olfactory":
+                input_val = _get_olfactory_input(correspondent, environment, organism)
+            #elif cell_type == "carniv":
+            #    input_val = _get_carn_input(correspondent, environment, organism)
         elif isinstance(correspondent, str):
             if correspondent == "health":
                 input_val = _get_health_input(organism)
@@ -374,8 +398,10 @@ def setup_network(dna, learning_rate=0.02, rnn=False, hiddenSize=8):
 
         if cell_info["type"] == "eye":
             base_input["visual"].append(cell_id)
-        elif cell_info["type"] == "carniv":
-            base_input["body"].append(cell_id)
+        elif cell_info["type"] == "olfactory":
+            base_input["chemical"].append(cell_id)
+        #elif cell_info["type"] == "carniv":
+        #    base_input["body"].append(cell_id)
 
     inputCells = []
     inputSize = 0
@@ -385,6 +411,11 @@ def setup_network(dna, learning_rate=0.02, rnn=False, hiddenSize=8):
     if base_input["visual"]:
         inputSize += len(base_input["visual"]) * output_lengths["adv_eye2"]
         for cell_id in base_input["visual"]:
+            inputCells.append(cell_id)
+
+    if base_input["chemical"]:
+        inputSize += len(base_input["chemical"])
+        for cell_id in base_input["chemical"]:
             inputCells.append(cell_id)
 
     if base_input["movement"]:
