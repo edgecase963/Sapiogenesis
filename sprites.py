@@ -63,6 +63,7 @@ training_dopamine_threshold = 1.
 age_limit = 200
 
 eyesight_multiplier = 10 # This multiplied by an eye cell's size is how far away that eye can see
+olfactory_multiplier = 15 # This multiplied by an olfactory cell's size is how far away that organism can smell dead cells
 
 base_cell_info = {
     "health": {
@@ -223,10 +224,13 @@ def eye_segment_handler(arbiter, space, data):
         return False
     if arbiter.shapes[1].sensor:
         return False
+
     sensor = arbiter.shapes[0].sprite
     sprite = arbiter.shapes[1].sprite
+
     if not sensor.alive:
         return False
+
     if sensor.organism != sprite.organism:
         if not sprite in sensor.info["view"]:
             sensor.info["view"].append(sprite)
@@ -929,11 +933,12 @@ class Organism():
             "health": cell_info["max_health"],
             "energy": cell_info["energy_storage"]/2,
             "in_use": False,
-            "sight": [],
+            "detection_items": [],
             "view": [],
             "removed": False,
             "colliding": [],
-            "sight_range": 0.0
+            "sight_range": 0.0,
+            "smell_range": 0.0
         }
         newCell.alive = alive
         newCell.isBubble = False
@@ -952,7 +957,19 @@ class Organism():
 
             joint = pymunk.PinJoint(newBody, newCell.body, [0,0], [0,0])
 
-            newCell.info["sight"] = [newBody, newShape, joint]
+            newCell.info["detection_items"] = [newBody, newShape, joint]
+        elif cell_info["type"] == "olfactory" and newCell.alive:
+            newCell.info["smell_range"] = cell_info["size"] * olfactory_multiplier
+
+            newBody, newShape = physics.makeCircle( newCell.info["smell_range"], friction=0.0, elasticity=0.0, mass=1 )
+            newShape.sensor = True
+            newShape.collision_type = 1
+            newShape.sprite = newCell
+            newBody.position = pos
+
+            joint = pymunk.PinJoint(newBody, newCell.body, [0,0], [0,0])
+
+            newCell.info["detection_items"] = [newBody, newShape, joint]
 
         return newCell
 
@@ -1150,7 +1167,7 @@ class Organism():
         sprite.info["removed"] = True
         self.environment.add_sprite(newCell)
 
-        self.environment.space.remove(*sprite.info["sight"])
+        self.environment.space.remove(*sprite.info["detection_items"])
 
         newCell.body.velocity = sprite.body.velocity
         newCell.body.angular_velocity = sprite.body.angular_velocity
@@ -1291,8 +1308,8 @@ class Organism():
         if not sprite.alive:
             return
 
-        if cell_info["type"] == "eye":
-            cShape = sprite.info["sight"][1]
+        if cell_info["type"] == "eye" or cell_info["type"] == "olfactory":
+            cShape = sprite.info["detection_items"][1]
             for cell in sprite.info["view"][:]:
                 if not cShape.shapes_collide(cell.shape).points or cell.info["removed"]:
                     sprite.info["view"].remove(cell)
@@ -1535,7 +1552,7 @@ class Organism():
         for cell_id in self.cells:
             sprite = self.cells[cell_id]
             self.environment.add_sprite(sprite)
-            self.environment.space.add(*sprite.info["sight"])
+            self.environment.space.add(*sprite.info["detection_items"])
 
         for cell_id in self.cells:
             sprite = self.cells[cell_id]
@@ -1616,7 +1633,7 @@ def make_bubble(environment):
         "health": 0,
         "energy": 0,
         "in_use": False,
-        "sight": [],
+        "detection_items": [],
         "view": [],
         "removed": False,
         "colliding": [],
@@ -1624,10 +1641,6 @@ def make_bubble(environment):
     }
 
     environment.add_sprite(bubble)
-
-    #joint = pymunk.PinJoint(newBody, newCell.body, [0,0], [0,0])
-
-    #newCell.info["sight"] = [newBody, newShape, joint]
 
 def update_organisms(environment):
     # For this to work properly the environment must have the variable `lastUpdated` which holds a time.time() value
