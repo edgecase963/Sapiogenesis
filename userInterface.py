@@ -1,6 +1,7 @@
 from PyQt5 import QtCore, QtGui
 from PyQt5 import QtWidgets
 from MainWindow import Ui_MainWindow
+from EditorWindow import Ui_Form as Editor_Dialog
 import MainWindow
 import sys
 import json
@@ -34,6 +35,9 @@ class Ui_MainWindow(Ui_MainWindow):
         self.worldView.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
         self.worldView.customContextMenuRequested[QtCore.QPoint].connect(self.rightMenuShow)
 
+        self.worldView.mouseMoveEvent = lambda event: mouseMoveEvent(self.worldView, event)
+        self.worldView.setMouseTracking(True)
+
         with open("environment_settings.json", "r") as f:
             env_settings = json.load(f)
 
@@ -55,10 +59,38 @@ class Ui_MainWindow(Ui_MainWindow):
 
         MainWindow.setWindowIcon(logo)
 
-        tempImg = QtGui.QPixmap("Images/background.jpg")
-        tempImg = tempImg.scaled(self.scene.width(), self.scene.height())
+        bgImg = QtGui.QPixmap("Images/background.jpg")
+        bgImg = bgImg.scaled(self.scene.width(), self.scene.height())
 
-        graphicsPixmapItem = QtWidgets.QGraphicsPixmapItem(tempImg)
+        graphicsPixmapItem = QtWidgets.QGraphicsPixmapItem(bgImg)
+        self.scene.addItem(graphicsPixmapItem)
+
+
+
+class Ui_EditorWindow(Editor_Dialog):
+    def setupUi(self, MainWindow):
+        super(Ui_EditorWindow, self).setupUi(MainWindow)
+        self.worldView = World_View(MainWindow)
+        self.worldView.setGeometry(QtCore.QRect(10, 25, 530, 360))
+        self.worldView.setObjectName("worldView")
+
+        self.worldView.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
+        #self.worldView.customContextMenuRequested[QtCore.QPoint].connect(self.rightMenuShow)
+
+        self.scene = QtWidgets.QGraphicsScene(self.worldView)
+        self.scene.setSceneRect(0, 0, 795, 540)
+        self.worldView.setScene(self.scene)
+
+        self.worldView.fitInView()
+
+        logo = QtGui.QIcon("logo.png")
+
+        MainWindow.setWindowIcon(logo)
+
+        bgImg = QtGui.QPixmap("Images/background.jpg")
+        bgImg = bgImg.scaled( self.scene.width(), self.scene.height() )
+
+        graphicsPixmapItem = QtWidgets.QGraphicsPixmapItem(bgImg)
         self.scene.addItem(graphicsPixmapItem)
 
 
@@ -146,7 +178,7 @@ Ui_MainWindow.rightMenuShow = rightMenuShow
 if __name__ == "__main__":
         app = QtWidgets.QApplication(sys.argv)
         window = QtWidgets.QMainWindow()
-        myapp = Ui_MainWindow()
+        myapp = Ui_EditorWindow()
 
         myapp.setupUi(window)
 

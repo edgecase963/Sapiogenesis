@@ -9,12 +9,17 @@ import pickle
 import MainWindow
 import physics
 import copy
+import torch
+import EditorFunctions
+import userInterface
 
 from PyQt5 import QtCore, QtGui
 from PyQt5 import QtWidgets
 from userInterface import Ui_MainWindow
+from userInterface import Ui_EditorWindow
+from EditorWindow import Ui_Form as Editor_Dialog
 
-__version__ = "0.7.0 (Beta)"
+__version__ = "0.8.0 (Beta)"
 
 
 
@@ -68,17 +73,14 @@ def updateUI(window, environment):
     environment.info["weight_persistence"] = window.weight_pers_checkbox.isChecked()
     #~
 
-    #window.test_label = QtWidgets.QLabel(window.worldView)
-    #window.test_label.setGeometry(QtCore.QRect(10, 10, 60, 25))
-    #window.test_label.setObjectName("test_label")
-    #window.test_label.setText("CO2:")
-
     #~ Sprite section
     if selected and selected.alive():
         window.generation_val.setText( str(selected.dna.generation) )
         if selected.brain:
             neurons = sum( [len(layer.bias) for layer in selected.brain.layers()] )
             window.neurons_val.setText( str(neurons) )
+
+            window.memory_val.setText( str(len( selected.dna.trainingInput )) )
 
         if not environment.info["paused"]:
             window.age_val.setText( str(int(time.time() - selected.birthTime)) )
@@ -110,6 +112,13 @@ def updateUI(window, environment):
         window.dopamine_val.setText( dopamineText )
     #~
 
+def mouseMoveEvent(worldView, event, environment):
+    super(userInterface.World_View, worldView).mouseMoveEvent(event)
+
+    pos = worldView.mapToScene(event.pos())
+    pos = [pos.x(), pos.y()]
+    environment.info["lastPosition"] = pos
+
 def cell_double_clicked(sprite, environment):
     pass
 
@@ -119,7 +128,7 @@ def add_organism(organism, environment):
     environment.info["organism_list"].append(organism)
     organism.build_body()
 
-def mousePressEvent(event, pos, environment):
+def mousePressEvent(myWindow, event, pos, environment):
     rightButton = False
     leftButton = False
     Mmodo = QtWidgets.QApplication.mouseButtons()
@@ -137,6 +146,7 @@ def mousePressEvent(event, pos, environment):
         if not sprite_clicked.isBubble:
             organism = sprite_clicked.organism
             environment.info["selected"] = organism
+            myWindow.active_training_checkbox.setChecked(organism.active_training)
 
 def mouseReleaseEvent(event, pos, environment):
     rightButton = False
@@ -185,7 +195,7 @@ def hurt_btn_clicked(myWindow, environment):
             if sprite.info["health"] < 0:
                 sprite.info["health"] = 0
 def save_organism_clicked(window, environment):
-    pause_world(window, environment)
+    pause_world(environment)
 
     selected = environment.info["selected"]
     if selected:
@@ -195,11 +205,11 @@ def save_organism_clicked(window, environment):
         if filePath:
             with open(filePath, "wb") as f:
                 pickle.dump(new_dna, f)
-    resume_world(window, environment)
+    resume_world(environment)
 def train_btn_clicked(environment):
     selected = environment.info["selected"]
     if selected:
-        sprites.neural.train_network(selected, epochs=sprites.training_epochs)
+        sprites.neural.train_network(selected, epochs=sprites.training_epochs, finite_memory=environment.info["finite_memory"])
 
 def sim_severity_changed(myWindow, environment):
     myWindow.sim_severity_lcd.setProperty("value", myWindow.sim_severity_slider.value())
@@ -343,8 +353,18 @@ def use_rnn_changed(val, environment):
     environment.info["use_rnn"] = val
 def amb_training_changed(val, environment):
     environment.info["ambient_training"] = val
+def finite_memory_changed(val, environment):
+    environment.info["finite_memory"] = val
 def hidden_rnn_changed(val, environment):
     environment.info["hidden_rnn_size"] = val
+
+def dialog_closed(dialog, event, environment):
+    dialog.environment.stop()
+
+    resume_world(dialog.main_environment)
+
+    if dialog.info["saving"]:
+        environment.info["copied"] = dialog.info["dna"].copy()
 
 def feed_all_clicked(environment):
     for org in environment.info["organism_list"]:
@@ -364,7 +384,7 @@ def reset_clicked(environment):
     environment.info["startTime"] = time.time()
     clear_events_clicked(window, environment)
 def import_organism_clicked(window, environment):
-    pause_world(window, environment)
+    pause_world(environment)
 
     filePath = QtWidgets.QFileDialog.getOpenFileName(window, "Select File")
     filePath = filePath[0]
@@ -374,11 +394,26 @@ def import_organism_clicked(window, environment):
             new_dna = pickle.load(f)
 
         environment.info["copied"] = new_dna
-    resume_world(window, environment)
-def pause_world(window, environment):
+    resume_world(environment)
+def custom_organism_clicked(window, environment):
+    pause_world(environment)
+
+    dialog = QtWidgets.QDialog()
+
+    dialog.ui = Ui_EditorWindow()
+    dialog.ui.setupUi(dialog)
+
+    dialog.main_environment = environment
+
+    dialog.closeEvent = lambda event: dialog_closed(dialog, event, environment)
+
+    EditorFunctions.setup_editor_buttons(dialog, environment)
+
+    dialog.exec_()
+def pause_world(environment):
     environment.info["paused"] = True
     environment.info["paused_time"] = time.time()
-def resume_world(window, environment):
+def resume_world(environment):
     if not environment.info["paused"]:
         return
 
@@ -411,11 +446,13 @@ def resume_world(window, environment):
 def keyPressed(event, window, myWindow, environment):
     if event.key() == QtCore.Qt.Key_Space:
         if environment.info["paused"]:
-            resume_world(window, environment)
+            resume_world(environment)
         else:
-            pause_world(window, environment)
+            pause_world(environment)
     if event.key() == QtCore.Qt.Key_C:
         copy_clicked(environment)
+    if event.key() == QtCore.Qt.Key_V:
+        paste_clicked(environment)
     if event.key() == QtCore.Qt.Key_R:
         reproduce_clicked(environment)
     if event.key() == QtCore.Qt.Key_T:
@@ -424,10 +461,19 @@ def keyPressed(event, window, myWindow, environment):
         heal_btn_clicked(myWindow, environment)
     if event.key() == QtCore.Qt.Key_K:
         kill_btn_clicked(myWindow, environment)
+    if event.key() == QtCore.Qt.Key_E:
+        custom_organism_clicked(window, environment)
 def keyReleased(event, window, myWindow, environment):
     pass
 
+def active_training_clicked(val, environment):
+    selected = environment.info["selected"]
+
+    selected.active_training = val
+
 def setup_window_buttons(window, myWindow, environment):
+    myWindow.worldView.mouseMoveEvent = lambda event: mouseMoveEvent(myWindow.worldView, event, environment)
+
     myWindow.mirror_x_lcd.setProperty("value", myWindow.mirror_x_slider.value())
     myWindow.mirror_y_lcd.setProperty("value", myWindow.mirror_y_slider.value())
 
@@ -481,8 +527,9 @@ def setup_window_buttons(window, myWindow, environment):
     myWindow.actionKill_All.triggered.connect(lambda: kill_all_clicked(environment))
     myWindow.actionReset.triggered.connect(lambda: reset_clicked(environment))
     myWindow.actionImport_Organism.triggered.connect(lambda: import_organism_clicked(window, environment))
-    myWindow.actionPause.triggered.connect(lambda: pause_world(window, environment))
-    myWindow.actionResume.triggered.connect(lambda: resume_world(window, environment))
+    myWindow.actionCustom_Organism.triggered.connect(lambda: custom_organism_clicked(window, environment))
+    myWindow.actionPause.triggered.connect(lambda: pause_world(environment))
+    myWindow.actionResume.triggered.connect(lambda: resume_world(environment))
 
     myWindow.physical_severity_slider.lastChanged = time.time()
     myWindow.neural_severity_slider.lastChanged = time.time()
@@ -501,8 +548,11 @@ def setup_window_buttons(window, myWindow, environment):
     myWindow.learning_rate_val.valueChanged.connect(lambda val: learning_rate_changed(val, environment))
     myWindow.use_rnn_checkbox.toggled.connect(lambda val: use_rnn_changed(val, environment))
     myWindow.amb_training_checkbox.toggled.connect(lambda val: amb_training_changed(val, environment))
+    myWindow.finite_memory_checkbox.toggled.connect(lambda val: finite_memory_changed(val, environment))
     myWindow.hidden_size_val.valueChanged.connect(lambda val: hidden_rnn_changed(val, environment))
     #~
+
+    myWindow.active_training_checkbox.toggled.connect(lambda val: active_training_clicked(val, environment))
 
     myWindow.age_limit_spinbox.valueChanged.connect(age_limit_changed)
 
@@ -530,7 +580,7 @@ if __name__ == "__main__":
         myapp.physical_severity_slider.setProperty("value", 50)
         myapp.neural_severity_slider.setProperty("value", 50)
 
-        env.mousePressFunc = lambda event, pos: mousePressEvent(event, pos, env)
+        env.mousePressFunc = lambda event, pos: mousePressEvent(myapp, event, pos, env)
         env.mouseReleaseFunc = lambda event, pos: mouseReleaseEvent(event, pos, env)
 
         window.show()

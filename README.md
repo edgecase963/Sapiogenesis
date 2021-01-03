@@ -28,6 +28,11 @@ python3.8 Sapiogenesis.py
 
 ```
 
+A feature added in version 0.8 allows users to modify organisms or create new ones from scratch using the editor. 
+
+### Editor Demo
+![Editor Demo](readme_media/editor_demo.gif)
+
 To learn more, [check out the wiki](https://github.com/edgecase963/Sapiogenesis/wiki)
 
 

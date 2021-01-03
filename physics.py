@@ -293,7 +293,7 @@ class Environment():
             "brain_mutation_severity": 0.5,
             "reproduction_limit": 6,
             "population": 0,
-            "population_limit": 22,
+            "population_limit": 18,
             "weight_persistence": True,
             "learning_rate": 0.02,
             "use_rnn": False,
@@ -303,7 +303,8 @@ class Environment():
             "sim_drought": False,
             "sim_algal": False,
             "sim_poison": False,
-            "hidden_rnn_size": 12
+            "hidden_rnn_size": 20,
+            "finite_memory": False
         }
 
         self.width = width
@@ -402,7 +403,6 @@ class Environment():
     def update(self, event):
         try:
             if self.info["paused"]:
-                self.space.step(0.0)
                 self.postUpdateEvent()
                 return
             self.preUpdateEvent()
@@ -437,6 +437,11 @@ class Environment():
         self.sprites.append(newSprite)
         self.space.add(newSprite.body, newSprite.shape)
         return newSprite
+
+    def stop(self):
+        for sprite in self.sprites:
+            self.removeSprite(sprite)
+        self.worldView.timer.stop()
 
 
 
