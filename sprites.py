@@ -43,7 +43,7 @@ offspring_amount = 1 # How many offspring to create when an organism reproduces
 
 heal_rate = 4 # The percentage of health to heal each second if the cell has enough energy
 
-mass_cutoff = 1 # If a dead cell's mass becomes less than this, it will be removed (dispersed completely)
+mass_cutoff = 1 # If a dead cell's percentage of mass becomes less than this, it will be removed (dispersed completely)
 
 break_damage = 5 # The amount of damage a cell does to its parent when it dies (break off from body) - multiplied by its size
 
@@ -58,7 +58,7 @@ training_epochs = 1 # How many epochs to train a network for per training interv
 max_push_speed = 250
 max_rotation_speed = 6 # Radians per second
 
-training_dopamine_threshold = 1.
+training_dopamine_threshold = 0.8
 
 age_limit = 200
 
@@ -69,7 +69,7 @@ base_cell_info = {
     "health": {
         # This is multiplied by the size and mass of each given cell
         # <max_health> = <base_health> * <cell_size> * <cell_mass>
-        "barrier": 75,
+        "barrier": 80,
         "carniv": 15,
         "co2C": 6,
         "eye": 4,
@@ -85,7 +85,7 @@ base_cell_info = {
         # This is multiplied by the size and mass of each given cell
         # <max_energy_usage> = <base_energy_usage> * (<cell_size> / 2) * (<cell_mass> / 2)
         "barrier": [2, 2],
-        "carniv": [5, 8],
+        "carniv": [5, 6],
         "co2C": [6, 6],
         "eye": [5, 5],
         "olfactory": [6, 8],
@@ -110,7 +110,7 @@ base_cell_info = {
     "damage": {
         # The damage each cell does when in contact with a cell from another organism
         "barrier": 0,
-        "carniv": 100,
+        "carniv": 45,
         "co2C": 0,
         "eye": 0,
         "olfactory": 0,
@@ -245,14 +245,16 @@ class DNA():
         #    <Cell_ID>: {
         #       "size": <integer>,
         #       "type": <string>,
-        #       "elasticity": <integer>,
+        #       "elasticity": <float>,
+        #       "friction": <float>
         #       "mass": <integer>,
         #       "first": <boolean>,
         #       "relative_pos": [<integer>, <integer>],
         #       "mirror_self": <cell_id>,
         #       "max_health": <integer>,
         #       "energy_usage": [<idle>, <in use>],
-        #       "energy_storage": <integer>
+        #       "energy_storage": <integer>,
+        #       "damage": <integer>
         #   }
         #}
         # `relative_pos` helps keep cells from forming to close to one another (starts at [0,0] for the first cell)
@@ -279,7 +281,7 @@ class DNA():
             "optimizer": "adam"
         }
 
-        self.brain_structure = self._base_brain_structure.copy()
+        self.brain_structure = copy.deepcopy(self._base_brain_structure)
 
         self.trainingInput = []
         self.trainingOutput = []
@@ -289,17 +291,18 @@ class DNA():
         self.previousDopamine = []
 
         self.base_info = {
-            "distanceThreshold": 2.2,
+            "distanceThreshold": .8,
             "mirror_x": False,
             "mirror_y": False,
             "maximum_creation_tries": 30,
             "curiosity": 0.5 # Ranges from 0.0 to 1.0
         }
         # Structure: {
-        #    "distanceThreshold": <integer>,
+        #    "distanceThreshold": <float>,
         #    "mirror_x": <boolean>,
         #    "mirror_y": <boolean>,
-        #    "maximum_creation_tries": <integer>
+        #    "maximum_creation_tries": <integer>,
+        #    "curiosity": <float>
         #}
 
         self.cellRange = [3,30]
@@ -311,6 +314,14 @@ class DNA():
 
     def copy(self):
         return copy.deepcopy(self)
+
+    def erase_memory(self):
+        self.trainingInput = []
+        self.trainingOutput = []
+
+        self.previousInputs = []
+        self.previousOutputs = []
+        self.previousDopamine = []
 
     def cell_size(self, cell_id):
         if cell_id in self.cells:
@@ -339,23 +350,6 @@ class DNA():
                 checkList.extend( self.sub_cells(cid) )
                 checkList.remove(cid)
         return all_cells
-
-    def remove_cell(self, cell_id, removing_mirror=False):
-        if cell_id in self.cells:
-            if self.cells[cell_id]["mirror_self"] and not removing_mirror:
-                cell_info = self.cells[cell_id]
-                if not cell_info["first"]:
-                    mirrorID = self.cells[cell_id]["mirror_self"]
-                    self.remove_cell(mirrorID, removing_mirror=True)
-            self.cells.pop(cell_id)
-            self.growth_pattern.pop(cell_id)
-
-            for cid in self.growth_pattern:
-                if cell_id in self.growth_pattern[cid]:
-                    self.growth_pattern[cid].pop(cell_id)
-
-            for cid in self.sub_cells(cell_id):
-                self.remove_cell(cid)
 
     def _lower_cells(self):
         # Returns all cells that do not contain children
@@ -444,6 +438,23 @@ class DNA():
             cid += 1
         return cid
 
+    def _finish_cell_info(self, cell_info):
+        cell_type = cell_info["type"]
+        cell_mass = cell_info["mass"]
+        cell_size = cell_info["size"]
+
+        cell_health = base_cell_info["health"][cell_type] * cell_size * cell_mass
+        cell_info["max_health"] = cell_health
+
+        cell_energy_usage = [i * (cell_size/2) * (cell_mass/2) for i in base_cell_info["energy_usage"][cell_type]]
+        cell_info["energy_usage"] = cell_energy_usage
+
+        cell_damage = base_cell_info["damage"][cell_type] * (cell_mass/2)
+        cell_info["damage"] = cell_damage
+
+        cell_energy_storage = base_cell_info["energy_storage"][cell_type] * cell_size * cell_mass
+        cell_info["energy_storage"] = cell_energy_storage
+
     def _make_random_cell(self, sizeRange, massRange, first_cell=False):
         cell_id = self._new_cell_id()
         cell_info = {}
@@ -471,28 +482,144 @@ class DNA():
             cell_type = random.choice(cell_types)
         cell_info["type"] = cell_type
 
-        cell_health = base_cell_info["health"][cell_type] * cell_size * cell_mass
-        cell_info["max_health"] = cell_health
-
-        cell_energy_usage = [i * (cell_size/2) * (cell_mass/2) for i in base_cell_info["energy_usage"][cell_type]]
-        cell_info["energy_usage"] = cell_energy_usage
-
-        cell_energy_storage = base_cell_info["energy_storage"][cell_type] * cell_size * cell_mass
-        cell_info["energy_storage"] = cell_energy_storage
-
-        cell_damage = base_cell_info["damage"][cell_type]
-        cell_info["damage"] = cell_damage
+        self._finish_cell_info(cell_info)
 
         cell_info["first"] = first_cell
 
         return cell_id, cell_info
 
+    def remove_cell(self, cell_id, removing_mirror=False, remove_sub_cells=True):
+        # Returns a modified version of this DNA with the missing cells
+
+        if not cell_id in self.cells:
+            return
+
+        new_dna = self.copy()
+
+        if remove_sub_cells:
+            for cID in new_dna.sub_cells(cell_id):
+                new_dna = new_dna.remove_cell(cID, removing_mirror=removing_mirror)
+
+        cell_info = new_dna.cells[cell_id]
+
+        if cell_info["mirror_self"] and not removing_mirror:
+            new_dna = new_dna.remove_cell(cell_info["mirror_self"], removing_mirror=True)
+
+        new_dna.growth_pattern.pop(cell_id)
+        new_dna.cells.pop(cell_id)
+
+        for cID in new_dna.growth_pattern:
+            if cell_id in new_dna.growth_pattern[cID]:
+                new_dna.growth_pattern[cID].pop(cell_id)
+
+        return new_dna
+
+    def set_mass(self, cell_id, new_mass, changing_mirror=False):
+        if not cell_id in self.cells:
+            return
+
+        self.cells[cell_id]["mass"] = new_mass
+        type = self.cells[cell_id]["type"]
+
+        if self.cells[cell_id]["mirror_self"] and not changing_mirror:
+            self.set_mass(self.cells[cell_id]["mirror_self"], new_mass, changing_mirror=True)
+
+        self._finish_cell_info(self.cells[cell_id])
+
+    def set_size(self, cell_id, new_size, changing_mirror=False):
+        if not cell_id in self.cells:
+            return
+
+        self.cells[cell_id]["size"] = new_size
+        type = self.cells[cell_id]["type"]
+
+        if self.cells[cell_id]["mirror_self"] and not changing_mirror:
+            self.set_size(self.cells[cell_id]["mirror_self"], new_size, changing_mirror=True)
+
+        self._finish_cell_info(self.cells[cell_id])
+
+    def change_type(self, cell_id, new_type, changing_mirror=False):
+        if not cell_id in self.cells:
+            return
+
+        self.cells[cell_id]["type"] = new_type
+
+        if self.cells[cell_id]["mirror_self"] and not changing_mirror:
+            self.change_type(self.cells[cell_id]["mirror_self"], new_type, changing_mirror=True)
+
+        self._finish_cell_info(self.cells[cell_id])
+
+    def add_cell(self, parentID, type, size, mass, elasticity, friction, angle):
+        if not parentID in self.cells:
+            return
+
+        grow_direction = [ math.cos(angle), math.sin(angle) ]
+
+        cell_id = self._new_cell_id()
+        cell_info = {}
+
+        cell_info = {
+            "size": size,
+            "mass": mass,
+            "elasticity": elasticity,
+            "friction": friction,
+            "type": type,
+            "mirror_self": None,
+            "first": False
+        }
+
+        self._finish_cell_info(cell_info)
+
+        relative_pos = self._new_relative_pos(parentID, grow_direction, cell_info["size"])
+        cell_info["relative_pos"] = relative_pos
+
+        self.growth_pattern[parentID][cell_id] = grow_direction
+
+        self.cells[cell_id] = cell_info
+        self.growth_pattern[cell_id] = {}
+
+        if self.base_info["mirror_x"] or self.base_info["mirror_y"]:
+            parentID = self.grows_from(cell_id)
+            grow_direction = self.growth_pattern[parentID][cell_id]
+            self._apply_mirror(cell_id, parentID, grow_direction)
+
+        return cell_id
+
+    def set_elasticity(self, cell_id, new_value):
+        if not cell_id in self.cells:
+            return
+
+        self.cells[cell_id]["elasticity"] = new_value
+
+        if cell_id == self.first_cell():
+            return
+
+        mirror_id = self.cells[cell_id]["mirror_self"]
+        if mirror_id != None and mirror_id in self.cells:
+            self.cells[mirror_id]["elasticity"] = new_value
+
+    def set_friction(self, cell_id, new_value):
+        if not cell_id in self.cells:
+            return
+
+        self.cells[cell_id]["friction"] = new_value
+
+        if cell_id == self.first_cell():
+            return
+
+        mirror_id = self.cells[cell_id]["mirror_self"]
+        if mirror_id != None and mirror_id in self.cells:
+            self.cells[mirror_id]["friction"] = new_value
+
     def _closest_cell_to_point(self, x, y):
         # This function only compares the relative positions of cells
         distances = {}
+        count = 0
         for cell_id in self.cells:
             rel_pos = self.cells[cell_id]["relative_pos"]
-            dist = calculateDistance(x, y, rel_pos[0], rel_pos[1])
+            radius = self.cells[cell_id]["size"] / 2
+
+            dist = calculateDistance(x, y, rel_pos[0], rel_pos[1]) - radius
             distances[dist] = cell_id
         if distances:
             closest_cell = distances[min(distances)]
@@ -504,8 +631,8 @@ class DNA():
         parentSize = self.cells[parentID]["size"]
         newRelPos = relParentPos[:]
 
-        addX = direction[0] * ( (parentSize/2) + (childSize/2) )
-        addY = direction[1] * ( (parentSize/2) + (childSize/2) )
+        addX = direction[0] * ( (parentSize/2.1) + (childSize/2.1) )
+        addY = direction[1] * ( (parentSize/2.1) + (childSize/2.1) )
 
         newRelPos = [newRelPos[0] + addX, newRelPos[1] + addY]
 
@@ -513,6 +640,7 @@ class DNA():
 
     def _cell_mirrorable(self, x, y, cell_info):
         cellSize = cell_info["size"]
+        cellRadius = cellSize / 2
 
         newX = x
         newY = y
@@ -522,49 +650,58 @@ class DNA():
         if self.base_info["mirror_y"]:
             newY = -newY
 
-        distance = calculateDistance(x, y, newX, newY)
+        distance = calculateDistance(x, y, newX, newY) - (cellSize/2)
 
-        if distance > (cellSize/self.base_info["distanceThreshold"]):
+        cid, distance2 = self._closest_cell_to_point(newX, newY)
+
+        if distance > (cellRadius*self.base_info["distanceThreshold"]) and distance2 > ( cellRadius*self.base_info["distanceThreshold"] ):
             return True
         return False
 
     def _viable_cell_position(self, x, y, cell_info):
         cid, dist = self._closest_cell_to_point(x, y)
 
-        size1 = cell_info["size"]
-        size2 = self.cell_size(cid)
+        size = cell_info["size"]
+        radius = size / 2
 
         if self.base_info["mirror_x"] or self.base_info["mirror_y"]:
             if not self._cell_mirrorable(x, y, cell_info):
                 return False
 
-        if dist > (size1/self.base_info["distanceThreshold"] + size2/self.base_info["distanceThreshold"]):
+        if dist > (radius*self.base_info["distanceThreshold"]):
             return True
         return False
 
-    def _apply_mirror(self, cell_id, grows_from, grow_direction):
-        newID = self._new_cell_id()
+    def _apply_mirror(self, cell_id, grows_from, grow_direction, newID=None):
+        if newID == None:
+            newID = self._new_cell_id()
+
         cell_info = self.cells[cell_id].copy()
 
         self.cells[cell_id]["mirror_self"] = newID
         cell_info["mirror_self"] = cell_id
 
         relative_pos = self.cells[cell_id]["relative_pos"][:]
+        new_grow_direction = grow_direction[:]
 
         if self.base_info["mirror_x"]:
             relative_pos[0] = -relative_pos[0]
+            new_grow_direction[0] = -new_grow_direction[0]
         if self.base_info["mirror_y"]:
             relative_pos[1] = -relative_pos[1]
+            new_grow_direction[1] = -new_grow_direction[1]
 
         new_grows_from = self.cells[grows_from]["mirror_self"]
-        new_grow_direction = [-i for i in grow_direction]
+        #new_grow_direction = [-i for i in grow_direction]
 
         self.growth_pattern[new_grows_from][newID] = new_grow_direction
 
         cell_info["relative_pos"] = relative_pos
 
         self.cells[newID] = cell_info
-        self.growth_pattern[newID] = {}
+
+        if not newID in self.growth_pattern:
+            self.growth_pattern[newID] = {}
 
     def add_randomized_cell(self, sizeRange, massRange, first_cell=False):
         cell_id, cell_info = self._make_random_cell(sizeRange, massRange, first_cell=first_cell)
@@ -594,15 +731,10 @@ class DNA():
         self.cells[cell_id] = cell_info
         self.growth_pattern[cell_id] = {}
 
-        if not first_cell:
-            if self.base_info["mirror_x"] or self.base_info["mirror_y"]:
-                grow_from = self.grows_from(cell_id)
-                grow_direction = self.growth_pattern[grow_from][cell_id]
-                self._apply_mirror(cell_id, grow_from, grow_direction)
-        return True
+        return cell_id
 
     def _setup_brain_structure(self, hiddenRange):
-        self.brain_structure = self._base_brain_structure.copy()
+        self.brain_structure = copy.deepcopy(self._base_brain_structure)
 
         for cell_id in self.cells:
             cell_info = self.cells[cell_id]
@@ -632,7 +764,7 @@ class DNA():
             decRange = decRange.reverse()
 
         minRange = min(decRange)-1
-        maxRange = max(decRange)
+        maxRange = max(decRange)*2
 
         for i in decRange:
             hiddenLayerSize = int(random.triangular(minRange, i, maxRange))
@@ -677,6 +809,14 @@ class DNA():
                 )
             first_cell = False
 
+        if self.base_info["mirror_x"] or self.base_info["mirror_y"]:
+            first_id = self.first_cell()
+            for cell_id in copy.deepcopy(self.cells):
+                if cell_id != first_id:
+                    grow_from = self.grows_from(cell_id)
+                    grow_direction = self.growth_pattern[grow_from][cell_id]
+                    self._apply_mirror(cell_id, grow_from, grow_direction)
+
         self._setup_brain_structure(hiddenRange)
 
         return self
@@ -707,6 +847,10 @@ class DNA():
                         new_dna.sizeRange,
                         new_dna.massRange
                     )
+                if new_dna.base_info["mirror_x"] or new_dna.base_info["mirror_y"]:
+                    grow_from = new_dna.grows_from(added)
+                    grow_direction = new_dna.growth_pattern[grow_from][added]
+                    new_dna._apply_mirror(added, grow_from, grow_direction)
 
         return new_dna
 
@@ -885,6 +1029,8 @@ class Organism():
         self.dopamine = 0.0 # The current dopamine output
         self.pain = 0.0
         self.dopamine_update_interval = .1
+
+        self.active_training = True
 
         self.brain = None
 
@@ -1324,9 +1470,9 @@ class Organism():
             else:
                 sprite.info["in_use"] = False
 
-            damage_dealt = base_cell_info["damage"]["carniv"]
+            damage_dealt = cell_info["damage"]
             for cell in sprite.info["colliding"]:
-                added_energy = damage_dealt
+                added_energy = damage_dealt / 2
                 if cell.alive:
                     cell.info["health"] -= damage_dealt
                 else:
@@ -1444,7 +1590,7 @@ class Organism():
         self.pain = health_diff / dopamine_uDiff
         self.dopamine_usage = energy_diff / dopamine_uDiff
 
-        self.pain *= 3.
+        self.pain *= 5.
 
         if self.pain > 0:
             self.pain = 0.0
@@ -1521,8 +1667,7 @@ class Organism():
         self.brain = neural.setup_network(
             self.dna,
             learning_rate = learning_rate,
-            rnn = self.environment.info["use_rnn"],
-            hiddenSize = self.environment.info["hidden_rnn_size"]
+            rnn = self.environment.info["use_rnn"]
         )
 
         for i, layer in enumerate(self.brain.hiddenLayers):
@@ -1677,8 +1822,8 @@ def update_organisms(environment):
                 else:
                     save_memory = False
 
-                if save_memory or environment.info["ambient_training"]:
-                    neural.train_network(org, epochs=training_epochs, save_memory=save_memory)
+                if (save_memory or environment.info["ambient_training"]) and org.active_training:
+                    neural.train_network(org, epochs=training_epochs, save_memory=save_memory, finite_memory=environment.info["finite_memory"])
         else:
             environment.info["organism_list"].remove(org)
 
@@ -1705,24 +1850,3 @@ def update_organisms(environment):
             else:
                 environment.removeSprite(sprite)
                 sprite.info["removed"] = True
-
-
-if __name__ == "__main__":
-        app = QtWidgets.QApplication(sys.argv)
-        window = QtWidgets.QMainWindow()
-        myapp = Ui_MainWindow()
-
-        myapp.setupUi(window)
-        #myapp.setupEnvironment()
-        env = physics.setupEnvironment(myapp.worldView, myapp.scene)
-
-        org = Organism([300,300], env)
-        org2 = Organism([500,500], env)
-
-        fCell = org.dna.first_cell()
-
-        org.build_body()
-        org2.build_body()
-
-        window.show()
-        sys.exit(app.exec_())

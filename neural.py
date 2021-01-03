@@ -29,7 +29,7 @@ output_lengths = {
     "carniv": 1
 }
 
-memory_limit = 280
+memory_limit = 300
 stimulation_memory = 10
 
 
@@ -222,8 +222,7 @@ def activate(network, environment, organism, uDiff):
         rotation = organism.rotation()
         if rotation:
             return rotation / 360.
-        else:
-            return 0.0
+        return 0.0
     def _get_speed_input(organism):
         return organism.movement["speed"]
     def _get_x_direction_input(organism):
@@ -249,7 +248,7 @@ def activate(network, environment, organism, uDiff):
                 input_val = _get_health_input(organism)
             elif correspondent == "energy":
                 input_val = _get_energy_input(organism)
-            elif correspondent == "rotation":
+            elif correspondent == "rotation":  # No longer in use
                 input_val = _get_rotation_input(organism)
             elif correspondent == "speed":
                 input_val = _get_speed_input(organism)
@@ -272,21 +271,23 @@ def activate(network, environment, organism, uDiff):
         flat_inputs = torch.tensor(flat_inputs).float()
 
         if network.isRNN:
-            network_output = network.forward(flat_inputs, network.lastHidden)
+            raw_output = network.forward(flat_inputs, network.lastHidden)
         else:
-            network_output = network.forward(flat_inputs)
+            raw_output = network.forward(flat_inputs)
 
         new_modifier = random.uniform(-1, 1) * network.boredom
         network.boredom_modifier = (network.boredom_modifier + new_modifier) / 2.
 
-        network_output = torch.tensor([ i+network.boredom_modifier for i in network_output ])
+        network_output = torch.tensor([ i+network.boredom_modifier for i in raw_output ])
 
         network.lastInput = flat_inputs.clone().detach().requires_grad_(True)
         network.lastOutput = network_output.clone().detach().requires_grad_(True)
 
-        organism.dna.previousInputs.append( flat_inputs )
-        organism.dna.previousOutputs.append( network_output.tolist() )
-        organism.dna.previousDopamine.append( organism.dopamine )
+        #if organism.dopamine != 0 or organism.pain != 0:
+        if organism.dopamine > 0:
+            organism.dna.previousInputs.append( flat_inputs )
+            organism.dna.previousOutputs.append( network_output.tolist() )
+            organism.dna.previousDopamine.append( organism.dopamine )
 
         for i, output_val in enumerate(network_output):
             correspondent = network.outputCells[i]
@@ -330,7 +331,7 @@ def activate(network, environment, organism, uDiff):
         network.boredom = 0.0
 
 
-def train_network(organism, epochs=1, save_memory=False):
+def train_network(organism, epochs=1, save_memory=False, finite_memory=True):
     network = organism.brain
     if not network:
         return
@@ -338,38 +339,39 @@ def train_network(organism, epochs=1, save_memory=False):
         return
     if (not organism.dna.trainingInput or not organism.dna.trainingOutput) and not save_memory:
         return
-    if len(organism.dna.previousInputs) < 4 or len(organism.dna.previousOutputs) < 4:
+    if len(organism.dna.previousInputs) < 5 or len(organism.dna.previousOutputs) < 5:
         return
     if len(organism.dna.previousDopamine) < 3:
         return
 
     pos_dopamine = list( map(positive, organism.dna.previousDopamine) )
-    scaled_dopamine_list = [ i/max(pos_dopamine) for i in organism.dna.previousDopamine ]
+    scaled_dopamine_list = [ (i/max(pos_dopamine)) * positive(i) for i in organism.dna.previousDopamine ]
 
     if save_memory:
         #inputData = network.lastInput.clone()
         #targetData = network.lastOutput.clone()
 
-        inputData = sum( organism.dna.previousInputs[-4:-3] )
-        targetData = sum( map(torch.tensor, organism.dna.previousOutputs[-4:-3]) )
+        inputData = sum( organism.dna.previousInputs[-5:-3] )
+        inputData = inputData / len(inputData)
+        targetData = sum( map(torch.tensor, organism.dna.previousOutputs[-5:-3]) )
+        targetData = targetData / len(targetData)
         #inputData = organism.dna.previousInputs[-4]
         #targetData = organism.dna.previousOutputs[-4]
 
         dopamineData = scaled_dopamine_list[-3:-1]
         targetDopamine = sum(dopamineData) / len(dopamineData)
 
-        if organism.pain >= 0.1:
-            targetData = torch.tensor( [x * -organism.pain for x in targetData] ).float()
-        else:
-            targetData = torch.tensor( [x * targetDopamine for x in targetData] ).float()
-        #    targetData = torch.tensor( [x * organism.energy_diff for x in targetData] ).float()
+        targetData = torch.tensor( [x * targetDopamine for x in targetData] ).float()
 
         organism.dna.trainingInput.append( inputData.tolist() )
         organism.dna.trainingOutput.append( targetData.tolist() )
 
-        while len(organism.dna.trainingInput) > memory_limit:
+        while len(organism.dna.trainingInput) > memory_limit and finite_memory:
             organism.dna.trainingInput.pop(0)
             organism.dna.trainingOutput.pop(0)
+            organism.dna.previousInputs.pop(0)
+            organism.dna.previousOutputs.pop(0)
+            organism.dna.previousDopamine.pop(0)
 
     if network.isRNN:
         for i in range(epochs):
@@ -383,11 +385,11 @@ def train_network(organism, epochs=1, save_memory=False):
     organism._update_brain_weights()
 
 
-def setup_network(dna, learning_rate=0.02, rnn=False, hiddenSize=8):
+def setup_network(dna, learning_rate=0.02, rnn=False):
     base_input = {
         "visual": [],
         "chemical": [],
-        "movement": ["rotation", "speed", "x_direction", "y_direction"],
+        "movement": ["speed", "x_direction", "y_direction"],
         "body": ["health", "energy"]
     }
 
@@ -405,7 +407,7 @@ def setup_network(dna, learning_rate=0.02, rnn=False, hiddenSize=8):
 
     inputCells = []
     inputSize = 0
-    hiddenList = []
+    hiddenList = dna.brain_structure["hidden_layers"]
     outputSize = 0
 
     if base_input["visual"]:
@@ -427,8 +429,6 @@ def setup_network(dna, learning_rate=0.02, rnn=False, hiddenSize=8):
         inputSize += len(base_input["body"])
         for correspondent in base_input["body"]:
             inputCells.append(correspondent)
-
-    hiddenList = dna.brain_structure["hidden_layers"]
 
     outputSize = len(base_output)
 
