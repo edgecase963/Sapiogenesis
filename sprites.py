@@ -519,7 +519,6 @@ class DNA():
             return
 
         self.cells[cell_id]["mass"] = new_mass
-        type = self.cells[cell_id]["type"]
 
         if self.cells[cell_id]["mirror_self"] and not changing_mirror:
             self.set_mass(self.cells[cell_id]["mirror_self"], new_mass, changing_mirror=True)
@@ -531,7 +530,6 @@ class DNA():
             return
 
         self.cells[cell_id]["size"] = new_size
-        type = self.cells[cell_id]["type"]
 
         if self.cells[cell_id]["mirror_self"] and not changing_mirror:
             self.set_size(self.cells[cell_id]["mirror_self"], new_size, changing_mirror=True)
@@ -549,7 +547,7 @@ class DNA():
 
         self._finish_cell_info(self.cells[cell_id])
 
-    def add_cell(self, parentID, type, size, mass, elasticity, friction, angle):
+    def add_cell(self, parentID, cell_type, size, mass, elasticity, friction, angle):
         if not parentID in self.cells:
             return
 
@@ -563,7 +561,7 @@ class DNA():
             "mass": mass,
             "elasticity": elasticity,
             "friction": friction,
-            "type": type,
+            "type": cell_type,
             "mirror_self": None,
             "first": False
         }
@@ -595,7 +593,7 @@ class DNA():
             return
 
         mirror_id = self.cells[cell_id]["mirror_self"]
-        if mirror_id != None and mirror_id in self.cells:
+        if mirror_id is not None and mirror_id in self.cells:
             self.cells[mirror_id]["elasticity"] = new_value
 
     def set_friction(self, cell_id, new_value):
@@ -608,7 +606,7 @@ class DNA():
             return
 
         mirror_id = self.cells[cell_id]["mirror_self"]
-        if mirror_id != None and mirror_id in self.cells:
+        if mirror_id is not None and mirror_id in self.cells:
             self.cells[mirror_id]["friction"] = new_value
 
     def _closest_cell_to_point(self, x, y):
@@ -673,7 +671,7 @@ class DNA():
         return False
 
     def _apply_mirror(self, cell_id, grows_from, grow_direction, newID=None):
-        if newID == None:
+        if newID is None:
             newID = self._new_cell_id()
 
         cell_info = self.cells[cell_id].copy()
@@ -1817,7 +1815,7 @@ def update_organisms(environment):
 
             train_uDiff = time.time() - org.brain.lastTrained
             if train_uDiff >= learning_update_delay:
-                if org.dopamine >= training_dopamine_threshold or org.pain >= 0.1:
+                if positive(org.dopamine) >= training_dopamine_threshold or org.pain >= 0.1:
                     save_memory = True
                 else:
                     save_memory = False

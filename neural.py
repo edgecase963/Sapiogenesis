@@ -271,20 +271,19 @@ def activate(network, environment, organism, uDiff):
         flat_inputs = torch.tensor(flat_inputs).float()
 
         if network.isRNN:
-            raw_output = network.forward(flat_inputs, network.lastHidden)
+            network_output = network.forward(flat_inputs, network.lastHidden)
         else:
-            raw_output = network.forward(flat_inputs)
+            network_output = network.forward(flat_inputs)
 
         new_modifier = random.uniform(-1, 1) * network.boredom
         network.boredom_modifier = (network.boredom_modifier + new_modifier) / 2.
 
-        network_output = torch.tensor([ i+network.boredom_modifier for i in raw_output ])
+        network_output = torch.tensor([ i+network.boredom_modifier for i in network_output ])
 
         network.lastInput = flat_inputs.clone().detach().requires_grad_(True)
         network.lastOutput = network_output.clone().detach().requires_grad_(True)
 
-        #if organism.dopamine != 0 or organism.pain != 0:
-        if organism.dopamine > 0:
+        if organism.dopamine != 0 or organism.pain != 0:
             organism.dna.previousInputs.append( flat_inputs )
             organism.dna.previousOutputs.append( network_output.tolist() )
             organism.dna.previousDopamine.append( organism.dopamine )
@@ -348,15 +347,10 @@ def train_network(organism, epochs=1, save_memory=False, finite_memory=True):
     scaled_dopamine_list = [ (i/max(pos_dopamine)) * positive(i) for i in organism.dna.previousDopamine ]
 
     if save_memory:
-        #inputData = network.lastInput.clone()
-        #targetData = network.lastOutput.clone()
-
         inputData = sum( organism.dna.previousInputs[-5:-3] )
         inputData = inputData / len(inputData)
         targetData = sum( map(torch.tensor, organism.dna.previousOutputs[-5:-3]) )
         targetData = targetData / len(targetData)
-        #inputData = organism.dna.previousInputs[-4]
-        #targetData = organism.dna.previousOutputs[-4]
 
         dopamineData = scaled_dopamine_list[-3:-1]
         targetDopamine = sum(dopamineData) / len(dopamineData)
