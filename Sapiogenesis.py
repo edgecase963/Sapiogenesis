@@ -10,12 +10,14 @@ import MainWindow
 import physics
 import copy
 import torch
+import TrainerFunctions
 import EditorFunctions
 import userInterface
 
 from PyQt5 import QtCore, QtGui
 from PyQt5 import QtWidgets
 from userInterface import Ui_MainWindow
+from TrainerWindow import Ui_Trainer
 from userInterface import Ui_EditorWindow
 from EditorWindow import Ui_Form as Editor_Dialog
 
@@ -145,8 +147,9 @@ def mousePressEvent(myWindow, event, pos, environment):
     if sprite_clicked:
         if not sprite_clicked.isBubble:
             organism = sprite_clicked.organism
-            environment.info["selected"] = organism
-            myWindow.active_training_checkbox.setChecked(organism.active_training)
+            if organism is not None:
+                environment.info["selected"] = organism
+                myWindow.active_training_checkbox.setChecked(organism.active_training)
 
 def mouseReleaseEvent(event, pos, environment):
     rightButton = False
@@ -395,6 +398,21 @@ def import_organism_clicked(window, environment):
 
         environment.info["copied"] = new_dna
     resume_world(environment)
+def train_organism_clicked(window, environment):
+    pause_world(environment)
+
+    dialog = QtWidgets.QDialog()
+
+    dialog.ui = Ui_Trainer()
+    dialog.ui.setupUi(dialog)
+
+    #dialog.closeEvent = lambda event: trainer_dialog_closed(dialog, event)
+
+    selected = environment.info["selected"]
+    if selected is not None:
+        TrainerFunctions.setup_editor_buttons(dialog, selected)
+
+    dialog.exec_()
 def custom_organism_clicked(window, environment):
     pause_world(environment)
 
@@ -417,6 +435,11 @@ def resume_world(environment):
     if not environment.info["paused"]:
         return
 
+    def format_update_difference(diff):
+        if diff > 0:
+            return time.time() - diff
+        return time.time()
+
     paused_time = environment.info["paused_time"]
 
     for org in environment.info["organism_list"]:
@@ -426,22 +449,42 @@ def resume_world(environment):
         brain_last_trained_diff = paused_time - org.brain.lastTrained
         birth_time_diff = paused_time - org.birthTime
 
-        org.lastUpdated = time.time() - last_updated_diff
-        org.last_updated_dopamine = time.time() - last_updated_dopamine_diff
-        org.brain.lastUpdated = time.time() - brain_last_updated_diff
-        org.brain.lastTrained = time.time() - brain_last_trained_diff
-        org.birthTime = time.time() - birth_time_diff
+        org.lastUpdated = format_update_difference(last_updated_diff)
+        org.last_updated_dopamine = format_update_difference(last_updated_dopamine_diff)
+        org.brain.lastUpdated = format_update_difference(brain_last_updated_diff)
+        org.brain.lastTrained = format_update_difference(brain_last_trained_diff)
+        org.birthTime = format_update_difference(birth_time_diff)
 
         for cell_id in org.cells:
             sprite = org.cells[cell_id]
             if sprite.alive:
                 sprite_update_diff = paused_time - sprite.lastUpdated
-                sprite.lastUpdated = time.time() - sprite_update_diff
+                sprite.lastUpdated = format_update_difference(sprite_update_diff)
 
     env_update_diff = paused_time - environment.lastUpdated
-    environment.lastUpdated = time.time() - env_update_diff
+    #environment.lastUpdated = time.time() - env_update_diff
+    environment.lastUpdated = format_update_difference(env_update_diff)
 
     environment.info["paused"] = False
+
+def add_dead_clicked(window, environment):
+    cell_id = 0
+    cell_info = {
+        "size": 30,
+        "mass": 12,
+        "elasticity": .5,
+        "friction": .5,
+        "mirror_self": None,
+        "first": False,
+        "type": "body"
+    }
+
+    sprites.finish_cell_info(cell_info)
+
+    newCell = sprites.build_sprite(environment, None, environment.info["lastPosition"], cell_id, cell_info, alive=False)
+    #newCell = self._build_sprite(environment.info["lastPosition"], cell_id, cell_info, alive=False)
+
+    environment.add_sprite(newCell)
 
 def keyPressed(event, window, myWindow, environment):
     if event.key() == QtCore.Qt.Key_Space:
@@ -463,6 +506,8 @@ def keyPressed(event, window, myWindow, environment):
         kill_btn_clicked(myWindow, environment)
     if event.key() == QtCore.Qt.Key_E:
         custom_organism_clicked(window, environment)
+    if event.key() == QtCore.Qt.Key_D:
+        add_dead_clicked(window, environment)
 def keyReleased(event, window, myWindow, environment):
     pass
 
@@ -499,7 +544,8 @@ def setup_window_buttons(window, myWindow, environment):
     myWindow.hurt_btn.mouseReleaseEvent = lambda event: hurt_btn_clicked(myWindow, environment)
     myWindow.reproduce_btn.mouseReleaseEvent = lambda event: reproduce_clicked(environment)
     myWindow.save_organism_btn.mouseReleaseEvent = lambda event: save_organism_clicked(window, environment)
-    myWindow.train_btn.mouseReleaseEvent = lambda event: train_btn_clicked(environment)
+    myWindow.train_btn.mouseReleaseEvent = lambda event: train_organism_clicked(window, environment)
+    #myWindow.train_btn.mouseReleaseEvent = lambda event: train_btn_clicked(environment)
 
     myWindow.sim_severity_slider.valueChanged.connect(lambda: sim_severity_changed(myWindow, environment))
     myWindow.mirror_x_slider.valueChanged.connect(lambda: mirror_x_val_changed(myWindow, environment))

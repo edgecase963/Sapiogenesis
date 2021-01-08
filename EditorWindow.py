@@ -247,7 +247,7 @@ class Ui_Form(object):
         self.mirror_y_checkbox.setText(_translate("Form", "Mirror Y"))
         self.cell_body_btn.setToolTip(_translate("Form", "This cell has no features, abilities, or neural inputs. It\'s the most plain cell of any organism"))
         self.cell_body_btn.setText(_translate("Form", "Body"))
-        self.cell_barrier_btn.setToolTip(_translate("Form", "This cell has a large amount of health and is used to defend against damage"))
+        self.cell_barrier_btn.setToolTip(_translate("Form", "This cell is immune to damage from carnivorous cells"))
         self.cell_barrier_btn.setText(_translate("Form", "Barrier"))
         self.cell_carniv_btn.setToolTip(_translate("Form", "Used to damage/destroy cells of other organisms and eat dead cells"))
         self.cell_carniv_btn.setText(_translate("Form", "Carnivorous"))

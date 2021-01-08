@@ -67,7 +67,7 @@ def mousePressEvent(event, pos, dialog, environment):
         if not sprite_clicked.isBubble:
             dialog.info["selected_cell"] = sprite_clicked
 
-def add_cell_clicked(dialog, type):
+def add_cell_clicked(dialog, cell_type):
     if not dialog.info["selected_cell"]:
         return
 
@@ -79,7 +79,7 @@ def add_cell_clicked(dialog, type):
 
     angle = math.radians( (dial_value / 100.) * 360 )
 
-    new_id = dialog.info["dna"].add_cell(dialog.info["selected_cell"].cell_id, type, size, mass, elasticity, friction, angle)
+    new_id = dialog.info["dna"].add_cell(dialog.info["selected_cell"].cell_id, cell_type, size, mass, elasticity, friction, angle)
 
     remake_organism(dialog, dialog.info["dna"])
 
@@ -87,7 +87,7 @@ def add_cell_clicked(dialog, type):
 
     cell_selected(dialog, sprite)
 
-def change_cell_clicked(dialog, type):
+def change_cell_clicked(dialog, cell_type):
     if not dialog.info["selected_cell"]:
         return
 
@@ -97,19 +97,19 @@ def change_cell_clicked(dialog, type):
     if cell_id == dna.first_cell():
         return
 
-    dna.change_type(cell_id, type)
+    dna.change_type(cell_id, cell_type)
 
     remake_organism(dialog, dna)
 
-def cell_btn_clicked(dialog, type):
+def cell_btn_clicked(dialog, cell_type):
     if dialog.info["adding_cell"]:
-        add_cell_clicked(dialog, type)
+        add_cell_clicked(dialog, cell_type)
     else:
-        change_cell_clicked(dialog, type)
+        change_cell_clicked(dialog, cell_type)
 
 def update_relative_positions(dna, cell_id, is_mirror=False):
     parentID = dna.grows_from(cell_id)
-    if parentID != None:
+    if parentID is not None:
         direction = dna.growth_pattern[parentID][cell_id]
         childSize = dna.cells[cell_id]["size"]
 
@@ -206,7 +206,7 @@ def cell_selected(dialog, sprite):
     dialog.ui.direction_dial.setValue(dialVal)
 
 def delete_btn_clicked(dialog):
-    if dialog.info["selected_cell"] == None:
+    if dialog.info["selected_cell"] is None:
         return
 
     sprite = dialog.info["selected_cell"]
@@ -245,7 +245,7 @@ def update_organism_mirroring(dialog):
                 continue
 
             mirror_id = cell_info["mirror_self"]
-            if mirror_id == None:
+            if mirror_id is None:
                 continue
 
             if mirror_id > cell_id and mirror_id in new_dna.cells:
@@ -304,7 +304,7 @@ def finish_clicked(dialog, event):
     dialog.close()
 
 def size_changed(dialog, val):
-    if dialog.info["selected_cell"] == None:
+    if dialog.info["selected_cell"] is None:
         return
     cell_id = dialog.info["selected_cell"].cell_id
 
@@ -315,7 +315,7 @@ def size_changed(dialog, val):
 
     remake_organism(dialog, dialog.info["dna"])
 def mass_changed(dialog, val):
-    if dialog.info["selected_cell"] == None:
+    if dialog.info["selected_cell"] is None:
         return
     cell_id = dialog.info["selected_cell"].cell_id
     dna = dialog.info["dna"]
@@ -327,7 +327,7 @@ def mass_changed(dialog, val):
 
     remake_organism(dialog, dna)
 def elasticity_changed(dialog, val):
-    if dialog.info["selected_cell"] == None:
+    if dialog.info["selected_cell"] is None:
         return
     cell_id = dialog.info["selected_cell"].cell_id
 
@@ -335,7 +335,7 @@ def elasticity_changed(dialog, val):
 
     remake_organism(dialog, dialog.info["dna"])
 def friction_changed(dialog, val):
-    if dialog.info["selected_cell"] == None:
+    if dialog.info["selected_cell"] is None:
         return
     cell_id = dialog.info["selected_cell"].cell_id
 

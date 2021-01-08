@@ -188,7 +188,7 @@
     </rect>
    </property>
    <property name="toolTip">
-    <string>This cell has a large amount of health and is used to defend against damage</string>
+    <string>This cell is immune to damage from carnivorous cells</string>
    </property>
    <property name="statusTip">
     <string/>
