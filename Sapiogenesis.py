@@ -21,7 +21,7 @@ from TrainerWindow import Ui_Trainer
 from userInterface import Ui_EditorWindow
 from EditorWindow import Ui_Form as Editor_Dialog
 
-__version__ = "0.8.0 (Beta)"
+__version__ = "0.8.1 (Beta)"
 
 
 
