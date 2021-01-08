@@ -33,7 +33,7 @@ if sys.platform.startswith("win"):
 last_bubble_creation = time.time()
 bubble_interval = 1.
 
-co2_conversion_ratio = 12 # The amount of energy generated from 1 CO2 particle
+co2_conversion_ratio = 3 # The amount of energy generated from 1 CO2 particle
 
 cell_dispersion_rate = 6 # The percentage of a dead cell's mass to disperse per second
 
@@ -47,7 +47,7 @@ mass_cutoff = 1 # If a dead cell's percentage of mass becomes less than this, it
 
 break_damage = 5 # The amount of damage a cell does to its parent when it dies (break off from body) - multiplied by its size
 
-starvation_rate = 150 # The amount of damage to do to a cell each second if its energy equals 0
+starvation_rate = 8 # The percentage of damage to do to a cell each second if its energy equals 0
 
 neural_update_delay = .2 # How long to wait before activating an organism's brain - helps reduce lag
 
@@ -69,48 +69,48 @@ base_cell_info = {
     "health": {
         # This is multiplied by the size and mass of each given cell
         # <max_health> = <base_health> * <cell_size> * <cell_mass>
-        "barrier": 80,
-        "carniv": 15,
-        "co2C": 6,
-        "eye": 4,
-        "olfactory": 12,
-        "push": 12,
-        "body": 12,
-        "heart": 6,
-        "rotate": 12
+        "barrier": 30,
+        "carniv": 30,
+        "co2C": 15,
+        "eye": 8,
+        "olfactory": 24,
+        "push": 24,
+        "body": 24,
+        "heart": 15,
+        "rotate": 24
     },
     "energy_usage": {
         # The first variable in the lists below represent an idle cell
         # The second variable reprents a cell's energy intake while in use
         # This is multiplied by the size and mass of each given cell
         # <max_energy_usage> = <base_energy_usage> * (<cell_size> / 2) * (<cell_mass> / 2)
-        "barrier": [2, 2],
-        "carniv": [5, 6],
-        "co2C": [6, 6],
-        "eye": [5, 5],
-        "olfactory": [6, 8],
-        "push": [5, 8],
-        "body": [2, 2],
-        "heart": [5, 5],
-        "rotate": [5, 8]
+        "barrier": [1.2, 1.2],
+        "carniv": [2.5, 4],
+        "co2C": [3.6, 3.6],
+        "eye": [2, 2],
+        "olfactory": [3.5, 5],
+        "push": [3, 6],
+        "body": [1.2, 1.2],
+        "heart": [2.5, 2.5],
+        "rotate": [2.5, 5]
     },
     "energy_storage": {
         # This is multiplied by the size and mass of each given cell
         # <energy_storage> = <base_energy_storage> * <cell_size> * <cell_mass>
-        "barrier": 10,
-        "carniv": 18,
-        "co2C": 20,
-        "eye": 18,
-        "olfactory": 18,
-        "push": 20,
-        "body": 18,
-        "heart": 22,
-        "rotate": 18
+        "barrier": 15,
+        "carniv": 30,
+        "co2C": 33,
+        "eye": 20,
+        "olfactory": 30,
+        "push": 30,
+        "body": 30,
+        "heart": 33,
+        "rotate": 30
     },
     "damage": {
         # The damage each cell does when in contact with a cell from another organism
         "barrier": 0,
-        "carniv": 45,
+        "carniv": 2,
         "co2C": 0,
         "eye": 0,
         "olfactory": 0,
@@ -236,6 +236,95 @@ def eye_segment_handler(arbiter, space, data):
             sensor.info["view"].append(sprite)
     return False
 
+def finish_cell_info(cell_info):
+    cell_type = cell_info["type"]
+    cell_mass = cell_info["mass"]
+    cell_size = cell_info["size"]
+
+    cell_health = (base_cell_info["health"][cell_type] * cell_size) + (base_cell_info["health"][cell_type] * cell_mass)
+    cell_info["max_health"] = cell_health
+
+    cell_energy_usage = [ (i * cell_size) + (i * cell_mass) for i in base_cell_info["energy_usage"][cell_type] ]
+    cell_info["energy_usage"] = cell_energy_usage
+
+    cell_damage = (base_cell_info["damage"][cell_type] * cell_size) + (base_cell_info["damage"][cell_type] * cell_mass)
+    cell_info["damage"] = cell_damage
+
+    cell_energy_storage = (base_cell_info["energy_storage"][cell_type] * cell_size) + (base_cell_info["energy_storage"][cell_type] * cell_mass)
+    cell_info["energy_storage"] = cell_energy_storage
+
+def build_sprite(environment, organism, pos, cell_id, cell_info, alive=True):
+    if alive:
+        image = "Images{}{}.png".format(dirType, cell_info["type"])
+    else:
+        image = "Images{}{}".format(dirType, dead_image)
+    body, shape = physics.makeCircle(
+        cell_info["size"]/2,
+        friction = cell_info["friction"],
+        elasticity = cell_info["elasticity"],
+        mass = cell_info["mass"]
+    )
+    newCell = physics.Sprite(
+        pos,
+        cell_info["size"],
+        cell_info["size"],
+        environment,
+        body,
+        shape,
+        image=image
+    )
+
+    newCell.cell_id = cell_id
+    if organism is not None:
+        newCell.collision = lambda sprite: organism._cell_collision(newCell, sprite)
+    newCell.organism = organism
+    newCell.cell_info = cell_info
+    newCell.info = {
+        "health": cell_info["max_health"],
+        "energy": cell_info["energy_storage"]/2,
+        "in_use": False,
+        "detection_items": [],
+        "view": [],
+        "removed": False,
+        "colliding": [],
+        "sight_range": 0.0,
+        "smell_range": 0.0
+    }
+    newCell.alive = alive
+    newCell.isBubble = False
+    newCell.creationTime = time.time()
+    newCell.environment = environment
+
+    if organism is not None:
+        newCell.mouseDoubleClickEvent = lambda event: organism.cell_double_clicked(newCell)
+
+    if cell_info["type"] == "eye" and newCell.alive:
+        newCell.info["sight_range"] = cell_info["size"] * eyesight_multiplier
+
+        newBody, newShape = physics.makeCircle( newCell.info["sight_range"], friction=0.0, elasticity=0.0, mass=1 )
+        newShape.sensor = True
+        newShape.collision_type = 1
+        newShape.sprite = newCell
+        newBody.position = pos
+
+        joint = pymunk.PinJoint(newBody, newCell.body, [0,0], [0,0])
+
+        newCell.info["detection_items"] = [newBody, newShape, joint]
+    elif cell_info["type"] == "olfactory" and newCell.alive:
+        newCell.info["smell_range"] = cell_info["size"] * olfactory_multiplier
+
+        newBody, newShape = physics.makeCircle( newCell.info["smell_range"], friction=0.0, elasticity=0.0, mass=1 )
+        newShape.sensor = True
+        newShape.collision_type = 1
+        newShape.sprite = newCell
+        newBody.position = pos
+
+        joint = pymunk.PinJoint(newBody, newCell.body, [0,0], [0,0])
+
+        newCell.info["detection_items"] = [newBody, newShape, joint]
+
+    return newCell
+
 
 
 class DNA():
@@ -322,10 +411,6 @@ class DNA():
         self.previousInputs = []
         self.previousOutputs = []
         self.previousDopamine = []
-
-    def cell_size(self, cell_id):
-        if cell_id in self.cells:
-            return self.cells[cell_id]["size"]
 
     def first_cell(self):
         # Returns the first cell that's created while building this creature's body
@@ -446,10 +531,10 @@ class DNA():
         cell_health = base_cell_info["health"][cell_type] * cell_size * cell_mass
         cell_info["max_health"] = cell_health
 
-        cell_energy_usage = [i * (cell_size/2) * (cell_mass/2) for i in base_cell_info["energy_usage"][cell_type]]
+        cell_energy_usage = [i * cell_size * cell_mass for i in base_cell_info["energy_usage"][cell_type]]
         cell_info["energy_usage"] = cell_energy_usage
 
-        cell_damage = base_cell_info["damage"][cell_type] * (cell_mass/2)
+        cell_damage = base_cell_info["damage"][cell_type] * cell_size * cell_mass
         cell_info["damage"] = cell_damage
 
         cell_energy_storage = base_cell_info["energy_storage"][cell_type] * cell_size * cell_mass
@@ -482,7 +567,7 @@ class DNA():
             cell_type = random.choice(cell_types)
         cell_info["type"] = cell_type
 
-        self._finish_cell_info(cell_info)
+        finish_cell_info(cell_info)
 
         cell_info["first"] = first_cell
 
@@ -523,7 +608,7 @@ class DNA():
         if self.cells[cell_id]["mirror_self"] and not changing_mirror:
             self.set_mass(self.cells[cell_id]["mirror_self"], new_mass, changing_mirror=True)
 
-        self._finish_cell_info(self.cells[cell_id])
+        finish_cell_info(self.cells[cell_id])
 
     def set_size(self, cell_id, new_size, changing_mirror=False):
         if not cell_id in self.cells:
@@ -534,7 +619,7 @@ class DNA():
         if self.cells[cell_id]["mirror_self"] and not changing_mirror:
             self.set_size(self.cells[cell_id]["mirror_self"], new_size, changing_mirror=True)
 
-        self._finish_cell_info(self.cells[cell_id])
+        finish_cell_info(self.cells[cell_id])
 
     def change_type(self, cell_id, new_type, changing_mirror=False):
         if not cell_id in self.cells:
@@ -545,7 +630,7 @@ class DNA():
         if self.cells[cell_id]["mirror_self"] and not changing_mirror:
             self.change_type(self.cells[cell_id]["mirror_self"], new_type, changing_mirror=True)
 
-        self._finish_cell_info(self.cells[cell_id])
+        finish_cell_info(self.cells[cell_id])
 
     def add_cell(self, parentID, cell_type, size, mass, elasticity, friction, angle):
         if not parentID in self.cells:
@@ -566,7 +651,7 @@ class DNA():
             "first": False
         }
 
-        self._finish_cell_info(cell_info)
+        finish_cell_info(cell_info)
 
         relative_pos = self._new_relative_pos(parentID, grow_direction, cell_info["size"])
         cell_info["relative_pos"] = relative_pos
@@ -1048,75 +1133,6 @@ class Organism():
     def cell_double_clicked(self, sprite):
         pass
 
-    def _build_sprite(self, pos, cell_id, cell_info, alive=True):
-        if alive:
-            image = "Images{}{}.png".format(dirType, cell_info["type"])
-        else:
-            image = "Images{}{}".format(dirType, dead_image)
-        body, shape = physics.makeCircle(
-            cell_info["size"]/2,
-            friction = cell_info["friction"],
-            elasticity = cell_info["elasticity"],
-            mass = cell_info["mass"]
-        )
-        newCell = physics.Sprite(
-            pos,
-            cell_info["size"],
-            cell_info["size"],
-            self.environment,
-            body,
-            shape,
-            image=image
-        )
-
-        newCell.cell_id = cell_id
-        newCell.collision = lambda sprite: self._cell_collision(newCell, sprite)
-        newCell.organism = self
-        newCell.cell_info = cell_info
-        newCell.info = {
-            "health": cell_info["max_health"],
-            "energy": cell_info["energy_storage"]/2,
-            "in_use": False,
-            "detection_items": [],
-            "view": [],
-            "removed": False,
-            "colliding": [],
-            "sight_range": 0.0,
-            "smell_range": 0.0
-        }
-        newCell.alive = alive
-        newCell.isBubble = False
-        newCell.creationTime = time.time()
-
-        newCell.mouseDoubleClickEvent = lambda event: self.cell_double_clicked(newCell)
-
-        if cell_info["type"] == "eye" and newCell.alive:
-            newCell.info["sight_range"] = cell_info["size"] * eyesight_multiplier
-
-            newBody, newShape = physics.makeCircle( newCell.info["sight_range"], friction=0.0, elasticity=0.0, mass=1 )
-            newShape.sensor = True
-            newShape.collision_type = 1
-            newShape.sprite = newCell
-            newBody.position = pos
-
-            joint = pymunk.PinJoint(newBody, newCell.body, [0,0], [0,0])
-
-            newCell.info["detection_items"] = [newBody, newShape, joint]
-        elif cell_info["type"] == "olfactory" and newCell.alive:
-            newCell.info["smell_range"] = cell_info["size"] * olfactory_multiplier
-
-            newBody, newShape = physics.makeCircle( newCell.info["smell_range"], friction=0.0, elasticity=0.0, mass=1 )
-            newShape.sensor = True
-            newShape.collision_type = 1
-            newShape.sprite = newCell
-            newBody.position = pos
-
-            joint = pymunk.PinJoint(newBody, newCell.body, [0,0], [0,0])
-
-            newCell.info["detection_items"] = [newBody, newShape, joint]
-
-        return newCell
-
     def _create_cell(self, cell_id, subCells=False):
         # When `subCells` equals True, it will also create all cells that grow from the given cell
         firstCell = self.dna.cells[cell_id]["first"]
@@ -1132,7 +1148,8 @@ class Organism():
 
             cell_info = self.dna.cells[cell_id]
 
-            newCell = self._build_sprite(pos, cell_id, cell_info, alive=True)
+            #newCell = self._build_sprite(pos, cell_id, cell_info, alive=True)
+            newCell = build_sprite(self.environment, self, pos, cell_id, cell_info, alive=True)
 
             self.cells[cell_id] = newCell
 
@@ -1152,7 +1169,8 @@ class Organism():
         #pos = sprite.body.position
         pos = [sprite.body.position[0], sprite.body.position[1]]
 
-        newCell = self._build_sprite(pos, cell_id, new_cell_info, alive=False)
+        #newCell = self._build_sprite(pos, cell_id, new_cell_info, alive=False)
+        newCell = build_sprite(self.environment, self, pos, cell_id, new_cell_info, alive=False)
 
         return newCell
 
@@ -1245,7 +1263,8 @@ class Organism():
         pos = self._growth_position(cell_id, rel_pos=newRelPos)
 
         cell_info = self.dna.cells[cell_id]
-        newCell = self._build_sprite(pos, cell_id, cell_info, alive=True)
+        #newCell = self._build_sprite(pos, cell_id, cell_info, alive=True)
+        newCell = build_sprite(self.environment, self, pos, cell_id, cell_info, alive=True)
         self.cells[cell_id] = newCell
 
         sprite = self.cells[cell_id]
@@ -1282,6 +1301,8 @@ class Organism():
         energyList = [self.cells[i].info["energy"] for i in self.living_cells()]
         return sum(energyList)
     def energy_percent(self):
+        if not self.total_energy() or not self.max_energy():
+            return 0.0
         return num2perc( self.total_energy(), self.max_energy() )
 
     def max_health(self):
@@ -1289,6 +1310,8 @@ class Organism():
     def current_health(self):
         return sum([self.cells[id].info["health"] for id in self.living_cells()])
     def health_percent(self):
+        if not self.current_health() or not self.max_health():
+            return 0.0
         return num2perc( self.current_health(), self.max_health() )
 
     def kill_cell(self, sprite):
@@ -1472,7 +1495,8 @@ class Organism():
             for cell in sprite.info["colliding"]:
                 added_energy = damage_dealt / 2
                 if cell.alive:
-                    cell.info["health"] -= damage_dealt
+                    if cell.cell_info["type"] != "barrier" or cell.alive == False:
+                        cell.info["health"] -= damage_dealt
                 else:
                     mass = cell.body.mass
                     newMass = mass - (damage_dealt / sprite.cell_info["size"])
@@ -1546,7 +1570,6 @@ class Organism():
         else:
             energy_usage = cell_info["energy_usage"][0]
 
-        #sprite.info["energy"] -= energy_usage * uDiff
         self.take_energy(energy_usage * uDiff)
 
         if sprite.info["energy"] < 0:
@@ -1574,9 +1597,11 @@ class Organism():
         #        self.revive_cell(dead_list[0])
         #        sprite.info["energy"] /= 2
 
-        if sprite.info["energy"] <= 0:
+        if sprite.info["energy"] <= perc2num(2, sprite.cell_info["energy_storage"]):
             #self.kill_cell(sprite)
-            damage_dealt = starvation_rate * uDiff
+            damage_dealt = perc2num(starvation_rate, sprite.cell_info["max_health"])
+            damage_dealt *= uDiff
+            #damage_dealt = starvation_rate * uDiff
             sprite.info["health"] -= damage_dealt
 
     def _update_brain(self):
@@ -1619,7 +1644,7 @@ class Organism():
             digested_energy = perc2num(80, self.energy_consumed) * uDiff
 
             self.energy_consumed -= digested_energy
-            self.energy_consumed += self.add_energy(digested_energy)
+            self.energy_consumed += self.add_energy(digested_energy * 1.2)
 
         #~ Brain udpate section
         brain_uDiff = time.time() - self.brain.lastUpdated
@@ -1656,6 +1681,9 @@ class Organism():
                 sprite = self.cells[cell_id]
                 if sprite.alive:
                     sprite.info["energy"] = sprite.info["energy"]/2
+
+            self.lastHealth = self.health_percent()
+            self.lastEnergy = self.energy_percent()
 
         for cell_id in self.cells.copy():
             self._update_cell(cell_id, uDiff)
@@ -1710,8 +1738,7 @@ class Organism():
 
 
 def disperse_cell(sprite):
-    organism = sprite.organism
-    environment = organism.environment
+    environment = sprite.environment
     #cell_info = sprite.cell_info
     #cell_id = sprite.cell_id
 
@@ -1732,8 +1759,9 @@ def disperse_all_dead(environment):
 def gradual_dispersion(environment, sprite, uDiff):
     mass = sprite.body.mass
     dispersion_rate = perc2num(cell_dispersion_rate, mass) * uDiff
-    organism = sprite.organism
-    cell_info = organism.dna.cells[sprite.cell_id]
+    cell_info = sprite.cell_info
+    #organism = sprite.organism
+    #cell_info = organism.dna.cells[sprite.cell_id]
     #dispersion_rate = cell_dispersion_rate * uDiff
 
     if mass < mass_cutoff:

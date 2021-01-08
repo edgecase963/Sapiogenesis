@@ -1863,7 +1863,7 @@
        <number>1</number>
       </property>
       <property name="maximum">
-       <number>9999</number>
+       <number>999</number>
       </property>
      </widget>
      <widget class="QDoubleSpinBox" name="learn_thresh_val">
@@ -1879,7 +1879,7 @@
        <string>Higher = faster | Lower = more detailed memory</string>
       </property>
       <property name="minimum">
-       <double>0.010000000000000</double>
+       <double>0.000000000000000</double>
       </property>
       <property name="maximum">
        <double>99.900000000000006</double>
