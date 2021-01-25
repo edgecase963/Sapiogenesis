@@ -3,6 +3,7 @@ import networks
 import math
 import torch
 import time
+import copy
 
 from pymunk import Vec2d
 
@@ -72,6 +73,30 @@ def calculateStimulation(dna):
     #stimulation = torch.mean( torch.tensor(inputAverages) ) / max_stim
 
     return float(stimulation)
+
+def roundList(lst, fl=1):
+    return [round(i, fl) for i in lst]
+
+def rewardSorter(mem):
+    return mem[2]
+
+def remove_memory(dna, index):
+    if index+1 <= len(dna.trainingInput):
+        dna.trainingInput.pop(index)
+        dna.trainingOutput.pop(index)
+        dna.trainingReward.pop(index)
+
+#def random_training_chunk(trainingInput, trainingOutput, chunkSize):
+#    training_inputs = copy.deepcopy(trainingInput)
+#    training_outputs = copy.deepcopy(trainingOutput)
+
+#    if len(trainingInput) > chunkSize:
+#        # If the length of training data is greater than the maximum index length, cut a random chunk from it
+#        random_index = random.randrange( 0, len(trainingInput) - chunkSize )
+#        training_inputs = training_inputs[ random_index : random_index+chunkSize ]
+#        training_outputs = training_outputs[ random_index : random_index+chunkSize ]
+
+#    return training_inputs, training_outputs
 
 
 
@@ -269,24 +294,47 @@ def activate(network, environment, organism, uDiff):
         for i in all_inputs:
             flat_inputs.extend(i)
         flat_inputs = torch.tensor(flat_inputs).float()
+        flat_inputs = torch.tensor([ round(i, 1) for i in flat_inputs.tolist() ])
 
-        if network.isRNN:
+        if network.is_rnn:
             network_output = network.forward(flat_inputs, network.lastHidden)
         else:
             network_output = network.forward(flat_inputs)
+        #network_output = torch.tensor([ round(i, 1) for i in network_output.tolist() ])
 
-        new_modifier = random.uniform(-1, 1) * network.boredom
+        #new_modifier = random.uniform(-1, 1) * network.boredom
+        new_modifier = torch.randn(network_output.shape) * network.boredom
         network.boredom_modifier = (network.boredom_modifier + new_modifier) / 2.
 
-        network_output = torch.tensor([ i+network.boredom_modifier for i in network_output ])
+        network_output += network.boredom_modifier
+
+        #if random.random() <= network.boredom:
+        #    network_output = torch.randn(network_output.shape)
+        #    print(network_output)
+
+        if positive(organism.dopamine) > 0.1 or positive(organism.pain) > 0.1:
+            if len(organism.dna.previousInputs) > 2 and len(organism.dna.previousOutputs) > 2:
+                organism.dna.memory.append([
+                    #network.lastInput.tolist(),
+                    #network.lastOutput.tolist(),
+                    organism.dna.previousInputs[-3].tolist(),
+                    organism.dna.previousOutputs[-3],
+                    network.lastDopamine + organism.dopamine
+                ])
+                if network.is_rnn:
+                    organism.dna.hidden_memory.append(network.lastHidden.tolist())
+
+        while len(organism.dna.memory) > 30:
+            organism.dna.memory.pop(0)
+            if network.is_rnn:
+                organism.dna.hidden_memory.pop(0)
 
         network.lastInput = flat_inputs.clone().detach().requires_grad_(True)
         network.lastOutput = network_output.clone().detach().requires_grad_(True)
+        network.lastDopamine = organism.dopamine
 
-        if organism.dopamine != 0 or organism.pain != 0:
-            organism.dna.previousInputs.append( flat_inputs )
-            organism.dna.previousOutputs.append( network_output.tolist() )
-            organism.dna.previousDopamine.append( organism.dopamine )
+        organism.dna.previousInputs.append( flat_inputs )
+        organism.dna.previousOutputs.append( network_output.tolist() )
 
         for i, output_val in enumerate(network_output):
             correspondent = network.outputCells[i]
@@ -334,57 +382,68 @@ def train_network(organism, epochs=1, save_memory=False, finite_memory=True):
     network = organism.brain
     if not network:
         return
-    if (network.lastOutput == None or network.lastInput == None) and save_memory:
+    if (network.lastOutput is None or network.lastInput is None) and save_memory:
         return
-    if (not organism.dna.trainingInput or not organism.dna.trainingOutput) and not save_memory:
-        return
-    if len(organism.dna.previousInputs) < 5 or len(organism.dna.previousOutputs) < 5:
-        return
-    if len(organism.dna.previousDopamine) < 3:
-        return
-
-    pos_dopamine = list( map(positive, organism.dna.previousDopamine) )
-    scaled_dopamine_list = [ (i/max(pos_dopamine)) * positive(i) for i in organism.dna.previousDopamine ]
 
     if save_memory:
-        inputData = sum( organism.dna.previousInputs[-5:-3] )
-        inputData = inputData / len(inputData)
-        targetData = sum( map(torch.tensor, organism.dna.previousOutputs[-5:-3]) )
-        targetData = targetData / len(targetData)
+        #inputDataR = roundList(network.lastInput.tolist())
 
-        dopamineData = scaled_dopamine_list[-3:-1]
-        targetDopamine = sum(dopamineData) / len(dopamineData)
+        #allActions = [mem for mem in organism.dna.memory if roundList(mem[0]) == inputDataR]
+        #print(allActions)
 
-        targetData = torch.tensor( [x * targetDopamine for x in targetData] ).float()
+        for i, mem in enumerate(organism.dna.memory):
+            inputDataR = roundList(mem[0])
+            allActions = [m for m in organism.dna.memory if roundList( m[0] ) == inputDataR]
 
-        organism.dna.trainingInput.append( inputData.tolist() )
-        organism.dna.trainingOutput.append( targetData.tolist() )
+            if allActions:
+                bestMemory = sorted(allActions, key=rewardSorter)[-1]
+                bestAction = bestMemory[1]
+                bestReward = bestMemory[2]
+                addToTraining = True
+
+                if inputDataR in organism.dna.trainingInput:
+                    index = organism.dna.trainingInput.index(inputDataR)
+                    if organism.dna.trainingReward[index] > bestReward:
+                        addToTraining = False
+                    else:
+                        remove_memory(organism.dna, index)
+
+                if addToTraining:
+                    organism.dna.trainingInput.append( inputDataR )
+                    organism.dna.trainingOutput.append( bestAction )
+                    organism.dna.trainingReward.append( mem[2] )
+                    if network.is_rnn:
+                        organism.dna.trainingHidden.append(organism.dna.hidden_memory[i])
 
         while len(organism.dna.trainingInput) > memory_limit and finite_memory:
-            organism.dna.trainingInput.pop(0)
-            organism.dna.trainingOutput.pop(0)
-            organism.dna.previousInputs.pop(0)
-            organism.dna.previousOutputs.pop(0)
-            organism.dna.previousDopamine.pop(0)
+            remove_memory(organism.dna, 0)
 
-    if network.isRNN:
-        for i in range(epochs):
-            network.lastLoss = network.trainer.train_rnn(torch.tensor(organism.dna.trainingInput), torch.tensor(organism.dna.trainingOutput))
-    else:
-        for i in range(epochs):
-            network.lastLoss = network.trainer.train_epoch(torch.tensor(organism.dna.trainingInput), torch.tensor(organism.dna.trainingOutput))
+    if organism.dna.trainingInput and organism.dna.trainingOutput:
+        if network.is_rnn:
+            for i in range(epochs):
+                network.lastLoss = network.trainer.train_rnn(
+                    torch.tensor(organism.dna.trainingInput),
+                    torch.tensor(organism.dna.trainingOutput),
+                    torch.tensor(organism.dna.trainingHidden)
+                )
+        else:
+            for i in range(epochs):
+                network.lastLoss = network.trainer.train_epoch(
+                    torch.tensor(organism.dna.trainingInput),
+                    torch.tensor(organism.dna.trainingOutput)
+                )
 
     network.lastTrained = time.time()
 
     organism._update_brain_weights()
 
 
-def setup_network(dna, learning_rate=0.02, rnn=False):
+def setup_network(dna, learning_rate=0.02, rnn=False, hiddenSize=6):
     base_input = {
         "visual": [],
         "chemical": [],
         "movement": ["speed", "x_direction", "y_direction"],
-        "body": ["health", "energy"]
+        "body": ["energy"]
     }
 
     base_output = ["rotation", "speed", "x_direction", "y_direction"]
@@ -430,7 +489,7 @@ def setup_network(dna, learning_rate=0.02, rnn=False):
         outputSize = len(base_output)
 
         if rnn:
-            network = networks.RNNetwork(inputSize, hiddenList, outputSize, 6, optimizer=dna.brain_structure["optimizer"], learning_rate=learning_rate)
+            network = networks.RNNetwork(inputSize, hiddenList, outputSize, hiddenSize, optimizer=dna.brain_structure["optimizer"], learning_rate=learning_rate)
         else:
             network = networks.Network(inputSize, hiddenList, outputSize, optimizer=dna.brain_structure["optimizer"], learning_rate=learning_rate)
 
@@ -441,10 +500,12 @@ def setup_network(dna, learning_rate=0.02, rnn=False):
         network.lastTrained = time.time()
         network.lastOutput = None
         network.lastInput = None
+        network.lastDopamine = 0.0
         network.lastLoss = 0.0
         network.stimulation = 0.0
         network.boredom = 0.0
-        network.boredom_modifier = 0.0
+        network.boredom_modifier = torch.zeros(outputSize)
+        network.is_rnn = rnn
         # boredom_modifier is how much to add to the network outputs and is changed randomly and scales with boredom
 
         return network

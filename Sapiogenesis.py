@@ -21,28 +21,37 @@ from TrainerWindow import Ui_Trainer
 from userInterface import Ui_EditorWindow
 from EditorWindow import Ui_Form as Editor_Dialog
 
-__version__ = "0.8.1 (Beta)"
+__version__ = "0.9.0 (Beta)"
 
 
 
 def updateUI(window, environment):
     time_passed = time.time() - environment.info["startTime"]
 
+    event_uDiff = time.time() - environment.info["last_event_update"]
     sim_severity = window.sim_severity_slider.value() / 10.
 
-    if environment.info["sim_drought"]:
-        depleted_val = sim_severity * time_passed
-        environment.info["oxygen"] -= depleted_val
-        environment.info["co2"] -= depleted_val
-    if environment.info["sim_algal"]:
-        depleted_val = sim_severity * time_passed
-        environment.info["oxygen"] -= depleted_val
-    if environment.info["sim_poison"]:
-        depleted_val = sim_severity * time_passed
-        for org in environment.info["organism_list"]:
-            for cell_id in org.cells:
-                sprite = org.cells[cell_id]
-                sprite.info["health"] -= depleted_val/10.
+    update_selection_widget(window, environment)
+
+    if not environment.info["paused"]:
+        if window.drought_checkbox.isChecked():
+            depleted_val = sim_severity * event_uDiff
+            environment.info["oxygen"] -= depleted_val
+            environment.info["co2"] -= depleted_val
+        if window.poison_checkbox.isChecked():
+            depleted_val = sim_severity * event_uDiff
+            for org in environment.info["organism_list"]:
+                for cell_id in org.cells:
+                    sprite = org.cells[cell_id]
+                    sprite.info["health"] -= depleted_val * 5
+        if window.random_cells_checkbox.isChecked():
+            rVal = sim_severity * event_uDiff
+            if random.random() <= rVal:
+                randomPosX = random.randrange(10, environment.width)
+                randomPosY = random.randrange(10, environment.height)
+                add_dead_clicked(window, environment, [randomPosX, randomPosY])
+
+    environment.info["last_event_update"] = time.time()
 
     if environment.info["co2"] < 0:
         environment.info["co2"] = 0
@@ -130,6 +139,40 @@ def add_organism(organism, environment):
     environment.info["organism_list"].append(organism)
     organism.build_body()
 
+def update_selection_widget(myWindow, environment):
+    selected = environment.info["selected"]
+
+    if myWindow.selection_widget is not None:
+        myWindow.scene.removeItem( myWindow.selection_widget )
+        myWindow.selection_widget = None
+
+    if selected is not None:
+        new_width = int(selected.get_width() + 20)
+        new_height = int(selected.get_height() + 20)
+        rect = selected.get_rect()
+
+        sImg = QtGui.QPixmap("Images/selection_image.png")
+        sImg = sImg.scaled( new_width, new_height )
+
+        graphicsPixmapItem = QtWidgets.QGraphicsPixmapItem(sImg)
+
+        graphicsPixmapItem.setPixmap(sImg)
+        graphicsPixmapItem.setPos(rect[0] - 10, rect[1] - 10)
+
+        myWindow.scene.addItem(graphicsPixmapItem)
+
+        myWindow.selection_widget = graphicsPixmapItem
+
+def organism_selected(myWindow, environment, organism):
+    environment.info["selected"] = organism
+    myWindow.active_training_checkbox.setChecked(organism.active_training)
+
+    myWindow.normal_mode_btn.setChecked(organism.normal_mode)
+    myWindow.training_mode_btn.setChecked(organism.training_mode)
+    myWindow.curiosity_val.setText( str(round(organism.dna.base_info["curiosity"], 2)) )
+
+    update_selection_widget(myWindow, environment)
+
 def mousePressEvent(myWindow, event, pos, environment):
     rightButton = False
     leftButton = False
@@ -148,8 +191,7 @@ def mousePressEvent(myWindow, event, pos, environment):
         if not sprite_clicked.isBubble:
             organism = sprite_clicked.organism
             if organism is not None:
-                environment.info["selected"] = organism
-                myWindow.active_training_checkbox.setChecked(organism.active_training)
+                organism_selected(myWindow, environment, organism)
 
 def mouseReleaseEvent(event, pos, environment):
     rightButton = False
@@ -231,25 +273,10 @@ def neural_sev_val_changed(myWindow, environment):
     myWindow.neural_severity_lcd.setProperty("value", neural_mutation_severity)
     environment.info["brain_mutation_severity"] = neural_mutation_severity / 100.
 
-def drought_btn_clicked(window, environment):
-    if environment.info["sim_drought"]:
-        environment.info["sim_drought"] = False
-    else:
-        environment.info["sim_drought"] = True
-def algal_btn_clicked(window, environment):
-    if environment.info["sim_algal"]:
-        environment.info["sim_algal"] = False
-    else:
-        environment.info["sim_algal"] = True
-def poison_btn_clicked(window, environment):
-    if environment.info["sim_poison"]:
-        environment.info["sim_poison"] = False
-    else:
-        environment.info["sim_poison"] = True
-def clear_events_clicked(window, environment):
-    environment.info["sim_drought"] = False
-    environment.info["sim_algal"] = False
-    environment.info["sim_poison"] = False
+def clear_events_clicked(myWindow, environment):
+    myWindow.drought_checkbox.setChecked(False)
+    myWindow.poison_checkbox.setChecked(False)
+    myWindow.random_cells_checkbox.setChecked(False)
 
 def reproduce_clicked(environment):
     selected = environment.info["selected"]
@@ -379,13 +406,13 @@ def feed_all_clicked(environment):
 def kill_all_clicked(environment):
     for org in environment.info["organism_list"]:
         org.kill()
-def reset_clicked(environment):
+def reset_clicked(myWindow, environment):
     kill_all_clicked(environment)
     disperse_cells_clicked(environment)
     environment.info["co2"] = 30000
     environment.info["oxygen"] = 0
     environment.info["startTime"] = time.time()
-    clear_events_clicked(window, environment)
+    clear_events_clicked(myWindow, environment)
 def import_organism_clicked(window, environment):
     pause_world(environment)
 
@@ -429,8 +456,7 @@ def custom_organism_clicked(window, environment):
 
     dialog.exec_()
 def pause_world(environment):
-    environment.info["paused"] = True
-    environment.info["paused_time"] = time.time()
+    environment.pause_world()
 def resume_world(environment):
     if not environment.info["paused"]:
         return
@@ -455,19 +481,25 @@ def resume_world(environment):
         org.brain.lastTrained = format_update_difference(brain_last_trained_diff)
         org.birthTime = format_update_difference(birth_time_diff)
 
-        for cell_id in org.cells:
-            sprite = org.cells[cell_id]
-            if sprite.alive:
-                sprite_update_diff = paused_time - sprite.lastUpdated
-                sprite.lastUpdated = format_update_difference(sprite_update_diff)
+        #for cell_id in org.cells:
+        #    sprite = org.cells[cell_id]
+        #    if sprite.alive:
+        #        sprite_update_diff = paused_time - sprite.lastUpdated
+        #        sprite.lastUpdated = format_update_difference(sprite_update_diff)
+
+    for sprite in environment.sprites:
+        if sprite.alive:
+            sprite_update_diff = paused_time - sprite.lastUpdated
+            sprite.lastUpdated = format_update_difference(sprite_update_diff)
 
     env_update_diff = paused_time - environment.lastUpdated
     #environment.lastUpdated = time.time() - env_update_diff
     environment.lastUpdated = format_update_difference(env_update_diff)
 
-    environment.info["paused"] = False
+    #environment.info["paused"] = False
+    environment.resume_world()
 
-def add_dead_clicked(window, environment):
+def add_dead_clicked(window, environment, pos):
     cell_id = 0
     cell_info = {
         "size": 30,
@@ -481,7 +513,7 @@ def add_dead_clicked(window, environment):
 
     sprites.finish_cell_info(cell_info)
 
-    newCell = sprites.build_sprite(environment, None, environment.info["lastPosition"], cell_id, cell_info, alive=False)
+    newCell = sprites.build_sprite(environment, None, pos, cell_id, cell_info, alive=False)
     #newCell = self._build_sprite(environment.info["lastPosition"], cell_id, cell_info, alive=False)
 
     environment.add_sprite(newCell)
@@ -507,9 +539,22 @@ def keyPressed(event, window, myWindow, environment):
     if event.key() == QtCore.Qt.Key_E:
         custom_organism_clicked(window, environment)
     if event.key() == QtCore.Qt.Key_D:
-        add_dead_clicked(window, environment)
+        add_dead_clicked(window, environment, environment.info["lastPosition"])
 def keyReleased(event, window, myWindow, environment):
     pass
+
+def normal_mode_clicked(environment):
+    selected = environment.info["selected"]
+
+    if selected:
+        selected.normal_mode = True
+        selected.training_mode = False
+def training_mode_clicked(environment):
+    selected = environment.info["selected"]
+
+    if selected:
+        selected.normal_mode = False
+        selected.training_mode = True
 
 def active_training_clicked(val, environment):
     selected = environment.info["selected"]
@@ -527,6 +572,9 @@ def setup_window_buttons(window, myWindow, environment):
 
     myWindow.physical_severity_lcd.setProperty("value", myWindow.physical_severity_slider.value())
     myWindow.neural_severity_lcd.setProperty("value", myWindow.neural_severity_slider.value())
+
+    myWindow.normal_mode_btn.clicked.connect(lambda event: normal_mode_clicked(environment))
+    myWindow.training_mode_btn.clicked.connect(lambda event: training_mode_clicked(environment))
 
     environment.info["mutation_severity"] = myWindow.physical_severity_slider.value() / 100.
     environment.info["brain_mutation_severity"] = myWindow.neural_severity_slider.value() / 100.
@@ -554,10 +602,7 @@ def setup_window_buttons(window, myWindow, environment):
     myWindow.physical_severity_slider.valueChanged.connect(lambda: physical_sev_val_changed(myWindow, environment))
     myWindow.neural_severity_slider.valueChanged.connect(lambda: neural_sev_val_changed(myWindow, environment))
 
-    myWindow.drought_btn.mouseReleaseEvent = lambda event: drought_btn_clicked(window, environment)
-    myWindow.algal_bloom_btn.mouseReleaseEvent = lambda event: algal_btn_clicked(window, environment)
-    myWindow.poison_btn.mouseReleaseEvent = lambda event: poison_btn_clicked(window, environment)
-    myWindow.clear_sim_btn.mouseReleaseEvent = lambda event: clear_events_clicked(window, environment)
+    myWindow.clear_sim_btn.clicked.connect(lambda event: clear_events_clicked(myWindow, environment))
 
     myWindow.add_random_creature_event = lambda: add_creature_clicked(myWindow, environment)
     myWindow.heal_event = lambda: heal_btn_clicked(myWindow, environment)
@@ -571,7 +616,7 @@ def setup_window_buttons(window, myWindow, environment):
 
     myWindow.actionFeed_All_Organisms.triggered.connect(lambda: feed_all_clicked(environment))
     myWindow.actionKill_All.triggered.connect(lambda: kill_all_clicked(environment))
-    myWindow.actionReset.triggered.connect(lambda: reset_clicked(environment))
+    myWindow.actionReset.triggered.connect(lambda: reset_clicked(myWindow, environment))
     myWindow.actionImport_Organism.triggered.connect(lambda: import_organism_clicked(window, environment))
     myWindow.actionCustom_Organism.triggered.connect(lambda: custom_organism_clicked(window, environment))
     myWindow.actionPause.triggered.connect(lambda: pause_world(environment))
@@ -602,11 +647,41 @@ def setup_window_buttons(window, myWindow, environment):
 
     myWindow.age_limit_spinbox.valueChanged.connect(age_limit_changed)
 
+def initial_creature(myWindow, environment):
+    minCellRange = myWindow.min_cell_range_spinbox.value()
+    maxCellRange = myWindow.max_cell_range_spinbox.value()
+
+    minSizeRange = myWindow.min_size_range_spinbox.value()
+    maxSizeRange = myWindow.max_size_range_spinbox.value()
+
+    minMassRange = myWindow.min_mass_range_spinbox.value()
+    maxMassRange = myWindow.max_mass_range_spinbox.value()
+
+    mirror_x = myWindow.mirror_x_slider.value() / 100.
+    mirror_y = myWindow.mirror_y_slider.value() / 100.
+
+    min_hiddden_layers = myWindow.min_hid_val.value()
+    max_hiddden_layers = myWindow.max_hid_val.value()
+
+    dna = sprites.DNA().randomize(
+        cellRange=[minCellRange, maxCellRange],
+        sizeRange=[minSizeRange, maxSizeRange],
+        massRange=[minMassRange, maxMassRange],
+        mirror_x=[1.0 - mirror_x, mirror_x],
+        mirror_y=[1.0 - mirror_y, mirror_y],
+        hiddenRange=[min_hiddden_layers, max_hiddden_layers]
+    )
+
+    organism = sprites.Organism([300, 300], env, dna=dna)
+    add_organism(organism, environment)
+
 
 if __name__ == "__main__":
         app = QtWidgets.QApplication(sys.argv)
         window = QtWidgets.QMainWindow()
         myapp = Ui_MainWindow()
+
+        myapp.selection_widget = None
 
         myapp.setupUi(window)
         #myapp.setupEnvironment()
@@ -628,6 +703,8 @@ if __name__ == "__main__":
 
         env.mousePressFunc = lambda event, pos: mousePressEvent(myapp, event, pos, env)
         env.mouseReleaseFunc = lambda event, pos: mouseReleaseEvent(event, pos, env)
+
+        #initial_creature(myapp, env)
 
         window.show()
         sys.exit(app.exec_())

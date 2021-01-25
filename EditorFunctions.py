@@ -13,6 +13,12 @@ def remake_organism(dialog, new_dna):
     h_layers = dialog.ui.hidden_layers_val.value()
     new_dna._setup_brain_structure([h_layers, h_layers+1])
 
+    selected = dialog.info["selected_cell"]
+
+    cid = None
+    if selected is not None:
+        cid = selected.cell_id
+
     new_dna.erase_memory()
     # Necessary in case the input or output sizes of the neural network have changed
 
@@ -38,9 +44,15 @@ def remake_organism(dialog, new_dna):
     dialog.environment.info["organism_list"].append(new_organism)
     new_organism.build_body()
 
+    if cid is not None:
+        if cid in new_organism.cells:
+            dialog.info["selected_cell"] = new_organism.cells[cid]
+
 def update_ui(dialog, environment):
     dna = dialog.info["dna"]
     organism = dialog.info["organism"]
+
+    update_selection_widget(dialog)
 
     if dialog.info["selected_cell"]:
         sprite = dialog.info["selected_cell"]
@@ -367,6 +379,29 @@ def ac_combobox_activated(dialog, val):
     else:
         dialog.info["adding_cell"] = False
 
+def update_selection_widget(dialog):
+    selected = dialog.info["selected_cell"]
+
+    if dialog.selection_widget is not None:
+        dialog.ui.scene.removeItem( dialog.selection_widget )
+        dialog.selection_widget = None
+
+    if selected is not None:
+        cell_pos = selected.getPos()
+        new_pos = [cell_pos[0] - selected.radius - 5, cell_pos[1] - selected.radius - 5]
+
+        sImg = QtGui.QPixmap("Images/selection_image.png")
+        sImg = sImg.scaled( (selected.radius*2) + 10, (selected.radius*2) + 10 )
+
+        graphicsPixmapItem = QtWidgets.QGraphicsPixmapItem(sImg)
+
+        graphicsPixmapItem.setPixmap(sImg)
+        graphicsPixmapItem.setPos(new_pos[0], new_pos[1])
+
+        dialog.ui.scene.addItem(graphicsPixmapItem)
+
+        dialog.selection_widget = graphicsPixmapItem
+
 def keyPressed(dialog, event):
     if event.key() == QtCore.Qt.Key_Space:
         if dialog.environment.info["paused"]:
@@ -387,6 +422,7 @@ def setup_editor_buttons(dialog, environment):
         starter_dna = dialog.main_environment.info["copied"].copy()
 
     dialog.environment = physics.setupEnvironment(dialog.ui.worldView, dialog.ui.scene)
+    dialog.selection_widget = None
 
     dialog.environment.info["paused"] = True
     dialog.environment.info["paused_time"] = time.time()

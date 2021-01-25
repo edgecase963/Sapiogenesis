@@ -53,13 +53,11 @@ class Trainer():
         self.learning_rate = learning_rate
         self.optimizer.defaults["lr"] = learning_rate
 
-    def train_rnn(self, inputData, targetData):
-        hidden = self.model.initHidden()
-
+    def train_rnn(self, inputData, targetData, hiddenData):
         self.model.zero_grad()
 
         for i in range(targetData.size()[0]):
-            result = self.model(inputData[i], hidden)
+            result = self.model(inputData[i], hiddenData[i])
 
         targetData.resize_(result.shape)
         loss = self.loss_fn(result, targetData)
@@ -162,6 +160,9 @@ class RNNetwork(torch.nn.Module):
         return torch.zeros(self.hiddenSize)
 
     def forward(self, inputs, hidden):
+        if hidden is None:
+            hidden = self.initHidden()
+
         combined = torch.cat((inputs, hidden), 0)
 
         result = self.inputLayer(combined)

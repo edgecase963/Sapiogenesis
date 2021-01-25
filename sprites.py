@@ -13,6 +13,7 @@ from userInterface import Ui_MainWindow
 from threading import Thread
 from pymunk import Vec2d
 from torch import tensor
+#import neural
 import neural
 import physics
 
@@ -47,7 +48,7 @@ mass_cutoff = 1 # If a dead cell's percentage of mass becomes less than this, it
 
 break_damage = 5 # The amount of damage a cell does to its parent when it dies (break off from body) - multiplied by its size
 
-starvation_rate = 8 # The percentage of damage to do to a cell each second if its energy equals 0
+starvation_rate = 6 # The percentage of damage to do to a cell each second if its energy equals 0
 
 neural_update_delay = .2 # How long to wait before activating an organism's brain - helps reduce lag
 
@@ -374,10 +375,14 @@ class DNA():
 
         self.trainingInput = []
         self.trainingOutput = []
+        self.trainingReward = []
+        self.trainingHidden = []
 
         self.previousInputs = []
         self.previousOutputs = []
-        self.previousDopamine = []
+
+        self.memory = []
+        self.hidden_memory = []
 
         self.base_info = {
             "distanceThreshold": .8,
@@ -407,10 +412,12 @@ class DNA():
     def erase_memory(self):
         self.trainingInput = []
         self.trainingOutput = []
+        self.trainingReward = []
 
         self.previousInputs = []
         self.previousOutputs = []
-        self.previousDopamine = []
+
+        self.memory = []
 
     def first_cell(self):
         # Returns the first cell that's created while building this creature's body
@@ -1061,12 +1068,7 @@ class DNA():
         # `severity` : 0.0 - 1.0
         new_dna = self.copy()
 
-        new_dna.previousInputs = []
-        new_dna.previousOutputs = []
-        new_dna.previousDopamine = []
-
-        new_dna.trainingInput = []
-        new_dna.trainingOutput = []
+        new_dna.erase_memory()
 
         new_dna = new_dna.mutate_cell_count(severity)
 
@@ -1097,6 +1099,8 @@ class Organism():
         self.cells = {}
         # Structure: {<Cell_ID>: <Sprite_Class>}
 
+        self.normal_mode = True
+        self.training_mode = False
 
         self.movement = {
             "speed": 0,
@@ -1218,16 +1222,23 @@ class Organism():
             radius = self.cells[cell_id].radius
 
             if pos[0]-radius < minX:
-                minX = pos[0]
+                minX = pos[0] - radius
             if pos[0]+radius > maxX:
-                maxX = pos[0]
+                maxX = pos[0] + radius
 
             if pos[1]-radius < minY:
-                minY = pos[1]
+                minY = pos[1] - radius
             if pos[1]+radius > maxY:
-                maxY = pos[1]
+                maxY = pos[1] + radius
 
         return [minX, minY, maxX, maxY]
+
+    def get_width(self):
+        rect = self.get_rect()
+        return rect[2] - rect[0]
+    def get_height(self):
+        rect = self.get_rect()
+        return rect[3] - rect[1]
 
     def _revive_cell_angle(self, cell_id):
         # BACKBURNER
@@ -1356,12 +1367,6 @@ class Organism():
             self.kill_cell(self.cells[fCell])
 
     def collision(self, cell, sprite):
-        own_id = cell.cell_id
-        other_id = sprite.cell_id
-
-        own_info = cell.cell_info
-        other_info = sprite.cell_info
-
         if not sprite in cell.info["colliding"]:
             cell.info["colliding"].append(sprite)
         if not cell in sprite.info["colliding"]:
@@ -1468,7 +1473,7 @@ class Organism():
         sprite = self.cells[cell_id]
         cell_info = self.dna.cells[cell_id]
 
-        if sprite.info["health"] <= 0:
+        if sprite.info["health"] <= 0 and self.normal_mode:
             self.kill_cell(sprite)
             return
 
@@ -1495,7 +1500,7 @@ class Organism():
             for cell in sprite.info["colliding"]:
                 added_energy = damage_dealt / 2
                 if cell.alive:
-                    if cell.cell_info["type"] != "barrier" or cell.alive == False:
+                    if cell.cell_info["type"] != "barrier" or not cell.alive:
                         cell.info["health"] -= damage_dealt
                 else:
                     mass = cell.body.mass
@@ -1598,10 +1603,8 @@ class Organism():
         #        sprite.info["energy"] /= 2
 
         if sprite.info["energy"] <= perc2num(2, sprite.cell_info["energy_storage"]):
-            #self.kill_cell(sprite)
             damage_dealt = perc2num(starvation_rate, sprite.cell_info["max_health"])
             damage_dealt *= uDiff
-            #damage_dealt = starvation_rate * uDiff
             sprite.info["health"] -= damage_dealt
 
     def _update_brain(self):
@@ -1641,7 +1644,7 @@ class Organism():
             self.energy_consumed = 0
 
         if self.energy_consumed:
-            digested_energy = perc2num(80, self.energy_consumed) * uDiff
+            digested_energy = perc2num(90, self.energy_consumed) * uDiff
 
             self.energy_consumed -= digested_energy
             self.energy_consumed += self.add_energy(digested_energy * 1.2)
@@ -1660,9 +1663,8 @@ class Organism():
         self.lastHealth = self.health_percent()
         self.lastEnergy = self.energy_percent()
 
-        cells_alive = self.living_cells()
-        if len(cells_alive) == 1:
-            self.kill_cell(self.cells[cells_alive[0]])
+        if len(self.living_cells()) == 1:
+            self.kill()
 
         fCell = self.dna.first_cell()
         if self.cells[fCell].alive:
@@ -1693,7 +1695,8 @@ class Organism():
         self.brain = neural.setup_network(
             self.dna,
             learning_rate = learning_rate,
-            rnn = self.environment.info["use_rnn"]
+            rnn = self.environment.info["use_rnn"],
+            hiddenSize = self.environment.info["hidden_rnn_size"]
         )
 
         for i, layer in enumerate(self.brain.hiddenLayers):
@@ -1830,7 +1833,7 @@ def update_organisms(environment):
         last_bubble_creation = time.time()
 
     for org in environment.info["organism_list"][:]:
-        if time.time() - org.birthTime >= age_limit:
+        if time.time() - org.birthTime >= age_limit and org.normal_mode:
             org.kill()
 
         if org.alive():
