@@ -8,6 +8,7 @@ import random
 import numpy as np
 import pymunk
 import json
+import copy
 from pymunk import Vec2d
 
 
@@ -151,6 +152,10 @@ class Sprite(QtWidgets.QGraphicsPixmapItem):
 
         # Pymunk
         #--
+
+        self.last_angular_velocity = copy.deepcopy(body.angular_velocity)
+        self.last_velocity = copy.deepcopy(body.velocity)
+        self.last_force = copy.deepcopy(body.force)
 
         self.radius = width/2
 
@@ -300,11 +305,9 @@ class Environment():
             "ambient_training": False,
             "paused": False,
             "paused_time": time.time(),
-            "sim_drought": False,
-            "sim_algal": False,
-            "sim_poison": False,
-            "hidden_rnn_size": 20,
-            "finite_memory": False
+            "hidden_rnn_size": 6,
+            "finite_memory": False,
+            "last_event_update": time.time()
         }
 
         self.width = width
@@ -400,10 +403,26 @@ class Environment():
         # Can be assigned so that another chunk of code is processed after the environment updates
         pass
 
+    def pause_world(self):
+        self.info["paused"] = True
+        self.info["paused_time"] = time.time()
+        for sprite in self.sprites:
+            sprite.last_velocity = copy.deepcopy(sprite.body.velocity)
+            sprite.last_angular_velocity = copy.deepcopy(sprite.body.angular_velocity)
+            sprite.last_force = copy.deepcopy(sprite.body.force)
+
+    def resume_world(self):
+        self.info["paused"] = False
+        for sprite in self.sprites:
+            sprite.body.velocity = copy.deepcopy(sprite.last_velocity)
+            sprite.body.angular_velocity = copy.deepcopy(sprite.last_angular_velocity)
+            sprite.body.force = copy.deepcopy(sprite.last_force)
+
     def update(self, event):
         try:
             if self.info["paused"]:
                 self.postUpdateEvent()
+                self.space.step(0.0)
                 return
             self.preUpdateEvent()
             self.space.step(self.worldSpeed)

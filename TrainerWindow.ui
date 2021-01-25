@@ -59,7 +59,7 @@
    <property name="geometry">
     <rect>
      <x>70</x>
-     <y>110</y>
+     <y>100</y>
      <width>130</width>
      <height>23</height>
     </rect>
@@ -68,12 +68,12 @@
     <number>0</number>
    </property>
   </widget>
-  <widget class="QLabel" name="epochs_label">
+  <widget class="QLabel" name="loss_val">
    <property name="geometry">
     <rect>
-     <x>120</x>
-     <y>190</y>
-     <width>111</width>
+     <x>110</x>
+     <y>200</y>
+     <width>121</width>
      <height>25</height>
     </rect>
    </property>
@@ -88,7 +88,7 @@
    <property name="geometry">
     <rect>
      <x>90</x>
-     <y>150</y>
+     <y>140</y>
      <width>89</width>
      <height>25</height>
     </rect>
@@ -97,11 +97,44 @@
     <string>Train</string>
    </property>
   </widget>
-  <widget class="QLabel" name="train_for_label_2">
+  <widget class="QLabel" name="loss_label">
    <property name="geometry">
     <rect>
      <x>50</x>
-     <y>190</y>
+     <y>200</y>
+     <width>51</width>
+     <height>25</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <pointsize>12</pointsize>
+     <weight>75</weight>
+     <bold>true</bold>
+    </font>
+   </property>
+   <property name="text">
+    <string>Loss:</string>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="finish_btn">
+   <property name="geometry">
+    <rect>
+     <x>170</x>
+     <y>230</y>
+     <width>89</width>
+     <height>25</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Finish</string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="epochs_dis_label">
+   <property name="geometry">
+    <rect>
+     <x>50</x>
+     <y>170</y>
      <width>61</width>
      <height>25</height>
     </rect>
@@ -117,17 +150,20 @@
     <string>Epochs:</string>
    </property>
   </widget>
-  <widget class="QPushButton" name="finish_btn">
+  <widget class="QLabel" name="epochs_label">
    <property name="geometry">
     <rect>
-     <x>170</x>
-     <y>230</y>
-     <width>89</width>
+     <x>120</x>
+     <y>170</y>
+     <width>111</width>
      <height>25</height>
     </rect>
    </property>
    <property name="text">
-    <string>Finish</string>
+    <string>0</string>
+   </property>
+   <property name="alignment">
+    <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
    </property>
   </widget>
  </widget>
