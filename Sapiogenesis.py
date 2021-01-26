@@ -146,7 +146,7 @@ def update_selection_widget(myWindow, environment):
         myWindow.scene.removeItem( myWindow.selection_widget )
         myWindow.selection_widget = None
 
-    if selected is not None:
+    if selected is not None and myWindow.selection_box_checkbox.isChecked():
         new_width = int(selected.get_width() + 20)
         new_height = int(selected.get_height() + 20)
         rect = selected.get_rect()
