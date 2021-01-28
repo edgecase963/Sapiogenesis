@@ -1464,7 +1464,7 @@
        <number>2</number>
       </property>
       <property name="value">
-       <number>18</number>
+       <number>12</number>
       </property>
      </widget>
      <widget class="QSlider" name="neural_severity_slider">
@@ -1745,7 +1745,7 @@
        <double>0.020000000000000</double>
       </property>
       <property name="value">
-       <double>0.300000000000000</double>
+       <double>0.400000000000000</double>
       </property>
      </widget>
      <widget class="QDoubleSpinBox" name="training_interval_spinbox">
@@ -1848,64 +1848,11 @@
        <number>999</number>
       </property>
      </widget>
-     <widget class="QDoubleSpinBox" name="learn_thresh_val">
-      <property name="geometry">
-       <rect>
-        <x>390</x>
-        <y>10</y>
-        <width>80</width>
-        <height>25</height>
-       </rect>
-      </property>
-      <property name="statusTip">
-       <string>Higher = faster | Lower = more detailed memory</string>
-      </property>
-      <property name="minimum">
-       <double>0.000000000000000</double>
-      </property>
-      <property name="maximum">
-       <double>99.900000000000006</double>
-      </property>
-      <property name="singleStep">
-       <double>0.100000000000000</double>
-      </property>
-      <property name="value">
-       <double>0.800000000000000</double>
-      </property>
-     </widget>
-     <widget class="QLabel" name="learn_thresh_label">
-      <property name="geometry">
-       <rect>
-        <x>240</x>
-        <y>10</y>
-        <width>151</width>
-        <height>25</height>
-       </rect>
-      </property>
-      <property name="font">
-       <font>
-        <weight>75</weight>
-        <bold>true</bold>
-       </font>
-      </property>
-      <property name="toolTip">
-       <string extracomment="The amount of CO2 in this world"/>
-      </property>
-      <property name="statusTip">
-       <string>The amount of dopamine difference required to memorize a situation and learn from it</string>
-      </property>
-      <property name="whatsThis">
-       <string/>
-      </property>
-      <property name="text">
-       <string>Learning Threshold:</string>
-      </property>
-     </widget>
      <widget class="QLabel" name="epoch_memory_label">
       <property name="geometry">
        <rect>
         <x>240</x>
-        <y>45</y>
+        <y>10</y>
         <width>151</width>
         <height>25</height>
        </rect>
@@ -1933,7 +1880,7 @@
       <property name="geometry">
        <rect>
         <x>390</x>
-        <y>45</y>
+        <y>10</y>
         <width>80</width>
         <height>25</height>
        </rect>
@@ -1951,14 +1898,14 @@
        <number>10</number>
       </property>
       <property name="value">
-       <number>300</number>
+       <number>200</number>
       </property>
      </widget>
      <widget class="QSpinBox" name="input_memory_spinbox">
       <property name="geometry">
        <rect>
         <x>390</x>
-        <y>80</y>
+        <y>45</y>
         <width>80</width>
         <height>25</height>
        </rect>
@@ -1983,7 +1930,7 @@
       <property name="geometry">
        <rect>
         <x>240</x>
-        <y>80</y>
+        <y>45</y>
         <width>151</width>
         <height>25</height>
        </rect>
@@ -2067,7 +2014,7 @@
       <property name="geometry">
        <rect>
         <x>240</x>
-        <y>115</y>
+        <y>145</y>
         <width>92</width>
         <height>25</height>
        </rect>
@@ -2092,7 +2039,7 @@
       <property name="geometry">
        <rect>
         <x>340</x>
-        <y>115</y>
+        <y>145</y>
         <width>91</width>
         <height>25</height>
        </rect>
@@ -2120,7 +2067,7 @@
       <property name="geometry">
        <rect>
         <x>440</x>
-        <y>115</y>
+        <y>145</y>
         <width>80</width>
         <height>25</height>
        </rect>
@@ -2145,7 +2092,7 @@
       <property name="geometry">
        <rect>
         <x>240</x>
-        <y>140</y>
+        <y>170</y>
         <width>151</width>
         <height>25</height>
        </rect>
@@ -2170,7 +2117,7 @@
       <property name="geometry">
        <rect>
         <x>400</x>
-        <y>140</y>
+        <y>170</y>
         <width>131</width>
         <height>25</height>
        </rect>
@@ -2188,7 +2135,7 @@
        <string>Finite Memory</string>
       </property>
       <property name="checked">
-       <bool>false</bool>
+       <bool>true</bool>
       </property>
      </widget>
     </widget>

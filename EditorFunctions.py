@@ -410,6 +410,8 @@ def keyPressed(dialog, event):
             pause_world(dialog)
     elif event.key() == QtCore.Qt.Key_F:
         finish_clicked(dialog, event)
+    elif event.key() == QtCore.Qt.Key_C:
+        cancel_clicked(dialog, event)
 
 def hidden_layers_changed(dialog, val):
     remake_organism(dialog, dialog.info["dna"])

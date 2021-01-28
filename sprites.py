@@ -50,7 +50,7 @@ break_damage = 5 # The amount of damage a cell does to its parent when it dies (
 
 starvation_rate = 6 # The percentage of damage to do to a cell each second if its energy equals 0
 
-neural_update_delay = .2 # How long to wait before activating an organism's brain - helps reduce lag
+neural_update_delay = .4 # How long to wait before activating an organism's brain - helps reduce lag
 
 learning_update_delay = .5 # How long to wait before training an organism
 
@@ -58,8 +58,6 @@ training_epochs = 1 # How many epochs to train a network for per training interv
 
 max_push_speed = 250
 max_rotation_speed = 6 # Radians per second
-
-training_dopamine_threshold = 0.8
 
 age_limit = 200
 
@@ -380,8 +378,9 @@ class DNA():
 
         self.previousInputs = []
         self.previousOutputs = []
+        self.previousDopamine = []
 
-        self.memory = []
+        self.short_term_memory = []
         self.hidden_memory = []
 
         self.base_info = {
@@ -417,7 +416,7 @@ class DNA():
         self.previousInputs = []
         self.previousOutputs = []
 
-        self.memory = []
+        self.short_term_memory = []
 
     def first_cell(self):
         # Returns the first cell that's created while building this creature's body
@@ -1839,20 +1838,10 @@ def update_organisms(environment):
         if org.alive():
             org.update()
 
-            #brain_uDiff = time.time() - org.brain.lastUpdated
-            #if brain_uDiff >= neural_update_delay:
-            #    neural_thread = Thread( target=org.brain.activate, args=[environment, org, uDiff] )
-            #    neural_thread.run()
-
             train_uDiff = time.time() - org.brain.lastTrained
             if train_uDiff >= learning_update_delay:
-                if positive(org.dopamine) >= training_dopamine_threshold or org.pain >= 0.1:
-                    save_memory = True
-                else:
-                    save_memory = False
-
-                if (save_memory or environment.info["ambient_training"]) and org.active_training:
-                    neural.train_network(org, epochs=training_epochs, save_memory=save_memory, finite_memory=environment.info["finite_memory"])
+                if (environment.info["ambient_training"]) or org.active_training:
+                    neural.train_network(org, epochs=training_epochs, finite_memory=environment.info["finite_memory"])
         else:
             environment.info["organism_list"].remove(org)
 
@@ -1871,11 +1860,6 @@ def update_organisms(environment):
             if sprite.alive:
                 organism = sprite.organism
                 sprite.info["health"] = 0
-                #if organism in environment.info["organism_list"]:
-                #    for cell_id in organism.cells:
-                #        sprite = organism.cells[cell_id]
-                #        environment.removeSprite(sprite)
-                #    environment.info["organism_list"].remove(organism)
             else:
                 environment.removeSprite(sprite)
                 sprite.info["removed"] = True

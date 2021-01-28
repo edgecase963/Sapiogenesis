@@ -369,8 +369,6 @@ def learning_delay_changed(val):
     sprites.learning_update_delay = val
 def training_epochs_changed(val):
     sprites.training_epochs = val
-def learning_threshold_changed(val):
-    sprites.training_dopamine_threshold = val
 def epoch_memory_changed(val):
     sprites.neural.memory_limit = val
 def stim_memory_changed(val):
@@ -633,7 +631,6 @@ def setup_window_buttons(window, myWindow, environment):
     myWindow.neural_interval_spinbox.valueChanged.connect(neural_interval_changed)
     myWindow.training_interval_spinbox.valueChanged.connect(learning_delay_changed)
     myWindow.epochs_spinbox.valueChanged.connect(training_epochs_changed)
-    myWindow.learn_thresh_val.valueChanged.connect(learning_threshold_changed)
     myWindow.epoch_memory_spinbox.valueChanged.connect(epoch_memory_changed)
     myWindow.input_memory_spinbox.valueChanged.connect(stim_memory_changed)
     myWindow.learning_rate_val.valueChanged.connect(lambda val: learning_rate_changed(val, environment))

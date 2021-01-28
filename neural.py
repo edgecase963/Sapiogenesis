@@ -30,7 +30,7 @@ output_lengths = {
     "carniv": 1
 }
 
-memory_limit = 300
+memory_limit = 200
 stimulation_memory = 10
 
 
@@ -62,15 +62,14 @@ def calculateStimulation(dna):
         return 0.0
     while len(dna.previousInputs) > stimulation_memory:
         dna.previousInputs.pop(0)
-    while len(dna.previousOutputs) > stimulation_memory:
         dna.previousOutputs.pop(0)
+        dna.previousDopamine.pop(0)
 
-    max_stim = len(dna.previousInputs[0])
+    max_stim = len(dna.previousInputs[0]) / 2.
 
     inputSum = sum(dna.previousInputs)
-    inputAverages = [i/len(dna.previousInputs) for i in inputSum]
+    inputAverages = torch.tensor([ i/len(dna.previousInputs) for i in inputSum ])
     stimulation = sum(inputAverages) / max_stim
-    #stimulation = torch.mean( torch.tensor(inputAverages) ) / max_stim
 
     return float(stimulation)
 
@@ -300,32 +299,30 @@ def activate(network, environment, organism, uDiff):
             network_output = network.forward(flat_inputs, network.lastHidden)
         else:
             network_output = network.forward(flat_inputs)
-        #network_output = torch.tensor([ round(i, 1) for i in network_output.tolist() ])
 
-        #new_modifier = random.uniform(-1, 1) * network.boredom
-        new_modifier = torch.randn(network_output.shape) * network.boredom
-        network.boredom_modifier = (network.boredom_modifier + new_modifier) / 2.
+        #new_modifier = torch.randn(network_output.shape) * network.boredom
+        #network.boredom_modifier = (network.boredom_modifier + new_modifier) / 2.
 
-        network_output += network.boredom_modifier
+        #network_output += network.boredom_modifier
 
-        #if random.random() <= network.boredom:
-        #    network_output = torch.randn(network_output.shape)
-        #    print(network_output)
+        if random.random() <= network.boredom:
+            network_output = torch.randn(network_output.shape)
 
         if positive(organism.dopamine) > 0.1 or positive(organism.pain) > 0.1:
             if len(organism.dna.previousInputs) > 2 and len(organism.dna.previousOutputs) > 2:
-                organism.dna.memory.append([
+                organism.dna.short_term_memory.append([
                     #network.lastInput.tolist(),
                     #network.lastOutput.tolist(),
                     organism.dna.previousInputs[-3].tolist(),
                     organism.dna.previousOutputs[-3],
-                    network.lastDopamine + organism.dopamine
+                    sum(organism.dna.previousDopamine[-2:]) / 2
+                    #network.lastDopamine + organism.dopamine
                 ])
                 if network.is_rnn:
                     organism.dna.hidden_memory.append(network.lastHidden.tolist())
 
-        while len(organism.dna.memory) > 30:
-            organism.dna.memory.pop(0)
+        while len(organism.dna.short_term_memory) > 30:
+            organism.dna.short_term_memory.pop(0)
             if network.is_rnn:
                 organism.dna.hidden_memory.pop(0)
 
@@ -335,6 +332,7 @@ def activate(network, environment, organism, uDiff):
 
         organism.dna.previousInputs.append( flat_inputs )
         organism.dna.previousOutputs.append( network_output.tolist() )
+        organism.dna.previousDopamine.append( organism.dopamine )
 
         for i, output_val in enumerate(network_output):
             correspondent = network.outputCells[i]
@@ -378,45 +376,48 @@ def activate(network, environment, organism, uDiff):
         network.boredom = 0.0
 
 
-def train_network(organism, epochs=1, save_memory=False, finite_memory=True):
+def train_network(organism, epochs=1, finite_memory=True):
     network = organism.brain
     if not network:
         return
-    if (network.lastOutput is None or network.lastInput is None) and save_memory:
+    if network.lastOutput is None or network.lastInput is None or network.lastDopamine is None:
         return
 
-    if save_memory:
-        #inputDataR = roundList(network.lastInput.tolist())
+    #inputDataR = roundList(network.lastInput.tolist())
 
-        #allActions = [mem for mem in organism.dna.memory if roundList(mem[0]) == inputDataR]
-        #print(allActions)
+    #allActions = [mem for mem in organism.dna.short_term_memory if roundList(mem[0]) == inputDataR]
+    #print(allActions)
 
-        for i, mem in enumerate(organism.dna.memory):
-            inputDataR = roundList(mem[0])
-            allActions = [m for m in organism.dna.memory if roundList( m[0] ) == inputDataR]
+    for i, mem in enumerate(organism.dna.short_term_memory):
+        inputDataR = roundList(mem[0])
+        allActions = [m for m in organism.dna.short_term_memory if roundList( m[0] ) == inputDataR]
 
-            if allActions:
-                bestMemory = sorted(allActions, key=rewardSorter)[-1]
-                bestAction = bestMemory[1]
-                bestReward = bestMemory[2]
-                addToTraining = True
+        if allActions:
+            bestMemory = sorted(allActions, key=rewardSorter)[-1]
+            bestAction = bestMemory[1]
+            bestReward = bestMemory[2]
+            addToTraining = True
 
-                if inputDataR in organism.dna.trainingInput:
-                    index = organism.dna.trainingInput.index(inputDataR)
-                    if organism.dna.trainingReward[index] > bestReward:
-                        addToTraining = False
-                    else:
-                        remove_memory(organism.dna, index)
+            if inputDataR in [roundList(i) for i in organism.dna.trainingInput]:
+                index = organism.dna.trainingInput.index(mem[0])
+                if organism.dna.trainingReward[index] > bestReward:
+                    addToTraining = False
+                else:
+                    remove_memory(organism.dna, index)
 
-                if addToTraining:
-                    organism.dna.trainingInput.append( inputDataR )
-                    organism.dna.trainingOutput.append( bestAction )
-                    organism.dna.trainingReward.append( mem[2] )
-                    if network.is_rnn:
-                        organism.dna.trainingHidden.append(organism.dna.hidden_memory[i])
+            if addToTraining:
+                organism.dna.trainingInput.append( mem[0] )
+                organism.dna.trainingOutput.append( bestAction )
+                organism.dna.trainingReward.append( mem[2] )
+                if network.is_rnn:
+                    organism.dna.trainingHidden.append(organism.dna.hidden_memory[i])
 
-        while len(organism.dna.trainingInput) > memory_limit and finite_memory:
-            remove_memory(organism.dna, 0)
+    while len(organism.dna.trainingInput) > memory_limit and finite_memory:
+        lowest_reward = sorted(organism.dna.trainingReward)[0]
+        lowest_index = organism.dna.trainingReward.index(lowest_reward)
+        # Remove the memory with the lowest reward first to preserve the most successful memories
+
+        remove_memory(organism.dna, lowest_index)
 
     if organism.dna.trainingInput and organism.dna.trainingOutput:
         if network.is_rnn:
