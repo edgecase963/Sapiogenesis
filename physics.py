@@ -298,7 +298,7 @@ class Environment():
             "brain_mutation_severity": 0.5,
             "reproduction_limit": 6,
             "population": 0,
-            "population_limit": 18,
+            "population_limit": 12,
             "weight_persistence": True,
             "learning_rate": 0.02,
             "use_rnn": False,
@@ -306,7 +306,7 @@ class Environment():
             "paused": False,
             "paused_time": time.time(),
             "hidden_rnn_size": 6,
-            "finite_memory": False,
+            "finite_memory": True,
             "last_event_update": time.time()
         }
 
