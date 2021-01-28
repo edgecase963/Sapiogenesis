@@ -661,6 +661,9 @@
           <height>23</height>
          </rect>
         </property>
+        <property name="statusTip">
+         <string>Resources will be slowly depleted from the environment</string>
+        </property>
         <property name="text">
          <string>Drought</string>
         </property>
@@ -674,6 +677,9 @@
           <height>23</height>
          </rect>
         </property>
+        <property name="statusTip">
+         <string>Every organism will take damage over time</string>
+        </property>
         <property name="text">
          <string>Poison</string>
         </property>
@@ -686,6 +692,9 @@
           <width>121</width>
           <height>23</height>
          </rect>
+        </property>
+        <property name="statusTip">
+         <string>Dead cells will be added into the environment at random locations</string>
         </property>
         <property name="text">
          <string>Random Cells</string>

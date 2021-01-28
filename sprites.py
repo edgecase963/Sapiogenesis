@@ -420,9 +420,9 @@ class DNA():
 
     def first_cell(self):
         # Returns the first cell that's created while building this creature's body
-        for id in self.cells:
-            if self.cells[id]["first"]:
-                return id
+        for cid in self.cells:
+            if self.cells[cid]["first"]:
+                return cid
 
     def sub_cells(self, cell_id):
         if cell_id in self.growth_pattern:
