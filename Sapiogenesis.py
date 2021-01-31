@@ -21,7 +21,7 @@ from TrainerWindow import Ui_Trainer
 from userInterface import Ui_EditorWindow
 from EditorWindow import Ui_Form as Editor_Dialog
 
-__version__ = "0.9.2 (Beta)"
+__version__ = "0.9.3 (Beta)"
 
 
 
@@ -167,8 +167,9 @@ def organism_selected(myWindow, environment, organism):
     environment.info["selected"] = organism
     myWindow.active_training_checkbox.setChecked(organism.active_training)
 
-    myWindow.normal_mode_btn.setChecked(organism.normal_mode)
-    myWindow.training_mode_btn.setChecked(organism.training_mode)
+    myWindow.immortal_checkbox.setChecked(organism.immortal)
+    myWindow.maladaptive_checkbox.setChecked(organism.maladaptive)
+    myWindow.spec_finite_memory_checkbox.setChecked(organism.finite_memory)
     myWindow.curiosity_val.setText( str(round(organism.dna.base_info["curiosity"], 2)) )
 
     update_selection_widget(myWindow, environment)
@@ -254,7 +255,7 @@ def save_organism_clicked(window, environment):
 def train_btn_clicked(environment):
     selected = environment.info["selected"]
     if selected:
-        sprites.neural.train_network(selected, epochs=sprites.training_epochs, finite_memory=environment.info["finite_memory"])
+        sprites.neural.train_network(selected, epochs=sprites.training_epochs)
 
 def sim_severity_changed(myWindow, environment):
     myWindow.sim_severity_lcd.setProperty("value", myWindow.sim_severity_slider.value())
@@ -541,18 +542,30 @@ def keyPressed(event, window, myWindow, environment):
 def keyReleased(event, window, myWindow, environment):
     pass
 
-def normal_mode_clicked(environment):
+def immortal_mode_clicked(myWindow, environment):
     selected = environment.info["selected"]
 
     if selected:
-        selected.normal_mode = True
-        selected.training_mode = False
-def training_mode_clicked(environment):
+        if myWindow.immortal_checkbox.isChecked():
+            selected.immortal = True
+        else:
+            selected.immortal = False
+def maladaptive_mode_clicked(myWindow, environment):
     selected = environment.info["selected"]
 
     if selected:
-        selected.normal_mode = False
-        selected.training_mode = True
+        if myWindow.maladaptive_checkbox.isChecked():
+            selected.maladaptive = True
+        else:
+            selected.maladaptive = False
+def spec_finite_memory_clicked(myWindow, environment):
+    selected = environment.info["selected"]
+
+    if selected:
+        if myWindow.spec_finite_memory_checkbox.isChecked():
+            selected.finite_memory = True
+        else:
+            selected.finite_memory = False
 
 def active_training_clicked(val, environment):
     selected = environment.info["selected"]
@@ -571,8 +584,9 @@ def setup_window_buttons(window, myWindow, environment):
     myWindow.physical_severity_lcd.setProperty("value", myWindow.physical_severity_slider.value())
     myWindow.neural_severity_lcd.setProperty("value", myWindow.neural_severity_slider.value())
 
-    myWindow.normal_mode_btn.clicked.connect(lambda event: normal_mode_clicked(environment))
-    myWindow.training_mode_btn.clicked.connect(lambda event: training_mode_clicked(environment))
+    myWindow.immortal_checkbox.clicked.connect(lambda event: immortal_mode_clicked(myWindow, environment))
+    myWindow.maladaptive_checkbox.clicked.connect(lambda event: maladaptive_mode_clicked(myWindow, environment))
+    myWindow.spec_finite_memory_checkbox.clicked.connect(lambda event: spec_finite_memory_clicked(myWindow, environment))
 
     environment.info["mutation_severity"] = myWindow.physical_severity_slider.value() / 100.
     environment.info["brain_mutation_severity"] = myWindow.neural_severity_slider.value() / 100.

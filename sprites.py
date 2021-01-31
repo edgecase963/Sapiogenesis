@@ -50,7 +50,7 @@ break_damage = 5 # The amount of damage a cell does to its parent when it dies (
 
 starvation_rate = 6 # The percentage of damage to do to a cell each second if its energy equals 0
 
-neural_update_delay = .4 # How long to wait before activating an organism's brain - helps reduce lag
+neural_update_delay = .5 # How long to wait before activating an organism's brain - helps reduce lag
 
 learning_update_delay = .5 # How long to wait before training an organism
 
@@ -1098,8 +1098,9 @@ class Organism():
         self.cells = {}
         # Structure: {<Cell_ID>: <Sprite_Class>}
 
-        self.normal_mode = True
-        self.training_mode = False
+        self.immortal = False
+        self.maladaptive = False
+        self.finite_memory = environment.info["finite_memory"]
 
         self.movement = {
             "speed": 0,
@@ -1472,7 +1473,7 @@ class Organism():
         sprite = self.cells[cell_id]
         cell_info = self.dna.cells[cell_id]
 
-        if sprite.info["health"] <= 0 and self.normal_mode:
+        if sprite.info["health"] <= 0 and not self.immortal:
             self.kill_cell(sprite)
             return
 
@@ -1643,7 +1644,7 @@ class Organism():
             self.energy_consumed = 0
 
         if self.energy_consumed:
-            digested_energy = perc2num(90, self.energy_consumed) * uDiff
+            digested_energy = perc2num(95, self.energy_consumed) * uDiff
 
             self.energy_consumed -= digested_energy
             self.energy_consumed += self.add_energy(digested_energy * 1.2)
@@ -1832,16 +1833,16 @@ def update_organisms(environment):
         last_bubble_creation = time.time()
 
     for org in environment.info["organism_list"][:]:
-        if time.time() - org.birthTime >= age_limit and org.normal_mode:
+        if time.time() - org.birthTime >= age_limit and not org.immortal:
             org.kill()
 
         if org.alive():
             org.update()
 
             train_uDiff = time.time() - org.brain.lastTrained
-            if train_uDiff >= learning_update_delay:
+            if train_uDiff >= learning_update_delay and not org.maladaptive:
                 if (environment.info["ambient_training"]) or org.active_training:
-                    neural.train_network(org, epochs=training_epochs, finite_memory=environment.info["finite_memory"])
+                    neural.train_network(org, epochs=training_epochs)
         else:
             environment.info["organism_list"].remove(org)
 

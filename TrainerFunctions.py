@@ -9,8 +9,7 @@ def train_btn_clicked(dialog):
     for i in range(dialog.ui.epochs_val.value()):
         neural.train_network(
             dialog.organism,
-            epochs=1,
-            finite_memory=False
+            epochs=1
         )
         progress_perc = (i / dialog.ui.epochs_val.value()) * 100
         dialog.ui.progress_bar.setValue(progress_perc)
