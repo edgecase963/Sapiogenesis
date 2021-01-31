@@ -1841,7 +1841,7 @@ def update_organisms(environment):
 
             train_uDiff = time.time() - org.brain.lastTrained
             if train_uDiff >= learning_update_delay and not org.maladaptive:
-                if (environment.info["ambient_training"]) or org.active_training:
+                if org.active_training:
                     neural.train_network(org, epochs=training_epochs)
         else:
             environment.info["organism_list"].remove(org)

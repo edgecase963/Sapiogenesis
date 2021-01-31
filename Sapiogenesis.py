@@ -380,8 +380,6 @@ def learning_rate_changed(val, environment):
     environment.info["learning_rate"] = val
 def use_rnn_changed(val, environment):
     environment.info["use_rnn"] = val
-def amb_training_changed(val, environment):
-    environment.info["ambient_training"] = val
 def finite_memory_changed(val, environment):
     environment.info["finite_memory"] = val
 def hidden_rnn_changed(val, environment):
@@ -649,7 +647,6 @@ def setup_window_buttons(window, myWindow, environment):
     myWindow.input_memory_spinbox.valueChanged.connect(stim_memory_changed)
     myWindow.learning_rate_val.valueChanged.connect(lambda val: learning_rate_changed(val, environment))
     myWindow.use_rnn_checkbox.toggled.connect(lambda val: use_rnn_changed(val, environment))
-    myWindow.amb_training_checkbox.toggled.connect(lambda val: amb_training_changed(val, environment))
     myWindow.finite_memory_checkbox.toggled.connect(lambda val: finite_memory_changed(val, environment))
     myWindow.hidden_size_val.valueChanged.connect(lambda val: hidden_rnn_changed(val, environment))
     #~
