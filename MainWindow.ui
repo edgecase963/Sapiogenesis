@@ -1754,7 +1754,7 @@
        <double>0.020000000000000</double>
       </property>
       <property name="value">
-       <double>0.400000000000000</double>
+       <double>0.500000000000000</double>
       </property>
      </widget>
      <widget class="QDoubleSpinBox" name="training_interval_spinbox">
@@ -2916,7 +2916,7 @@
        <enum>QFrame::Raised</enum>
       </property>
      </widget>
-     <widget class="QRadioButton" name="normal_mode_btn">
+     <widget class="QCheckBox" name="immortal_checkbox">
       <property name="geometry">
        <rect>
         <x>10</x>
@@ -2926,26 +2926,42 @@
        </rect>
       </property>
       <property name="statusTip">
-       <string>Normal Mode: Organisms can die, learn and feed</string>
+       <string>Immortal Mode: Organisms can feel pain, but can not die unless they somehow make it through the barriers or you kill them manually</string>
       </property>
       <property name="text">
-       <string>Normal</string>
+       <string>Immortal</string>
       </property>
      </widget>
-     <widget class="QRadioButton" name="training_mode_btn">
+     <widget class="QCheckBox" name="maladaptive_checkbox">
       <property name="geometry">
        <rect>
         <x>10</x>
         <y>170</y>
-        <width>91</width>
+        <width>111</width>
         <height>23</height>
        </rect>
       </property>
       <property name="statusTip">
-       <string>Training Mode: Organisms can feel pain, but can not die unless they somehow make it through the barriers or you kill them manually</string>
+       <string>Maladaptive Mode: Organisms can think and make decisions, but do not learn and are not trained (except manually)</string>
       </property>
       <property name="text">
-       <string>Training</string>
+       <string>Maladaptive</string>
+      </property>
+     </widget>
+     <widget class="QCheckBox" name="spec_finite_memory_checkbox">
+      <property name="geometry">
+       <rect>
+        <x>120</x>
+        <y>140</y>
+        <width>121</width>
+        <height>23</height>
+       </rect>
+      </property>
+      <property name="statusTip">
+       <string>Change this to ignore the global finite memory val (in neural controls) for this organism specifically</string>
+      </property>
+      <property name="text">
+       <string>Finite Memory</string>
       </property>
      </widget>
     </widget>
