@@ -1110,8 +1110,6 @@ class Organism():
         self.lastEnergy = 0.0 # Used to calculate the organism's dopamine
         self.lastHealth = 0.0 # Used to calculate the organism's pain
         self.energy_diff = 0.0
-        self.dopamine_average = 0
-        self.dopamine_memory = [0]*50
         self.dopamine_usage = 0.0
         self.dopamine = 0.0 # The current dopamine output
         self.pain = 0.0
@@ -1622,16 +1620,8 @@ class Organism():
             self.pain = 0.0
 
         self.pain = positive(self.pain)
-        #self.dopamine_usage -= self.pain
 
-        self.dopamine_memory.append(self.dopamine)
-        self.dopamine_memory.pop(0)
-
-        self.dopamine_average = sum(self.dopamine_memory) / len(self.dopamine_memory)
-
-        self.dopamine = self.dopamine_usage - self.dopamine_average
-        self.dopamine -= positive(self.pain)
-        #self.dopamine = self.dopamine_usage
+        self.dopamine = self.dopamine_usage - self.pain
         self.last_updated_dopamine = time.time()
 
     def update(self):
