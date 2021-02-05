@@ -65,10 +65,11 @@ def calculateStimulation(dna):
         dna.previousOutputs.pop(0)
         dna.previousDopamine.pop(0)
 
-    max_stim = len(dna.previousInputs[0]) / 2.
+    max_stim = len(dna.previousInputs[0])
 
     inputSum = sum(dna.previousInputs)
     inputAverages = torch.tensor([ i/len(dna.previousInputs) for i in inputSum ])
+    inputAverages = torch.tensor([ positive(i) for i in inputAverages ])
     stimulation = sum(inputAverages) / max_stim
 
     return float(stimulation)
@@ -302,11 +303,11 @@ def activate(network, environment, organism, uDiff):
         organism.dna.previousDopamine.append( organism.dopamine )
 
         if positive(organism.dopamine) > 0.1 or positive(organism.pain) > 0.1:
-            if len(organism.dna.previousInputs) > 2 and len(organism.dna.previousOutputs) > 2:
+            if len(organism.dna.previousInputs) > 3 and len(organism.dna.previousOutputs) > 3:
                 organism.dna.short_term_memory.append([
-                    organism.dna.previousInputs[-3].tolist(),
-                    organism.dna.previousOutputs[-3],
-                    sum(organism.dna.previousDopamine[-2:]) / 2
+                    organism.dna.previousInputs[-4].tolist(),
+                    organism.dna.previousOutputs[-4],
+                    sum(organism.dna.previousDopamine[-3:]) / 3
                 ])
                 if network.is_rnn:
                     organism.dna.hidden_memory.append(network.lastHidden.tolist())

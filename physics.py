@@ -302,7 +302,6 @@ class Environment():
             "weight_persistence": True,
             "learning_rate": 0.02,
             "use_rnn": False,
-            "ambient_training": False,
             "paused": False,
             "paused_time": time.time(),
             "hidden_rnn_size": 6,

@@ -2097,31 +2097,6 @@
        <number>6</number>
       </property>
      </widget>
-     <widget class="QCheckBox" name="amb_training_checkbox">
-      <property name="geometry">
-       <rect>
-        <x>240</x>
-        <y>170</y>
-        <width>151</width>
-        <height>25</height>
-       </rect>
-      </property>
-      <property name="font">
-       <font>
-        <weight>75</weight>
-        <bold>true</bold>
-       </font>
-      </property>
-      <property name="statusTip">
-       <string>While checked, neural networks will constantly be trained as opposed to only being trained when dopamine or pain thresholds are met</string>
-      </property>
-      <property name="text">
-       <string>Perpetual Training</string>
-      </property>
-      <property name="checked">
-       <bool>false</bool>
-      </property>
-     </widget>
      <widget class="QCheckBox" name="finite_memory_checkbox">
       <property name="geometry">
        <rect>
