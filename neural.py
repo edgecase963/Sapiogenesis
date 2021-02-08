@@ -349,7 +349,14 @@ def activate(network, environment, organism, uDiff):
                 organism.movement["direction"][1] = dir_val
 
     curiosity = organism.dna.base_info["curiosity"]
-    network.stimulation = calculateStimulation(organism.dna)
+    new_stim = calculateStimulation(organism.dna)
+
+    organism.dna.stim_history.append(new_stim)
+    organism.dna.stim_history.pop(0)
+
+    avg_stim = sum(organism.dna.stim_history) / len(organism.dna.stim_history)
+
+    network.stimulation = positive(new_stim - avg_stim)
 
     if network.stimulation and curiosity:
         inverse_val = 1.0 - network.stimulation

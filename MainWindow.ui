@@ -3029,7 +3029,7 @@
      <string>Lifespan:</string>
     </property>
    </widget>
-   <widget class="QCheckBox" name="active_training_checkbox">
+   <widget class="QCheckBox" name="selection_box_checkbox">
     <property name="geometry">
      <rect>
       <x>920</x>
@@ -3045,32 +3045,7 @@
      </font>
     </property>
     <property name="statusTip">
-     <string>While checked, organism's neural networks will be trained automatically. Uncheck this for manual training only on the selected organism</string>
-    </property>
-    <property name="text">
-     <string>Active Training</string>
-    </property>
-    <property name="checked">
-     <bool>false</bool>
-    </property>
-   </widget>
-   <widget class="QCheckBox" name="selection_box_checkbox">
-    <property name="geometry">
-     <rect>
-      <x>920</x>
-      <y>690</y>
-      <width>131</width>
-      <height>25</height>
-     </rect>
-    </property>
-    <property name="font">
-     <font>
-      <weight>75</weight>
-      <bold>true</bold>
-     </font>
-    </property>
-    <property name="statusTip">
-     <string>While checked, organism's neural networks will be trained automatically. Uncheck this for manual training only on the selected organism</string>
+     <string>Leave check to display the selection box around the currently selected organism</string>
     </property>
     <property name="text">
      <string>Selection Box</string>
