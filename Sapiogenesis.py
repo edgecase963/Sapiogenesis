@@ -21,7 +21,7 @@ from TrainerWindow import Ui_Trainer
 from userInterface import Ui_EditorWindow
 from EditorWindow import Ui_Form as Editor_Dialog
 
-__version__ = "0.9.4 (Beta)"
+__version__ = "0.9.5 (Beta)"
 
 
 
@@ -165,7 +165,6 @@ def update_selection_widget(myWindow, environment):
 
 def organism_selected(myWindow, environment, organism):
     environment.info["selected"] = organism
-    myWindow.active_training_checkbox.setChecked(organism.active_training)
 
     myWindow.immortal_checkbox.setChecked(organism.immortal)
     myWindow.maladaptive_checkbox.setChecked(organism.maladaptive)
@@ -478,22 +477,13 @@ def resume_world(environment):
         org.brain.lastTrained = format_update_difference(brain_last_trained_diff)
         org.birthTime = format_update_difference(birth_time_diff)
 
-        #for cell_id in org.cells:
-        #    sprite = org.cells[cell_id]
-        #    if sprite.alive:
-        #        sprite_update_diff = paused_time - sprite.lastUpdated
-        #        sprite.lastUpdated = format_update_difference(sprite_update_diff)
-
     for sprite in environment.sprites:
-        if sprite.alive:
-            sprite_update_diff = paused_time - sprite.lastUpdated
-            sprite.lastUpdated = format_update_difference(sprite_update_diff)
+        sprite_update_diff = paused_time - sprite.lastUpdated
+        sprite.lastUpdated = format_update_difference(sprite_update_diff)
 
     env_update_diff = paused_time - environment.lastUpdated
-    #environment.lastUpdated = time.time() - env_update_diff
     environment.lastUpdated = format_update_difference(env_update_diff)
 
-    #environment.info["paused"] = False
     environment.resume_world()
 
 def add_dead_clicked(window, environment, pos):
@@ -564,11 +554,6 @@ def spec_finite_memory_clicked(myWindow, environment):
             selected.finite_memory = True
         else:
             selected.finite_memory = False
-
-def active_training_clicked(val, environment):
-    selected = environment.info["selected"]
-
-    selected.active_training = val
 
 def setup_window_buttons(window, myWindow, environment):
     myWindow.worldView.mouseMoveEvent = lambda event: mouseMoveEvent(myWindow.worldView, event, environment)
@@ -650,8 +635,6 @@ def setup_window_buttons(window, myWindow, environment):
     myWindow.finite_memory_checkbox.toggled.connect(lambda val: finite_memory_changed(val, environment))
     myWindow.hidden_size_val.valueChanged.connect(lambda val: hidden_rnn_changed(val, environment))
     #~
-
-    myWindow.active_training_checkbox.toggled.connect(lambda val: active_training_clicked(val, environment))
 
     myWindow.age_limit_spinbox.valueChanged.connect(age_limit_changed)
 

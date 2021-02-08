@@ -380,6 +380,8 @@ class DNA():
         self.previousOutputs = []
         self.previousDopamine = []
 
+        self.stim_history = [0]*10
+
         self.short_term_memory = []
         self.hidden_memory = []
 
@@ -1115,8 +1117,6 @@ class Organism():
         self.pain = 0.0
         self.dopamine_update_interval = .1
 
-        self.active_training = True
-
         self.brain = None
 
         self.lastUpdated = time.time()
@@ -1830,8 +1830,8 @@ def update_organisms(environment):
             org.update()
 
             train_uDiff = time.time() - org.brain.lastTrained
-            if train_uDiff >= learning_update_delay and not org.maladaptive:
-                if org.active_training:
+            if train_uDiff >= learning_update_delay:
+                if not org.maladaptive:
                     neural.train_network(org, epochs=training_epochs)
         else:
             environment.info["organism_list"].remove(org)
