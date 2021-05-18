@@ -57,6 +57,9 @@ def getDirection(angle):
     direction = [math.cos(angle), math.sin(angle)]
     return direction
 
+def condition_input_volume(lst):
+    return [i / sum(lst) for i in lst]
+
 def calculateStimulation(dna):
     if not dna.previousInputs:
         return 0.0
@@ -89,37 +92,6 @@ def remove_memory(dna, index):
 
 
 def activate(network, environment, organism, uDiff):
-    def _get_eye_input(cell_id, environment, organism):
-        eye_input = [0] * 4
-        # [<-x>, <+x>, <-y>, <+y>]
-
-        sprite = organism.cells[cell_id]
-        sprite_pos = sprite.getPos()
-        rotationAngle = math.radians(organism.rotation())
-        if not sprite.alive:
-            return eye_input
-
-        sprite_info = sprite.cell_info
-
-        for cell in sprite.info["view"]:
-            cell_pos = cell.getPos()
-            cell_info = cell.cell_info
-
-            angle = getAngle(sprite_pos[0], sprite_pos[1], cell_pos[0], cell_pos[1])
-            angle += rotationAngle
-            direction = [math.cos(angle), math.sin(angle)]
-
-            if direction[0] < 0:
-                eye_input[0] = 1.0
-            else:
-                eye_input[1] = 1.0
-
-            if direction[1] < 0:
-                eye_input[2] = 1.0
-            else:
-                eye_input[3] = 1.0
-
-        return eye_input
     def _adv_get_eye_input(cell_id, environment, organism):
         eye_input = [0] * 8
         # [
@@ -374,6 +346,9 @@ def train_network(organism, epochs=1):
     for i, mem in enumerate(organism.dna.short_term_memory):
         allActions = [m for m in organism.dna.short_term_memory if roundList(m[0]) == roundList(mem[0])]
 
+        # allActions
+        # [ [<inputs>, <outputs>, <reward>], ... ]
+
         if allActions:
             bestMemory = sorted(allActions, key=rewardSorter)[-1]
             bestAction = bestMemory[1]
@@ -488,5 +463,6 @@ def setup_network(dna, learning_rate=0.02, rnn=False, hiddenSize=6):
         network.stimulation = 0.0
         network.boredom = 0.0
         network.is_rnn = rnn
+        network.stimulation_volume = condition_input_volume([1.0 for i in range(network.inputSize)])
 
         return network

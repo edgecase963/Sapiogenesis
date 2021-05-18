@@ -300,10 +300,11 @@ class Network(torch.nn.Module):
 
     def forward(self, inputs):
         result = self.inputLayer(inputs)
-        result = torch.sigmoid(result)
+        result = torch.relu(result)
 
         for layer in self.hiddenLayers:
             result = layer(result)
+            result = torch.relu(result)
 
         return self.outputLayer(result)
 
