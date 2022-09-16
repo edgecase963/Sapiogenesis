@@ -215,7 +215,7 @@ def cell_selected(dialog, sprite):
 
     dialog.info["cell_recently_selected"] = True
 
-    dialog.ui.direction_dial.setValue(dialVal)
+    dialog.ui.direction_dial.setValue(int(dialVal))
 
 def delete_btn_clicked(dialog):
     if dialog.info["selected_cell"] is None:
@@ -391,7 +391,7 @@ def update_selection_widget(dialog):
         new_pos = [cell_pos[0] - selected.radius - 5, cell_pos[1] - selected.radius - 5]
 
         sImg = QtGui.QPixmap("Images/selection_image.png")
-        sImg = sImg.scaled( (selected.radius*2) + 10, (selected.radius*2) + 10 )
+        sImg = sImg.scaled( int((selected.radius*2) + 10), int((selected.radius*2) + 10) )
 
         graphicsPixmapItem = QtWidgets.QGraphicsPixmapItem(sImg)
 

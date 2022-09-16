@@ -5,6 +5,7 @@ import time
 import sys
 import math
 import random
+import asyncio
 import numpy as np
 import pymunk
 import json
@@ -262,7 +263,7 @@ class Sprite(QtWidgets.QGraphicsPixmapItem):
         newVel = list(self.body.velocity)
         newVel = [newVel[0]-frictionCutX, newVel[1]-frictionCutY]
 
-        self.body.velocity = Vec2d(newVel)
+        self.body.velocity = Vec2d(newVel[0], newVel[1])
 
         self.body.angular_velocity -= frictionCutA
 
@@ -339,11 +340,22 @@ class Environment():
         for line in static_lines:
             line.elasticity = 0.95
             line.friction = 0.9
-        self.space.add(static_lines)
+        
+        for line in static_lines:
+            self.space.add(line)
+        #self.space.add(static_lines)
 
         self.scene.mouseReleaseEvent = self.worldMouseReleaseEvent
         self.scene.mousePressEvent = self.worldMousePressEvent
 
+        self.scene.keyPressEvent = self.keyPressEvent
+        self.scene.keyReleaseEvent = self.keyReleaseEvent
+
+        self.mousePressFunc = None
+        self.mouseReleaseFunc = None
+        # These both execute with ( [x, y] )
+
+    async def start(self):
         # Setup timer
         #--
         self.worldView.timer = QtCore.QBasicTimer()
@@ -352,13 +364,6 @@ class Environment():
 
         self.worldView.timer.start(self.updateSpeed, self.worldView)
         #--
-
-        self.scene.keyPressEvent = self.keyPressEvent
-        self.scene.keyReleaseEvent = self.keyReleaseEvent
-
-        self.mousePressFunc = None
-        self.mouseReleaseFunc = None
-        # These both execute with ( [x, y] )
 
     def sprite_under_mouse(self):
         for sprite in self.sprites:
@@ -372,7 +377,7 @@ class Environment():
         pass
 
     def collision(self, arbiter, space, data):
-        shape1, shape2 = arbiter._get_shapes()
+        shape1, shape2 = arbiter.shapes
         if not isinstance(shape1, pymunk.Segment) and not isinstance(shape2, pymunk.Segment):
             sprite1 = shape1.sprite
             sprite2 = shape2.sprite
@@ -417,7 +422,7 @@ class Environment():
             sprite.body.angular_velocity = copy.deepcopy(sprite.last_angular_velocity)
             sprite.body.force = copy.deepcopy(sprite.last_force)
 
-    def update(self, event):
+    async def update(self, event):
         try:
             if self.info["paused"]:
                 self.postUpdateEvent()
@@ -425,8 +430,10 @@ class Environment():
                 return
             self.preUpdateEvent()
             self.space.step(self.worldSpeed)
+            
             for sprite in self.sprites:
                 sprite.updateSprite()
+            
             self.scene.update( self.scene.sceneRect() )
             self.postUpdateEvent()
         except KeyboardInterrupt:
@@ -468,6 +475,7 @@ def setupEnvironment(worldView, scene, friction=60.0, gravity=(0, 0)):
     # scene should be a `QGraphicsScene` item
     sceneRect = scene.sceneRect()
     environment = Environment(worldView, scene, sceneRect.width(), sceneRect.height(), friction=friction, gravity=gravity)
+    asyncio.run(environment.start())
     return environment
 
 
