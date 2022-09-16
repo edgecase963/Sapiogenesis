@@ -1,5 +1,6 @@
 import time
 import sys
+import asyncio
 import random
 import networks
 import math
@@ -47,8 +48,8 @@ def updateUI(window, environment):
         if window.random_cells_checkbox.isChecked():
             rVal = sim_severity * event_uDiff
             if random.random() <= rVal:
-                randomPosX = random.randrange(10, environment.width)
-                randomPosY = random.randrange(10, environment.height)
+                randomPosX = random.randrange(10, int(environment.width))
+                randomPosY = random.randrange(10, int(environment.height))
                 add_dead_clicked(window, environment, [randomPosX, randomPosY])
 
     environment.info["last_event_update"] = time.time()

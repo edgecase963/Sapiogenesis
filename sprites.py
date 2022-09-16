@@ -552,10 +552,10 @@ class DNA():
         cell_id = self._new_cell_id()
         cell_info = {}
 
-        cell_size = random.randrange(sizeRange[0], sizeRange[1])
+        cell_size = random.randrange(int(sizeRange[0]), int(sizeRange[1]))
         cell_info["size"] = cell_size
 
-        cell_mass = random.randrange(massRange[0], massRange[1])
+        cell_mass = random.randrange(int(massRange[0]), int(massRange[1]))
         cell_info["mass"] = cell_mass
 
         cell_elasticity = random.random()
@@ -968,10 +968,10 @@ class DNA():
                 mRange = round(mRange)
                 if not mRange:
                     return new_dna
-                addRange = random.randrange(-mRange, mRange)
+                addRange = random.randrange(int(-mRange), int(mRange))
 
                 while new_dna.cells[cell_id]["mass"] + addRange <= 0:
-                    addRange = random.randrange(-mRange, mRange)
+                    addRange = random.randrange(int(-mRange), int(mRange))
 
                 new_dna.cells[cell_id]["mass"] += addRange
 
@@ -1536,7 +1536,7 @@ class Organism():
                 speed *= (uDiff)
 
                 new_velocity = [push_x*speed, push_y*speed]
-                new_velocity = Vec2d(new_velocity)
+                new_velocity = Vec2d(new_velocity[0], new_velocity[1])
 
                 sprite.body.velocity += new_velocity
                 sprite.info["in_use"] = True

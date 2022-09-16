@@ -60,7 +60,7 @@ class Ui_MainWindow(Ui_MainWindow):
         MainWindow.setWindowIcon(logo)
 
         bgImg = QtGui.QPixmap("Images/background.jpg")
-        bgImg = bgImg.scaled(self.scene.width(), self.scene.height())
+        bgImg = bgImg.scaled(int(self.scene.width()), int(self.scene.height()))
 
         graphicsPixmapItem = QtWidgets.QGraphicsPixmapItem(bgImg)
         self.scene.addItem(graphicsPixmapItem)
@@ -88,7 +88,7 @@ class Ui_EditorWindow(Editor_Dialog):
         MainWindow.setWindowIcon(logo)
 
         bgImg = QtGui.QPixmap("Images/background.jpg")
-        bgImg = bgImg.scaled( self.scene.width(), self.scene.height() )
+        bgImg = bgImg.scaled( int(self.scene.width()), int(self.scene.height()) )
 
         graphicsPixmapItem = QtWidgets.QGraphicsPixmapItem(bgImg)
         self.scene.addItem(graphicsPixmapItem)
