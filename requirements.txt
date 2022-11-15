@@ -2,3 +2,4 @@ numpy>=1.19.0
 pymunk>=6.2.1
 PyQt5>=5.15.0
 torch>=1.7.0
+setuptools>=65.5.1 # not directly required, pinned by Snyk to avoid a vulnerability
